@@ -226,7 +226,7 @@ export default function Page() {
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
-                    {installedCount > 0 && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독 · 검수 전)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
+                    {installedCount > 0 && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 md:block">
                     {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물시설 거리는 반영하지 않아 90점 만점입니다

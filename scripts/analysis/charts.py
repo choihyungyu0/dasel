@@ -138,7 +138,7 @@ def chart_tiers():
     axes[0].set_ylabel("건물 수(동) — 산단마다 세로축 눈금이 다름")
     tot = t["total"]
     basis = (META.get("labels") or {}).get("basis")
-    basis_txt = "위성영상 AI 판독 기준 · 사람 검수 전" if basis == "ai" else "위성영상 판독 기준"
+    basis_txt = "위성영상 AI 판독 기준" if basis == "ai" else "위성영상 판독 기준"
     finish(
         fig, "02_tiers_by_complex", "산업단지별 검토 단계",
         f"출처: {META['sources']['tiers_by_complex']}\n"
@@ -257,7 +257,7 @@ def chart_validation():
     mw_txt = f" · Mann-Whitney U={m['u']:,.0f}, p={m['p']}, 효과크기 {m['effect']}" if m else ""
     title = "점수 상위 건물에는 이미 태양광을 올린 곳이 기대값보다 많다"
     if ai:
-        title += "  — 위성영상 AI 판독 기준 · 사람 검수 전"
+        title += "  — 위성영상 AI 판독 기준"
     finish(
         fig, "04_validation", title,
         f"출처: {META['sources']['validation']} · 판독 결과 생성일 {v.get('generated', '-')}{mw_txt}\n"
