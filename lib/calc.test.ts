@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calc, normalize, roofArea, summarize, toManwon } from "./calc";
-import { CONSTANTS, unsourcedConstants } from "./constants";
+import { CONSTANTS, TARIFF, peakSpread, unsourcedConstants } from "./constants";
 
 describe("5,000㎡ 예시 (CAL-01~04·06)", () => {
   const low = calc(5000, 150);
@@ -96,5 +96,19 @@ describe("BR-O1 출처 없는 상수 금지", () => {
   it("모든 상수에 출처·기준일", () => {
     expect(unsourcedConstants()).toEqual([]);
     expect(Object.keys(CONSTANTS).length).toBeGreaterThan(0);
+  });
+});
+
+describe("BR-C6 요금표 상수", () => {
+  it("계절별 최대−경부하 단가차 113.0·34.9·81.6 → 가중 평균 70.0", () => {
+    const diff = (r: readonly number[]) => Math.round((r[2] - r[0]) * 10) / 10;
+    const e = TARIFF.energy;
+    expect([diff(e.summer.rates), diff(e.springFall.rates), diff(e.winter.rates)]).toEqual([113.0, 34.9, 81.6]);
+    expect(peakSpread()).toBe(70.0);
+  });
+  it("12개월을 빠짐없이 덮는다", () => {
+    const months = Object.values(TARIFF.energy).flatMap((s) => [...s.months]).sort((a, b) => a - b);
+    expect(months).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(TARIFF.basicWonPerKw).toBe(8320);
   });
 });

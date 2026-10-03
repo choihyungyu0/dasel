@@ -49,8 +49,14 @@ describe("구성요소 구간", () => {
     expect([500, 600, 2000, 4000, 10000].map(pts)).toEqual([0, 8, 15, 22, 30]);
   });
   it("BR-S2 구조", () => {
-    expect(["철근콘크리트구조", "철골철근콘크리트구조", "일반철골구조", "경량철골구조", "벽돌구조", "일반목구조", null].map(structPoints))
-      .toEqual([20, 20, 12, 12, 5, 5, 0]);
+    expect(["철근콘크리트구조", "철골철근콘크리트구조", "철골콘크리트구조", "프리케스트콘크리트구조", "프리캐스트콘크리트구조"].map(structPoints))
+      .toEqual([20, 20, 20, 20, 20]);
+    expect(["일반철골구조", "경량철골구조", "강파이프구조", "기타강구조"].map(structPoints)).toEqual([12, 12, 12, 12]);
+    expect(["벽돌구조", "블록구조", "일반목구조", null].map(structPoints)).toEqual([5, 5, 5, 0]);
+  });
+  it("철골 계열은 하중 확인 칩", () => {
+    expect(score(make({ struct: "일반철골구조" }), BASE).chips).toContain("경량 지붕 하중 확인 필요");
+    expect(score(make(), BASE).chips).not.toContain("경량 지붕 하중 확인 필요");
   });
   it("BR-S3 노후", () => {
     const pts = (ymd: string | null) => score(make({ aprYmd: ymd }), BASE).parts.age;

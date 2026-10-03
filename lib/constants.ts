@@ -33,13 +33,36 @@ export const CONSTANTS = {
   SOC_MIN: { value: 0.1, unit: "", label: "충전율 하한", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
 } as const satisfies Record<string, Const>;
 
+/** 산업용(을) 고압A 선택Ⅱ 요금표(BR-C6). 전력량요금은 [경부하, 중간부하, 최대부하] 원/kWh. */
+export const TARIFF = {
+  name: "산업용(을) 고압A 선택Ⅱ",
+  source: "한전ON 전기요금표(PRM004D00)",
+  asOf: "2024-10-24",
+  basicWonPerKw: 8320,
+  energy: {
+    summer: { months: [6, 7, 8], rates: [116.0, 163.8, 229.0] },
+    springFall: { months: [3, 4, 5, 9, 10], rates: [116.0, 133.4, 150.9] },
+    winter: { months: [11, 12, 1, 2], rates: [123.0, 164.0, 204.6] },
+  },
+  peakHours: { summer: "11~12시·13~18시", other: "09~12시·16~19시" },
+} as const;
+
+/** 최대부하 − 경부하 단가차의 월수 가중 평균(원/kWh, 소수 1자리). */
+export function peakSpread(): number {
+  const seasons = Object.values(TARIFF.energy);
+  const sum = seasons.reduce((a, s) => a + (s.rates[2] - s.rates[0]) * s.months.length, 0);
+  return Math.round((sum / 12) * 10) / 10;
+}
+
 export type ConstKey = keyof typeof CONSTANTS;
 
 /** 출처·기준일이 빠진 상수 키 목록. 비어 있지 않으면 빌드를 중단한다(BR-O1). */
 export function unsourcedConstants(): string[] {
-  return Object.entries(CONSTANTS)
+  const missing = Object.entries(CONSTANTS)
     .filter(([, c]) => !c.source.trim() || !c.asOf.trim())
     .map(([k]) => k);
+  if (!TARIFF.source.trim() || !TARIFF.asOf.trim()) missing.push("TARIFF");
+  return missing;
 }
 
 export const REVIEW_BADGE = "1차 검토(현장·구조검토 전)";

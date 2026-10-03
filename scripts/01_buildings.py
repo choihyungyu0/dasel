@@ -140,6 +140,8 @@ def main():
     (OUT / "buildings.json").write_text(json.dumps({"meta": meta, "buildings": rows}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     cpx4326 = cpx.to_crs(4326)
     cpx4326["source"] = SRC_CPX
+    cpx4326["targets"] = [sum(1 for x in rows if x["target"] and x["complex_cd"] == cd) for cd in cpx4326["complex_cd"]]
+    cpx4326["status"] = ["조성 중" if n == 0 else "운영" for n in cpx4326["targets"]]  # MAP-04: 대상 0동은 비활성
     (OUT / "complex.geojson").write_text(cpx4326.to_json(ensure_ascii=False), encoding="utf-8")
 
     tgt = [x for x in rows if x["target"]]

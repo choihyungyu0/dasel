@@ -42,10 +42,12 @@ export interface Score {
   ageYears: number | null;
 }
 
+const STEEL = /철골|강파이프|강구조/;
+
 export function structPoints(struct: string | null): number {
   if (!struct) return 0;
-  if (struct.includes("철근콘크리트") || struct.includes("철골콘크리트")) return 20;
-  if (struct.includes("철골") || struct.includes("강")) return 12;
+  if (/철근콘크리트|철골콘크리트|프리[케캐]스트콘크리트/.test(struct)) return 20;
+  if (STEEL.test(struct)) return 12;
   return 5;
 }
 
@@ -84,7 +86,7 @@ export function score(input: ScoreInput, baseYmd: string, av: Availability = P0_
     chips.push(`사용승인 ${years}년 — 구조검토 필수`);
     conditional = true;
   }
-  if (input.struct?.includes("경량철골")) chips.push("경량지붕 — 하중 확인 필요");
+  if (input.struct && structPoints(input.struct) === 12) chips.push("경량 지붕 하중 확인 필요");
   if (av.hazmat) {
     const d = input.distHazmatM ?? null;
     if (d === null) {
