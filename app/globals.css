@@ -17,3 +17,16 @@ body {
 .num {
   font-variant-numeric: tabular-nums;
 }
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  body {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
