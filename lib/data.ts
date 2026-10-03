@@ -24,6 +24,8 @@ export interface RawBuilding {
   companies?: Company[];
   industry?: Industry;
   dist_119_m?: number | null;
+  roof_type?: string | null;
+  reg_match?: "EXACT" | "DONG" | "AREA" | null;
 }
 
 export interface Company {
@@ -52,7 +54,7 @@ export interface Complex {
 }
 
 export interface Dataset {
-  meta: { source: string; base_date: string; built: string };
+  meta: { source: string; base_date: string; built: string; factory_source?: string; register_source?: string };
   buildings: Building[];
   byId: Map<number, Building>;
   geo: FeatureCollection;
@@ -112,4 +114,11 @@ export function topBuilding(ds: Dataset, complexCd?: string | null): Building | 
   const list = ds.buildings.filter((b) => b.score.tier === "설치 우선" && (!complexCd || b.complex_cd === complexCd));
   list.sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
   return list[0] ?? null;
+}
+
+/** 단가가 바뀌면 건물별 계산만 다시 한다(지도 도형은 그대로). */
+export function reprice(ds: Dataset, unitCost: number): Dataset {
+  const baseYmd = ds.meta.built.replaceAll("-", "");
+  const buildings = ds.buildings.map((b) => enrich(b, baseYmd, unitCost));
+  return { ...ds, buildings, byId: new Map(buildings.map((b) => [b.bld_id, b])) };
 }
