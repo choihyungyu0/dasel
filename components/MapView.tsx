@@ -111,5 +111,9 @@ export default function MapView({ ds, complexCd, selectedId, onSelect }: Props) 
     else m.once("idle", apply);
   }, [ds, selectedId]);
 
-  return <div id="MAP-01" data-tour="map" ref={el} className="absolute inset-0" />;
+  return (
+    <div id="MAP-01" data-tour="map" className="absolute inset-0">
+      <div ref={el} className="h-full w-full" />
+    </div>
+  );
 }

@@ -9,3 +9,5 @@ data/raw/
 __pycache__/
 .next/
 next-env.d.ts
+
+.vercel
