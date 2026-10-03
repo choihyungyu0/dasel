@@ -1,0 +1,46 @@
+// DAT-07 계산 상수. 화면에 나오는 모든 값은 출처·기준일을 함께 가진다(BR-O1).
+
+export type Kind = "공식" | "가정";
+
+export interface Const {
+  value: number;
+  unit: string;
+  label: string;
+  kind: Kind;
+  source: string;
+  asOf: string;
+  /** 시뮬레이터 허용 범위(SIM-01) */
+  range?: [number, number];
+}
+
+const ASSUMED = "초기 가정값(산정 기준 페이지에 범위 공개, IS-02·IS-08)";
+
+export const CONSTANTS = {
+  PVOUT: { value: 1427, unit: "kWh/kWp·년", label: "연간 발전량 계수", kind: "공식", source: "Global Solar Atlas (36.72N 127.43E)", asOf: "2026-10-03" },
+  EMISSION: { value: 0.4173, unit: "tCO2eq/MWh", label: "전력 간접배출계수", kind: "공식", source: "2025 승인 국가 온실가스 배출·흡수계수(2023 소비단)", asOf: "2025" },
+  PRICE_LOW: { value: 150, unit: "원/kWh", label: "절감 단가 하한", kind: "가정", source: "한전ON 산업용(을) 고압A 선택Ⅱ 낮 시간대 전력량요금 보수 가정", asOf: "2024-10-24" },
+  PRICE_FALLBACK: { value: 192, unit: "원/kWh", label: "기준 단가(조회 실패 시)", kind: "공식", source: "한전 전력데이터 개방포털 계약종별 전력사용량(청주 산업용 평균판매단가)", asOf: "2026-06" },
+  UTIL: { value: 0.5, unit: "", label: "지붕 이용률", kind: "가정", source: ASSUMED, asOf: "2026-10-03", range: [0.3, 0.7] },
+  M2_PER_KW: { value: 10, unit: "㎡/kW", label: "kW당 설치 면적", kind: "가정", source: ASSUMED, asOf: "2026-10-03", range: [7, 12] },
+  ESS_HOURS: { value: 2, unit: "h", label: "ESS 저장 시간", kind: "가정", source: ASSUMED, asOf: "2026-10-03", range: [1, 4] },
+  ESS_UNIT_MAX: { value: 1000, unit: "kWh", label: "분산 단위 상한", kind: "가정", source: "ESS 화재 사례(1~5MWh 다수) 기준 1MWh 이하 분산 조건", asOf: "2026-10-03" },
+  PV_MIN_KW: { value: 30, unit: "kW", label: "ESS 산정 최소 용량", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
+  PACK_KWH: { value: 60, unit: "kWh", label: "재사용 팩 정격", kind: "가정", source: ASSUMED, asOf: "2026-10-03", range: [40, 80] },
+  SOH_A: { value: 0.8, unit: "", label: "A등급 잔존용량", kind: "가정", source: "초기 가정값(법정 성능등급 기준은 2027.5 시행 전 미정)", asOf: "2026-10-03" },
+  SOH_B: { value: 0.7, unit: "", label: "B등급 잔존용량", kind: "가정", source: "초기 가정값(법정 성능등급 기준은 2027.5 시행 전 미정)", asOf: "2026-10-03" },
+  A_RATIO: { value: 0.7, unit: "", label: "A등급 비율", kind: "가정", source: ASSUMED, asOf: "2026-10-03", range: [0, 1] },
+  SOC_MAX: { value: 0.9, unit: "", label: "충전율 상한", kind: "가정", source: "ESS 화재 사례(충전율 95% 이상 다수) 기준 운전 조건", asOf: "2026-10-03", range: [0.8, 0.9] },
+  SOC_MIN: { value: 0.1, unit: "", label: "충전율 하한", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
+} as const satisfies Record<string, Const>;
+
+export type ConstKey = keyof typeof CONSTANTS;
+
+/** 출처·기준일이 빠진 상수 키 목록. 비어 있지 않으면 빌드를 중단한다(BR-O1). */
+export function unsourcedConstants(): string[] {
+  return Object.entries(CONSTANTS)
+    .filter(([, c]) => !c.source.trim() || !c.asOf.trim())
+    .map(([k]) => k);
+}
+
+export const REVIEW_BADGE = "1차 검토(현장·구조검토 전)";
+export const HAZMAT_CHIP_P0 = "위험물시설 거리 미반영 — 설치 전 관할 소방서 확인";
