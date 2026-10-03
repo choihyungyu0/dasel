@@ -16,6 +16,7 @@ interface Props {
   onTop: () => void;
 }
 
+/** 화면 아래에 깔리는 계량 띠. 지도를 가리지 않도록 한 줄로 읽힌다. */
 export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop }: Props) {
   const items: { label: string; value: string; unit: string; source: string }[] = [
     { label: "대상 공장", value: n(s.buildings), unit: "동", source: `GIS건물통합정보 ${baseDate} · 30kW 이상 대상` },
@@ -26,29 +27,31 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
     { label: "감축", value: n(s.co2_t), unit: "tCO2", source: `${CONSTANTS.EMISSION.source}` },
   ];
   return (
-    <section id="CRD-00" data-tour="summary" className="rounded-xl bg-white/92 px-4 py-3 shadow-sm ring-1 ring-slate-900/10 backdrop-blur">
-      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 className="text-sm font-semibold">{scope} 합계</h2>
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
-        <span className="text-[11px] text-slate-500">그 외 {n(s.others)}동(30kW 미만·대상 아님)은 합계에 넣지 않았습니다</span>
+    <section id="CRD-00" data-tour="summary" className="surface @container overflow-hidden">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 px-3 py-1.5 md:px-4">
+        <h2 className="text-[13px] font-semibold">{scope} 합계</h2>
+        <span className="badge-review">{REVIEW_BADGE}</span>
+        <span className="text-[11px] text-ink/55">그 외 {n(s.others)}동(30kW 미만·대상 아님)은 합계에 넣지 않았습니다</span>
       </div>
-      <dl className="grid grid-cols-3 gap-x-4 gap-y-2 md:grid-cols-6">
-        {items.map((it) => (
-          <div key={it.label} title={it.source}>
-            <dt className="text-[11px] text-slate-500">{it.label}</dt>
-            <dd className="num text-lg font-semibold leading-tight">
-              {it.value}
-              <span className="ml-0.5 text-xs font-normal text-slate-500">{it.unit}</span>
-            </dd>
-            <p className="hidden truncate text-[10px] text-slate-400 md:block">{it.source}</p>
-          </div>
-        ))}
-      </dl>
-      {hasTop && (
-        <button id="BTN-01" data-tour="top1" type="button" onClick={onTop} className="mt-3 rounded-lg bg-tier-go px-3 py-1.5 text-sm font-medium text-white hover:brightness-110">
-          적합도 1순위 건물 보기
-        </button>
-      )}
+      <div className="flex flex-col @4xl:flex-row @4xl:items-stretch">
+        <dl className="grid flex-1 grid-cols-2 @md:grid-cols-3 @4xl:grid-cols-6 @4xl:divide-x @4xl:divide-ink/10">
+          {items.map((it) => (
+            <div key={it.label} title={it.source} className="min-w-0 px-3 py-1.5 @4xl:py-2">
+              <dt className="text-[11px] text-ink/55">{it.label}</dt>
+              <dd className="readout whitespace-nowrap">
+                {it.value}
+                <span className="unit">{it.unit}</span>
+              </dd>
+              <p className="hidden truncate text-[10px] text-ink/40 @5xl:block">{it.source}</p>
+            </div>
+          ))}
+        </dl>
+        {hasTop && (
+          <button id="BTN-01" data-tour="top1" type="button" onClick={onTop} className="m-2 shrink-0 rounded-md bg-tier-go px-4 py-2 text-sm font-semibold text-white hover:brightness-110 @4xl:my-2 @4xl:mr-3">
+            적합도 1순위 건물 보기
+          </button>
+        )}
+      </div>
     </section>
   );
 }

@@ -57,18 +57,18 @@ export default function ListPage() {
   return (
     <main className="flex h-dvh flex-col gap-2 p-2 md:p-3">
       <AppHeader />
-      <section className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-900/10">
+      <section className="surface bg-white p-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <Filters id="FLT-02" tour="list-filter" />
           <div className="flex flex-col items-end gap-1">
-            <button id="BTN-07" data-tour="list-csv" type="button" onClick={download} disabled={!filtered.length} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40">CSV 내려받기</button>
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
+            <button id="BTN-07" data-tour="list-csv" type="button" onClick={download} disabled={!filtered.length} className="rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40">CSV 내려받기</button>
+            <span className="badge-review">{REVIEW_BADGE}</span>
             {toast && <span role="status" className="text-xs text-slate-600">{toast}</span>}
           </div>
         </div>
       </section>
 
-      <section className="min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-900/10">
+      <section className="min-h-0 flex-1 overflow-auto surface bg-white">
         {status === "loading" && <p className="p-6 text-sm text-slate-500">공장 건물 불러오는 중</p>}
         {status === "error" && (
           <p className="p-6 text-sm">건물 데이터를 불러오지 못했어요 <button type="button" onClick={reload} className="ml-1 underline">다시 시도</button></p>

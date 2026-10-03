@@ -81,7 +81,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
       </header>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
-        <p id="TXT-02" className="rounded-lg bg-slate-900 px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>
+        <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>
 
         <Card id="CRD-01" title="건물·회사" source={`${gisSrc}${b.companies.length ? ` · ${ds.meta.factory_source}` : ""}`}>
           {b.companies.length === 0 ? (
@@ -160,7 +160,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
               </p>
               <p className="mt-1 text-[11px] text-slate-500">평균판매단가에는 기본요금이 들어 있어 실제 절감은 하한에 가까울 수 있습니다. 기후환경요금·연료비조정액은 넣지 않았습니다.</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
+                <span className="badge-review">{REVIEW_BADGE}</span>
                 <button id="BTN-02" type="button" onClick={onRefreshPrice} disabled={price.loading} className="rounded-md border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-50">
                   {price.loading ? "불러오는 중" : "최신 단가 다시 불러오기"}
                 </button>
@@ -173,7 +173,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                 <span id="SCR-01" className="num text-lg font-semibold">{s.score}<span className="text-xs font-normal text-slate-500">/{s.max}</span></span>
                 <span className="text-xs text-slate-500">안전 게이트 {s.gate}</span>
               </div>
-              <span id="BDG-02" className="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
+              <span id="BDG-02" className="mt-1 inline-block badge-review">{REVIEW_BADGE}</span>
               <ul className="mt-2 space-y-1">
                 {(Object.entries(s.parts) as [PartKey, number][]).map(([k, v]) => (
                   <li key={k} className="flex items-center gap-2 text-xs">
@@ -196,7 +196,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
 
       <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-sm">
         {!excluded && c.pv_kw !== null && (
-          <Link id="BTN-04" href={`/opinion/${b.bld_id}`} className="rounded-md bg-slate-900 px-2.5 py-1 text-white">검토의견서 만들기</Link>
+          <Link id="BTN-04" href={`/opinion/${b.bld_id}`} className="rounded-md bg-ink px-2.5 py-1 text-white">검토의견서 만들기</Link>
         )}
         <button id="BTN-05" type="button" onClick={copyLink} className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">링크 복사</button>
         <Link id="LNK-01" href="/method#pv" className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">계산 근거</Link>

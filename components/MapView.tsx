@@ -4,7 +4,7 @@ import { LngLatBounds, Map as MlMap, NavigationControl, type ExpressionSpecifica
 import { useEffect, useRef, useState } from "react";
 import type { Dataset } from "@/lib/data";
 
-export const TIER_COLOR = { "설치 우선": "#0f6b3c", 검토: "#e07b00", 보류: "#7b8494", 제외: "#d5d9df" } as const;
+export const TIER_COLOR = { "설치 우선": "#0b5d34", 검토: "#f08c00", 보류: "#7b8494", 제외: "#d5d9df" } as const;
 const NONE = "#aab1bc";
 
 export type ColorBy = "tier" | "kw" | "packs" | "age" | "gate";
@@ -15,7 +15,7 @@ export const COLOR_SCALES: Record<ColorBy, { label: string; prop: string; stops:
   kw: { label: "설치용량", prop: "pv_kw", stops: [{ label: "30kW 미만", color: "#dbe9d5", min: 0 }, { label: "30~99kW", color: "#a6d49a", min: 30 }, { label: "100~199kW", color: "#5fb260", min: 100 }, { label: "200~499kW", color: "#22853f", min: 200 }, { label: "500kW 이상", color: "#084d24", min: 500 }] },
   packs: { label: "필요 팩 수", prop: "packs", stops: [{ label: "1~5개", color: "#c9dcf2", min: 1 }, { label: "6~15개", color: "#85b3e3", min: 6 }, { label: "16~30개", color: "#3d83cc", min: 16 }, { label: "31개 이상", color: "#134c94", min: 31 }] },
   age: { label: "사용승인 경과", prop: "age", stops: [{ label: "10년 미만", color: "#fde3c2", min: 0 }, { label: "10~19년", color: "#f8b36b", min: 10 }, { label: "20~29년", color: "#e07b00", min: 20 }, { label: "30년 이상", color: "#8f3c00", min: 30 }] },
-  gate: { label: "안전 게이트", prop: "gate", stops: [{ label: "통과", color: "#0f6b3c", value: "통과" }, { label: "조건부", color: "#e07b00", value: "조건부" }] },
+  gate: { label: "안전 게이트", prop: "gate", stops: [{ label: "통과", color: "#0b5d34", value: "통과" }, { label: "조건부", color: "#f08c00", value: "조건부" }] },
 };
 
 function fillColor(by: ColorBy): ExpressionSpecification {
@@ -231,10 +231,10 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   const tipB = tip ? ds.byId.get(tip.id) : null;
 
   return (
-    <div id="MAP-01" data-tour="map" className="absolute inset-0">
+    <div id="MAP-01" data-tour="map" className="absolute inset-0" style={{ "--map-bottom": `${padding.bottom}px`, "--map-right": `${padding.right}px` } as React.CSSProperties}>
       <div ref={el} className="h-full w-full" />
       {tipB && tip && (
-        <div role="tooltip" className="pointer-events-none absolute z-10 max-w-[240px] rounded-md bg-slate-900/90 px-2 py-1 text-xs text-white shadow" style={{ left: tip.x + 12, top: tip.y + 12 }}>
+        <div role="tooltip" className="pointer-events-none absolute z-10 max-w-[240px] rounded-md bg-ink/90 px-2 py-1 text-xs text-white shadow" style={{ left: tip.x + 12, top: tip.y + 12 }}>
           <p className="truncate font-medium">{tipB.companies[0]?.company ?? tipB.name ?? tipB.addr ?? "건물"}</p>
           <p className="num text-slate-300">{tipB.score.tier === "제외" ? "일반 건물" : `${tipB.score.tier} · ${tipB.calc.pv_kw === null ? "면적 정보 없음" : `${tipB.calc.pv_kw.toLocaleString("ko-KR")}kW`}`}</p>
         </div>

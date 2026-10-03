@@ -3,11 +3,13 @@
 @import "driver.js/dist/driver.css";
 
 @theme {
-  --color-tier-go: #0f6b3c;
-  --color-tier-review: #e07b00;
+  --color-ink: #0e2233;
+  --color-cell: #1456c8;
+  --color-tier-go: #0b5d34;
+  --color-tier-review: #f08c00;
   --color-tier-hold: #7b8494;
   --color-tier-out: #d5d9df;
-  --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  --font-sans: var(--font-body), "Noto Sans KR", system-ui, sans-serif;
 }
 
 html,
@@ -17,6 +19,63 @@ body {
 
 .num {
   font-variant-numeric: tabular-nums;
+}
+
+/* 지도 위에 뜨는 판: 반투명 흰색, 가는 선, 약한 그림자 */
+.surface {
+  background: rgb(255 255 255 / 0.86);
+  backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid rgb(14 34 51 / 0.1);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(14 34 51 / 0.06), 0 10px 24px -16px rgb(14 34 51 / 0.35);
+}
+
+/* 계량기 숫자판: 폭이 좁은 숫자 전용 글꼴, 단위는 작게 */
+.readout {
+  font-family: var(--font-readout), var(--font-body), sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+.readout .unit {
+  margin-left: 3px;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: rgb(14 34 51 / 0.55);
+}
+
+.badge-review {
+  border-radius: 4px;
+  background: #fdecc8;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b4300;
+}
+
+/* 낱말 표지: 셀 한 칸에 잔량 막대 */
+.cell-mark {
+  position: relative;
+  display: inline-block;
+  width: 15px;
+  height: 20px;
+  border: 2px solid var(--color-ink);
+  border-radius: 3px;
+  background: linear-gradient(to top, var(--color-tier-go) 0 62%, transparent 62%);
+}
+.cell-mark::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: -5px;
+  height: 3px;
+  border-radius: 1px 1px 0 0;
+  background: var(--color-ink);
 }
 
 @page {
@@ -87,4 +146,11 @@ body {
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
     display: none;
   }
+}
+
+/* 지도 조작 버튼과 출처 표기는 합계 띠·패널이 가리지 않는 자리로 올린다 */
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--map-bottom, 0px);
+  right: var(--map-right, 0px);
+  transition: bottom 0.2s, right 0.2s;
 }

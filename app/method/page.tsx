@@ -26,7 +26,7 @@ function keywords(): { group: string; ksic: string; words: string[] }[] {
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/10">
+    <section id={id} className="scroll-mt-4 surface bg-white p-4">
       <h2 className="mb-2 text-[15px] font-semibold">{title}</h2>
       <div className="space-y-2 text-[13px] leading-relaxed">{children}</div>
     </section>

@@ -47,7 +47,7 @@ function Slider({ id, label, value, min, max, step, show, note, disabled, onChan
         <span>{label}</span>
         <span className="num font-semibold">{show}</span>
       </span>
-      <input id={id} type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-slate-900 disabled:opacity-40" />
+      <input id={id} type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-ink disabled:opacity-40" />
       <span className="flex justify-between text-[10px] text-slate-400"><span>{min}</span><span>{note}</span><span>{max}</span></span>
     </label>
   );
@@ -98,7 +98,7 @@ export default function SimPage() {
       {status === "error" && <p className="rounded-xl bg-white p-6 text-sm">건물 데이터를 불러오지 못했어요 <button type="button" onClick={reload} className="ml-1 underline">다시 시도</button></p>}
       {s && rows && baseRows && (
         <div className="grid gap-2 md:grid-cols-[340px_1fr]">
-          <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/10">
+          <section className="surface bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold">조건</h2>
             <div data-tour="sim-sliders" className="space-y-3">
               <Slider id="SLD-01" label="지붕 이용률" value={Math.round(s.util * 100)} min={30} max={70} step={5} show={`${Math.round(s.util * 100)}%`} note={C.UTIL.source} onChange={(v) => set({ util: v / 100 })} />
@@ -110,7 +110,7 @@ export default function SimPage() {
                 </div>
                 <div role="group" aria-label="단가 기준" className="mb-1 flex gap-1 text-xs">
                   {([["하한", C.PRICE_LOW.value], ["기준", price.unitCost], ["직접", mode === "직접" ? s.price : 200]] as const).map(([m, v]) => (
-                    <button key={m} type="button" aria-pressed={mode === m} onClick={() => set({ price: v })} className={`rounded-md border px-2 py-0.5 ${mode === m ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 hover:bg-slate-100"}`}>{m}</button>
+                    <button key={m} type="button" aria-pressed={mode === m} onClick={() => set({ price: v })} className={`rounded-md border px-2 py-0.5 ${mode === m ? "border-ink bg-ink text-white" : "border-slate-300 hover:bg-slate-100"}`}>{m}</button>
                   ))}
                 </div>
                 <Slider id="SLD-03" label="직접 입력" value={s.price} min={PRICE_RANGE[0]} max={PRICE_RANGE[1]} step={1} show="" note={`기준 ${price.unitCost}원(${price.month}${price.fallback ? ", 기준값" : ", 한전"})`} disabled={mode !== "직접"} onChange={(v) => set({ price: v })} />
@@ -122,16 +122,16 @@ export default function SimPage() {
             </div>
             <div id="BTN-06" data-tour="sim-reset" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
               <button type="button" onClick={() => { setS(defaults); setNote(null); }} className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">기본값으로</button>
-              <button type="button" onClick={copy} className="rounded-md bg-slate-900 px-2.5 py-1 text-white">조건 링크 복사</button>
+              <button type="button" onClick={copy} className="rounded-md bg-ink px-2.5 py-1 text-white">조건 링크 복사</button>
             </div>
             {note && <p role="status" className="mt-2 break-all text-xs text-slate-600">{note}</p>}
           </section>
 
           <section className="space-y-2">
-            <div className="overflow-x-auto rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/10">
+            <div className="overflow-x-auto surface bg-white p-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold">산단별 결과</h2>
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
+                <span className="badge-review">{REVIEW_BADGE}</span>
                 <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산</span>
               </div>
               <table id="TBL-01" data-tour="sim-result" className="w-full min-w-[720px] border-collapse text-[13px]">
@@ -158,7 +158,7 @@ export default function SimPage() {
               </table>
             </div>
 
-            <div id="CHT-01" className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/10">
+            <div id="CHT-01" className="surface bg-white p-4">
               <h2 className="mb-2 text-sm font-semibold">산단별 설치용량·재사용 팩</h2>
               <ul className="space-y-2">
                 {rows.filter((r) => r.cd !== "all").map((r) => (

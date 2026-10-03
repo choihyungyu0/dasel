@@ -25,13 +25,13 @@ export default function SearchBox({ ds, onPick }: { ds: Dataset; onPick: (item: 
   };
 
   return (
-    <div className="relative w-full md:w-72">
+    <div className="relative w-full max-md:order-2 md:w-72">
       <input
         id="INP-01" data-tour="search" type="search" value={q} maxLength={50} placeholder="회사명·주소 검색" aria-label="회사명·주소 검색"
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === "Enter" && result.hits[0]) pick(result.hits[0]); if (e.key === "Escape") setOpen(false); }}
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-900"
+        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-cell"
       />
       {open && q.trim() && (
         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg bg-white text-sm shadow-lg ring-1 ring-slate-900/10">

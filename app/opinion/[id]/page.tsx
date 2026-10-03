@@ -58,7 +58,7 @@ export default function OpinionPage() {
     <main className="mx-auto max-w-[210mm] p-3 print:p-0">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-sm print:hidden">
         <Link href={`/?b=${id}`} className="rounded-md border border-slate-300 bg-white px-2.5 py-1 hover:bg-slate-100">지도로 돌아가기</Link>
-        <button id="BTN-08" type="button" onClick={() => print()} disabled={opinion.status !== "done"} className="rounded-md bg-slate-900 px-2.5 py-1 text-white disabled:opacity-40">인쇄 / PDF 저장</button>
+        <button id="BTN-08" type="button" onClick={() => print()} disabled={opinion.status !== "done"} className="rounded-md bg-ink px-2.5 py-1 text-white disabled:opacity-40">인쇄 / PDF 저장</button>
         {opinion.status === "done" && <button type="button" onClick={generate} className="rounded-md border border-slate-300 bg-white px-2.5 py-1 hover:bg-slate-100">다시 만들기</button>}
       </div>
 
@@ -70,7 +70,7 @@ export default function OpinionPage() {
             <p className="text-xs text-slate-600">{facts.주소 ?? "주소 정보 없음"} · {facts.산단} · {facts.주용도 ?? "용도 미확인"} · {facts.구조 ?? "구조 정보 없음"}</p>
           </div>
           <div className="shrink-0 text-right">
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">{REVIEW_BADGE}</span>
+            <span className="badge-review">{REVIEW_BADGE}</span>
             <p className="mt-1 text-sm font-semibold">{facts.단계}</p>
           </div>
         </header>

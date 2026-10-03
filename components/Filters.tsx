@@ -11,7 +11,7 @@ function Chips<T extends string>({ label, options, value, onChange }: { label: s
         const on = value.includes(o);
         return (
           <button key={o} type="button" aria-pressed={on} onClick={() => onChange(on ? value.filter((v) => v !== o) : [...value, o])}
-            className={`rounded-full border px-2 py-0.5 text-xs ${on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white hover:bg-slate-100"}`}>
+            className={`rounded-full border px-2 py-0.5 text-xs ${on ? "border-ink bg-ink text-white" : "border-slate-300 bg-white hover:bg-slate-100"}`}>
             {o}
           </button>
         );
@@ -40,7 +40,7 @@ export default function Filters({ id, tour }: { id: string; tour: string }) {
   return (
     <div id={id} data-tour={tour} className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="num rounded-full bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">{filtered.length.toLocaleString("ko-KR")}동</span>
+        <span className="num rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-white">{filtered.length.toLocaleString("ko-KR")}동</span>
         {!isDefault(f) && (
           <button type="button" onClick={() => setFilters(DEFAULT_FILTERS)} className="text-xs text-slate-600 underline">필터 해제</button>
         )}

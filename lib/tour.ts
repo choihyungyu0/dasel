@@ -18,7 +18,7 @@ export interface TourStep {
 
 export const STEPS: TourStep[] = [
   { target: "search", title: "우리 공장 찾기", body: "회사명이나 주소를 넣으면 그 건물로 바로 갑니다.", side: "bottom", advance: "next", needs: "map" },
-  { target: "summary", title: "산단 전체 합계", body: "오창 4개 산단 공장 지붕을 모두 더한 값입니다. 조건을 바꾸면 같이 바뀝니다.", side: "bottom", advance: "next", needs: "map" },
+  { target: "summary", title: "산단 전체 합계", body: "오창 4개 산단 공장 지붕을 모두 더한 값입니다. 조건을 바꾸면 같이 바뀝니다.", side: "top", advance: "next", needs: "map" },
   { target: "map-building", title: "색이 진할수록 먼저 볼 건물", body: "강조된 건물을 직접 눌러 보세요.", side: "right", advance: "click", needs: "anchor" },
   { target: "card-pv", title: "지붕 태양광", body: "지붕 면적으로 계산한 설치 용량과 1년 발전량입니다.", side: "left", advance: "next", needs: "panel" },
   { target: "card-ess", title: "재사용 배터리", body: "필요한 재사용 배터리 팩 수입니다. 1MWh 이하로 나눠 설치하는 기준입니다.", side: "left", advance: "next", needs: "panel" },
