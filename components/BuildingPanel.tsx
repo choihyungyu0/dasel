@@ -183,6 +183,12 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                   </li>
                 ))}
               </ul>
+              {b.stability !== null && (
+                <p className="mt-2 text-xs text-slate-600" title="가중치 4개를 각각 ±20% 범위에서 무작위로 바꿔 1,000번 다시 순위를 매겼을 때, 이 건물이 상위 10%에 든 횟수의 비율입니다">
+                  순위 안정도 <span className="num font-semibold text-ink">{Math.round(b.stability * 100)}%</span>
+                  <span className="text-slate-500"> · 가중치를 ±20% 바꾼 1,000회 중 상위 10%({ds.stability.topCount}동)에 든 비율</span>
+                </p>
+              )}
               <ul id="BDG-01" className="mt-2 flex flex-wrap gap-1">
                 {b.flags.includes("USE_NULL") && <li className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">용도 미확인</li>}
                 {s.chips.map((chip) => (

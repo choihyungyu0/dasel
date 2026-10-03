@@ -2,6 +2,7 @@
 import type { FeatureCollection } from "geojson";
 import { calc, roofArea, summarize, type Assumptions, type Calc, type Roof, type Summary } from "./calc";
 import { score, type Industry, type Score } from "./score";
+import { rankStability, type StabilityResult } from "./stability";
 
 export interface RawBuilding {
   bld_id: number;
@@ -42,6 +43,8 @@ export interface Building extends RawBuilding {
   score: Score;
   companies: Company[];
   industry: Industry;
+  /** 가중치 ±20% 1,000회 중 상위 10%에 든 비율. 30kW 미만·대상 아님은 null */
+  stability: number | null;
 }
 
 export interface Complex {
@@ -62,6 +65,7 @@ export interface Dataset {
   complexGeo: FeatureCollection;
   stationGeo: FeatureCollection | null;
   factories: Factory[];
+  stability: StabilityResult;
 }
 
 export interface Factory {
@@ -97,7 +101,7 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
   const c = calc(roof.roof_m2, unitCost, assumptions);
   const industry: Industry = raw.industry ?? null;
   const s = score({ target: raw.target, calc: c, struct: raw.struct, aprYmd: raw.apr_ymd, industry }, baseYmd);
-  return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [] };
+  return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [], stability: null };
 }
 
 export async function loadDataset(unitCost?: number): Promise<Dataset> {
@@ -111,11 +115,20 @@ export async function loadDataset(unitCost?: number): Promise<Dataset> {
   const baseYmd = attrs.meta.built.replaceAll("-", "");
   const buildings = attrs.buildings.map((b) => enrich(b, baseYmd, unitCost));
   const byId = new Map(buildings.map((b) => [b.bld_id, b]));
+  const stability = withStability(buildings);
   for (const f of geo.features) {
     const b = byId.get(Number(f.properties?.bld_id));
     if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1 };
   }
-  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories };
+  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories, stability };
+}
+
+/** 30kW 이상 대상 건물을 후보로 순위 안정도를 계산해 각 건물에 붙인다. */
+export function withStability(buildings: Building[]): StabilityResult {
+  const cands = buildings.filter((b) => b.score.tier !== "제외" && b.calc.pv_kw !== null && !b.calc.small);
+  const result = rankStability(cands.map((b) => ({ id: b.bld_id, score: b.score, tie: b.calc.pv_kw ?? 0 })));
+  for (const b of buildings) b.stability = result.byId.get(b.bld_id) ?? null;
+  return result;
 }
 
 /** 운영 중 산단의 대상 건물 합계. complexCd가 있으면 그 산단만. */
@@ -134,6 +147,7 @@ export function topBuilding(ds: Dataset, complexCd?: string | null): Building | 
 /** 단가가 바뀌면 건물별 계산만 다시 한다(지도 도형은 그대로). */
 export function reprice(ds: Dataset, unitCost: number): Dataset {
   const baseYmd = ds.meta.built.replaceAll("-", "");
-  const buildings = ds.buildings.map((b) => enrich(b, baseYmd, unitCost));
+  // 단가는 점수에 영향을 주지 않으므로 안정도는 그대로 옮긴다
+  const buildings = ds.buildings.map((b) => ({ ...enrich(b, baseYmd, unitCost), stability: b.stability }));
   return { ...ds, buildings, byId: new Map(buildings.map((b) => [b.bld_id, b])) };
 }

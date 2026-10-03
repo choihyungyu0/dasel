@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AppHeader from "@/components/AppHeader";
 import { CONSTANTS, HAZMAT_CHIP_P0, peakSpread, REVIEW_BADGE, TARIFF } from "@/lib/constants";
+import { enrich, withStability, type RawBuilding } from "@/lib/data";
 import { maxAvailable, WEIGHTS } from "@/lib/score";
+import { STABILITY } from "@/lib/stability";
 
 export const metadata = { title: "산정 기준 — 다셀" };
 
@@ -57,6 +59,8 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
+  const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
+  const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
   const baseDate = bq.meta.base_date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 
   return (
@@ -67,7 +71,7 @@ export default function MethodPage() {
           이 지도의 숫자는 공개 데이터와 아래 식으로 계산한 <strong>{REVIEW_BADGE}</strong> 값입니다. 실제 설치 여부와 용량은 현장 조사, 구조검토, 전기·소방 협의를 거쳐 정해집니다.
         </p>
         <nav className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600">
-          {[["pv", "지붕 태양광"], ["ess", "재사용 ESS"], ["money", "절감액·탄소"], ["score", "적합도·설치 조건"], ["industry", "업종 분류"], ["constants", "상수"], ["tariff", "요금표"], ["data", "데이터"], ["limits", "한계"]].map(([id, label]) => (
+          {[["pv", "지붕 태양광"], ["ess", "재사용 ESS"], ["money", "절감액·탄소"], ["score", "적합도·설치 조건"], ["stability", "순위 안정도"], ["industry", "업종 분류"], ["constants", "상수"], ["tariff", "요금표"], ["data", "데이터"], ["limits", "한계"]].map(([id, label]) => (
             <a key={id} href={`#${id}`} className="underline">{label}</a>
           ))}
         </nav>
@@ -112,7 +116,19 @@ export default function MethodPage() {
         <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열은 경량 지붕 하중 확인이 필요합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
       </Section>
 
+      <Section id="stability" title="순위 안정도">
+        <p>배점은 초기값이므로, 배점이 달라져도 순위가 유지되는지 확인합니다. 반영 중인 항목의 배점을 각각 ±{STABILITY.spread * 100}% 범위에서 무작위로 바꿔 {n(STABILITY.runs)}번 다시 순위를 매기고, 건물마다 상위 {STABILITY.top * 100}%에 든 비율을 계산합니다.</p>
+        <Table head={["항목", "값"]} rows={[
+          ["후보(30kW 이상 대상 건물)", `${n(st.population)}동`],
+          [`상위 ${STABILITY.top * 100}%`, `${n(st.topCount)}동`],
+          ["상위 건물의 평균 유지 비율", `${(st.topMean * 100).toFixed(1)}%`],
+          ["1,000회 중 90% 이상 상위에 남은 건물", `${n(st.topStable)}동 / ${n(st.topCount)}동`],
+        ]} />
+        <p>건물 패널의 '순위 안정도'가 낮은 건물은 배점에 따라 순위가 바뀔 수 있으니 다른 조건과 함께 봐야 합니다. 난수 씨앗을 고정해 같은 데이터에서는 같은 값이 나옵니다.</p>
+      </Section>
+
       <Section id="industry" title="업종 분류">
+        <p>등록공장은 주소 좌표가 떨어진 건물과 같은 필지의 다른 동에도 함께 연결합니다(동 구분 불가). 그래서 창고나 부속동도 같은 업종 점수를 받습니다.</p>
         <p>등록공장현황에는 업종코드가 없어 생산품 문구의 키워드로 분류합니다. 아래 키워드가 들어 있으면 다소비 업종(15점), 그 밖의 생산품은 제조(8점)입니다.</p>
         <Table head={["업종군", "KSIC", "키워드"]} rows={keywords().map((k) => [k.group, k.ksic, k.words.join(", ")])} />
       </Section>
