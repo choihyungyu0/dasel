@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import BuildingPanel from "@/components/BuildingPanel";
 import Filters from "@/components/Filters";
@@ -11,13 +11,21 @@ import { useStore } from "@/components/Store";
 import SummaryBanner from "@/components/SummaryBanner";
 import { summarize } from "@/lib/calc";
 import { DEFAULT_FILTERS, isDefault } from "@/lib/filters";
+import { startTour, tourDone, type TourHandle } from "@/lib/tour";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"]];
 
 export default function Page() {
-  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId } = useStore();
+  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce } = useStore();
+  const [anchorId, setAnchorId] = useState<number | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [sheetTall, setSheetTall] = useState(false);
+  const [live, setLive] = useState("");
+  const [chip, setChip] = useState(false);
+  const tour = useRef<TourHandle | null>(null);
+  const topRef = useRef<number | null>(null);
   const [colorBy, setColorBy] = useState<ColorBy>("tier");
   const [layers, setLayers] = useState<Layers>({ complex: true, target: true, general: true, station: false });
   const [showFilter, setShowFilter] = useState(false);
@@ -51,6 +59,54 @@ export default function Page() {
 
   const summary = useMemo(() => summarize(filtered), [filtered]);
   const top = filtered.find((b) => b.score.tier === "설치 우선") ?? null;
+  topRef.current = top?.bld_id ?? filtered[0]?.bld_id ?? null;
+
+  const runTour = useCallback(async () => {
+    if (tour.current) return;
+    setChip(false);
+    setShowFilter(false);
+    tour.current = await startTour({
+      topId: topRef.current,
+      mobile: !matchMedia("(min-width: 768px)").matches,
+      select: setSelectedId,
+      setAnchor: setAnchorId,
+      setLocked,
+      setSheetTall,
+      announce: setLive,
+      onEnd: () => {
+        tour.current = null;
+        setLive("");
+        // TUR-06: 끝나면 다시 보기 위치(? 버튼)를 2초간 강조
+        const help = document.getElementById("BTN-H1");
+        help?.classList.add("tour-flash");
+        setTimeout(() => help?.classList.remove("tour-flash"), 2000);
+      },
+    });
+  }, [setSelectedId]);
+
+  // TUR-02 시작 조건: ?tour=1 → 무조건 / 첫 방문 → 자동 / 딥링크(?b=)·저장 불가 → 칩만
+  useEffect(() => {
+    if (!base) return;
+    const params = new URLSearchParams(location.search);
+    const done = tourDone();
+    if (params.get("tour") === "1") {
+      const t = setTimeout(runTour, 600);
+      return () => clearTimeout(t);
+    }
+    if (done === true) return;
+    if (params.has("b") || done === null) {
+      setChip(true);
+      return;
+    }
+    const t = setTimeout(runTour, 600);
+    return () => clearTimeout(t);
+  }, [base, runTour]);
+
+  // ? 메뉴의 '둘러보기 다시 보기'
+  useEffect(() => {
+    if (tourNonce > 0) void runTour();
+  }, [tourNonce, runTour]);
+  useEffect(() => () => tour.current?.stop(), []);
   const passIds = useMemo(() => (isDefault(filters) && !complexCd ? null : new Set(filtered.map((b) => b.bld_id))), [filters, complexCd, filtered]);
   const scope = `${ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체"}${isDefault(filters) ? "" : " · 필터 적용"}`;
   const selected = ds && selectedId !== null ? (ds.byId.get(selectedId) ?? null) : null;
@@ -61,8 +117,17 @@ export default function Page() {
       {base && (
         <MapView
           ds={base} complexCd={complexCd} selectedId={selectedId} onSelect={setSelectedId} colorBy={colorBy} layers={layers} passIds={passIds} flyTo={flyTo}
-          padding={selected ? (wide ? { right: 400, bottom: 0 } : { right: 0, bottom: Math.round(innerHeight * 0.6) }) : { right: 0, bottom: 0 }}
+          padding={{
+            top: typeof document === "undefined" ? 120 : Math.round(document.querySelector("header")?.getBoundingClientRect().bottom ?? 60) + (wide ? 150 : 0),
+            right: selected && wide ? 400 : 0,
+            bottom: selected && !wide ? Math.round(innerHeight * 0.6) : 0,
+          }}
           onFallback={() => setFallbackImagery(true)}
+          anchorId={anchorId} locked={locked}
+          onAnchorClick={() => {
+            setSelectedId(anchorId);
+            tour.current?.buildingClicked();
+          }}
         />
       )}
 
@@ -94,7 +159,7 @@ export default function Page() {
         </AppHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:items-start">
-          <div className={`flex min-w-0 flex-1 flex-col items-start gap-2 ${selected ? "max-md:hidden" : ""}`}>
+          <div className={`flex min-w-0 flex-1 flex-col items-start gap-2 ${selected || anchorId !== null ? "max-md:hidden" : ""}`}>
             {ds && (
               <div className="pointer-events-auto w-full">
                 <SummaryBanner
@@ -143,7 +208,7 @@ export default function Page() {
           </div>
 
           {ds && selected && (
-            <div className="mt-auto flex max-h-[62dvh] min-h-0 w-full flex-col md:mt-0 md:h-full md:max-h-full md:w-[380px] md:shrink-0">
+            <div className={`mt-auto flex min-h-0 w-full flex-col md:mt-0 md:h-full md:max-h-full md:w-[380px] md:shrink-0 ${sheetTall ? "h-[75dvh] max-h-[75dvh]" : "max-h-[62dvh]"}`}>
               <BuildingPanel b={selected} ds={ds} price={price} onRefreshPrice={refreshPrice} onClose={() => setSelectedId(null)} />
             </div>
           )}
@@ -151,7 +216,7 @@ export default function Page() {
       </div>
 
       {ds && (
-        <aside id="LGD-01" className={`absolute bottom-3 left-3 max-w-[280px] rounded-xl bg-white/92 px-3 py-2 text-[11px] shadow-sm ring-1 ring-slate-900/10 backdrop-blur ${selected ? "max-md:hidden" : ""}`}>
+        <aside id="LGD-01" className={`absolute bottom-3 left-3 max-w-[280px] rounded-xl bg-white/92 px-3 py-2 text-[11px] shadow-sm ring-1 ring-slate-900/10 backdrop-blur ${selected || anchorId !== null ? "max-md:hidden" : ""}`}>
           <p className="mb-1 font-semibold">{scale.label}</p>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5">
             {scale.stops.map((s) => (
@@ -165,6 +230,11 @@ export default function Page() {
           </p>
         </aside>
       )}
+
+      {chip && !tour.current && (
+        <button id="CHP-T1" type="button" onClick={runTour} className="absolute bottom-24 right-3 z-20 rounded-full bg-slate-900 px-3 py-1.5 text-sm text-white shadow-lg">처음이세요? 둘러보기</button>
+      )}
+      <p aria-live="polite" className="sr-only">{live}</p>
 
       {toast && <p role="status" className="absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white shadow-lg">{toast}</p>}
     </main>

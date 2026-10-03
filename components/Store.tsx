@@ -23,6 +23,9 @@ interface Store {
   filtered: Building[];
   selectedId: number | null;
   setSelectedId: (id: number | null) => void;
+  /** 둘러보기 다시 보기 요청(값이 바뀌면 지도 화면이 투어를 시작한다) */
+  tourNonce: number;
+  requestTour: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -40,6 +43,8 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
   const [complexCd, setComplexCd] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [tourNonce, setTourNonce] = useState(0);
+  const requestTour = useCallback(() => setTourNonce((n) => n + 1), []);
 
   const reload = useCallback(() => {
     setStatus("loading");
@@ -71,6 +76,6 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     [ds, filters, complexCd],
   );
 
-  const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId };
+  const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

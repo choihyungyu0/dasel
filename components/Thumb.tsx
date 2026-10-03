@@ -37,7 +37,7 @@ export default function Thumb({ feature }: { feature: Feature }) {
       setFailed(true);
       return;
     }
-    m.on("load", () => {
+    m.once("style.load", () => {
       m.addSource("b", { type: "geojson", data: feature });
       m.addLayer({ id: "b", type: "line", source: "b", paint: { "line-color": "#ffffff", "line-width": 3 } });
     });

@@ -55,14 +55,22 @@ interface Props {
   passIds: Set<number> | null;
   flyTo: { lon: number; lat: number; n: number } | null;
   /** 패널이 가리는 영역(px) */
-  padding: { right: number; bottom: number };
+  padding: { top: number; right: number; bottom: number };
   onFallback: () => void;
+  /** 둘러보기: 이 건물 위에 투명 앵커를 덮는다(TUR-04) */
+  anchorId?: number | null;
+  /** 둘러보기 중 지도 이동·확대 잠금 */
+  locked?: boolean;
+  onAnchorClick?: () => void;
 }
 
-export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback }: Props) {
+const HANDLERS = ["dragPan", "scrollZoom", "boxZoom", "dragRotate", "keyboard", "doubleClickZoom", "touchZoomRotate"] as const;
+
+export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
+  const [anchorBox, setAnchorBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const cb = useRef({ onSelect, onFallback });
   cb.current = { onSelect, onFallback };
 
@@ -89,7 +97,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       cb.current.onFallback();
     });
     m.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
-    m.on("load", () => {
+    m.once("style.load", () => {
       m.addSource("complex", { type: "geojson", data: ds.complexGeo });
       m.addSource("bld", { type: "geojson", data: ds.geo, promoteId: "bld_id" });
       m.addLayer({ id: "LYR-01", type: "line", source: "complex", paint: { "line-color": "#ffffff", "line-width": 2, "line-dasharray": [3, 2] } });
@@ -176,7 +184,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (selectedId !== null) {
       m.setFeatureState({ source: "bld", id: selectedId }, { selected: true });
       const f = ds.geo.features.find((x) => Number(x.properties?.bld_id) === selectedId);
-      if (f) m.fitBounds(bounds((f.geometry as { coordinates: unknown }).coordinates), { padding: { top: 120, left: 60, right: 60 + padding.right, bottom: 60 + padding.bottom }, maxZoom: 17.5, duration: 1200 });
+      if (f) m.fitBounds(bounds((f.geometry as { coordinates: unknown }).coordinates), { padding: { top: 60 + padding.top, left: 60, right: 60 + padding.right, bottom: 60 + padding.bottom }, maxZoom: 17.5, duration: 1200 });
     }
     prev.current = selectedId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,9 +194,43 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (ready && flyTo) map.current!.flyTo({ center: [flyTo.lon, flyTo.lat], zoom: 17, duration: 1200 });
   }, [ready, flyTo]);
 
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    for (const h of HANDLERS) (locked ? m[h].disable() : m[h].enable());
+  }, [ready, locked]);
+
+  // TUR-04: 캔버스 안 건물에는 DOM이 없으므로 화면 좌표로 바꾼 투명 div를 덮는다
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m || anchorId === null) {
+      setAnchorBox(null);
+      return;
+    }
+    const f = ds.geo.features.find((x) => Number(x.properties?.bld_id) === anchorId);
+    if (!f) return;
+    const box = bounds((f.geometry as { coordinates: unknown }).coordinates);
+    const place = () => {
+      const [sw, ne] = [m.project(box.getSouthWest()), m.project(box.getNorthEast())];
+      setAnchorBox({ left: Math.min(sw.x, ne.x), top: Math.min(sw.y, ne.y), width: Math.abs(ne.x - sw.x), height: Math.abs(ne.y - sw.y) });
+    };
+    m.on("move", place);
+    m.on("resize", place);
+    m.fitBounds(box, { padding: { top: 60 + padding.top, left: 60, right: 60, bottom: 60 + padding.bottom }, maxZoom: 17, duration: 1200 });
+    place();
+    return () => {
+      m.off("move", place);
+      m.off("resize", place);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, ds, anchorId]);
+
   return (
     <div id="MAP-01" data-tour="map" className="absolute inset-0">
       <div ref={el} className="h-full w-full" />
+      {anchorBox && (
+        <button type="button" id="TUR-ANCHOR" data-tour="map-building" aria-label="적합도 1순위 건물" onClick={onAnchorClick} className="absolute cursor-pointer bg-transparent" style={anchorBox} />
+      )}
     </div>
   );
 }

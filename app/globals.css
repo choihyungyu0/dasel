@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css";
+@import "driver.js/dist/driver.css";
 
 @theme {
   --color-tier-go: #0f6b3c;
@@ -28,5 +29,55 @@ body {
     background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+}
+
+/* 둘러보기(TUR-03): 말풍선 최대 320px, 강조 대상에 흰 외곽선 */
+.driver-popover.dasel-tour {
+  max-width: 320px;
+  border-radius: 12px;
+  font-family: var(--font-sans);
+}
+.dasel-tour .driver-popover-title {
+  font-size: 15px;
+}
+.dasel-tour .driver-popover-description {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dasel-tour .driver-popover-footer button {
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  text-shadow: none;
+}
+.dasel-tour .driver-popover-next-btn {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+}
+.dasel-tour .dasel-tour-skip {
+  margin-right: auto;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+}
+.driver-active-element {
+  outline: 2px solid #fff;
+  outline-offset: 6px;
+  border-radius: 10px;
+}
+.tour-flash {
+  animation: tour-flash 1s ease-in-out 2;
+}
+@keyframes tour-flash {
+  50% {
+    box-shadow: 0 0 0 6px rgb(15 107 60 / 0.45);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-flash {
+    animation: none;
+    box-shadow: 0 0 0 4px rgb(15 107 60 / 0.45);
   }
 }

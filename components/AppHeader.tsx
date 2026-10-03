@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { useStore } from "./Store";
 
 const TABS: { href: string; label: string; tour?: string }[] = [
@@ -12,7 +13,14 @@ const TABS: { href: string; label: string; tour?: string }[] = [
 
 export default function AppHeader({ children, complexSelect = true }: { children?: React.ReactNode; complexSelect?: boolean }) {
   const path = usePathname();
-  const { ds, complexCd, setComplexCd } = useStore();
+  const router = useRouter();
+  const { ds, complexCd, setComplexCd, requestTour } = useStore();
+  const [menu, setMenu] = useState(false);
+  const replay = () => {
+    setMenu(false);
+    if (path === "/") requestTour();
+    else router.push("/?tour=1");
+  };
   return (
     <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-white/92 px-3 py-2 shadow-sm ring-1 ring-slate-900/10 backdrop-blur">
       <h1 className="text-base font-bold tracking-tight">다셀</h1>
@@ -34,7 +42,15 @@ export default function AppHeader({ children, complexSelect = true }: { children
           )}
         </div>
       )}
-      <Link id="BTN-H1" data-tour="help" href="/method" title="산정 기준" aria-label="산정 기준" className={`grid size-7 place-items-center rounded-full border border-slate-300 text-sm font-semibold hover:bg-slate-100 ${complexSelect ? "" : "ml-auto"} ${path === "/method" ? "bg-slate-900 text-white" : ""}`}>?</Link>
+      <div className={`relative ${complexSelect ? "" : "ml-auto"}`}>
+        <button id="BTN-H1" data-tour="help" type="button" aria-haspopup="menu" aria-expanded={menu} aria-label="도움말" onClick={() => setMenu((v) => !v)} className="grid size-7 place-items-center rounded-full border border-slate-300 text-sm font-semibold hover:bg-slate-100">?</button>
+        {menu && (
+          <div role="menu" className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg bg-white text-sm shadow-lg ring-1 ring-slate-900/10">
+            <button type="button" role="menuitem" onClick={replay} className="block w-full px-3 py-2 text-left hover:bg-slate-100">둘러보기 다시 보기</button>
+            <Link role="menuitem" href="/method" onClick={() => setMenu(false)} className="block px-3 py-2 hover:bg-slate-100">산정 기준</Link>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
