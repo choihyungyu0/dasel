@@ -64,7 +64,7 @@ export default function MethodPage() {
   const vq = read<Validation & { generated: string; basis?: "human" | "ai" }>("data/quality/validation.json");
   const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
-  const gq = read<{ meta: { fetched: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
+  const gq = read<{ meta: { fetched: string; source: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
   const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
   const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
   const baseDate = bq.meta.base_date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
@@ -113,20 +113,21 @@ export default function MethodPage() {
       </Section>
 
       <Section id="score" title="설치 적합도·설치 조건">
-        <p>적합도는 아래 항목의 점수를 더한 값입니다. 항목 값이 없는 건물은 그 항목을 0점으로 둡니다. 전 건물에 자료가 없는 항목(현재 위험물 거리·배전 여유)은 만점에서 빼서 <strong>{maxAvailable()}점 만점</strong>으로 표시합니다.</p>
+        <p>적합도는 아래 항목의 점수를 더한 값입니다. 항목 값이 없는 건물은 그 항목을 0점으로 둡니다. 전 건물에 자료가 없는 항목(현재 위험물시설 거리)은 만점에서 빼서 <strong>{maxAvailable()}점 만점</strong>으로 표시합니다.</p>
         <Table head={["항목", "배점", "기준"]} rows={[
           ["규모", WEIGHTS.scale, "500kW 이상 30 / 200~499 22 / 100~199 15 / 30~99 8 / 30 미만 0"],
           ["구조", WEIGHTS.struct, "철근콘크리트·철골철근콘크리트·철골콘크리트·프리캐스트콘크리트 20 / 일반철골·경량철골·강파이프·기타강구조 12 / 조적·목조·기타 5 / 정보 없음 0"],
           ["사용 연수", WEIGHTS.age, "10년 미만 15 / 10~19년 12 / 20~29년 6 / 30년 이상·정보 없음 0"],
           ["전력수요 업종", WEIGHTS.industry, "다소비 업종 15 / 그 밖의 제조 8 / 등록공장 미연결 0"],
           ["안전 이격(위험물)", WEIGHTS.hazmat, "자료 미확보로 미반영"],
-          ["배전 여유", WEIGHTS.grid, "자료 미확보로 미반영"],
+          ["배전 여유", WEIGHTS.grid, "주소의 리(里)에 걸친 모든 배전선로 여유 ≥ 설치용량 10 / 여유 있는 선로가 하나라도 있으면 5 / 없으면 0"],
         ]} />
         <Table head={["단계", "기준"]} rows={[
           ["설치 우선", `만점의 70% 이상(현재 ${Math.round(maxAvailable() * 0.7)}점)이고 설치 조건 '통과'`],
           ["검토", `만점의 50% 이상(현재 ${Math.round(maxAvailable() * 0.5)}점)이거나, 70% 이상이지만 설치 조건 '조건부'`],
           ["보류", "만점의 50% 미만 또는 30kW 미만"],
         ]} />
+        <p><strong>배전 여유</strong>: {gq.meta.source}({gq.meta.fetched} 조회)는 지번 단위로 응답하지 않아 리 단위로 조회했습니다({gq.areas_ok}개 리). 건물이 어느 선로에 접속될지는 한전 접수 때 정해지므로, 그 리에 걸친 선로 여유의 최솟값과 최댓값을 함께 보고 보수적으로 점수를 줍니다. 선로 여유는 변전소·주변압기·배전선로 여유 중 가장 작은 값입니다. 응답에는 단위 표기가 없지만, 한전ON '배전선로 여유용량' 화면이 kW로 표기하고 접속기준용량(변전소 200,000kW·주변압기 50,000kW)이 응답의 누적 연계용량과 여유용량 합과 같아 kW로 확인했습니다. 다만 한전ON은 번지별로 실제 접속 선로를 보여 주고 이 자료는 리 단위 선로 목록이라, 한전ON에 나오는 선로가 목록에 없을 수 있습니다.</p>
         <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획의 입주대상업종에 태양광 발전업이 명시되지 않은 산단은 판매·임대 방식에 '확인 필요'를 표시합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
       </Section>
 
@@ -184,7 +185,7 @@ export default function MethodPage() {
           ["국토교통부 건축HUB 건축물대장 표제부(15134735)", "조회일 기준", "구조·면적·사용승인일·지붕 보강", `대상 ${n(rq.buildings)}동 중 ${n(rq.buildings - rq.reg_null)}동 연결(${Math.round(rq.match_rate * 100)}%)`],
           ["소방청 119안전센터 현황(15065056)", "2026-07-01", "가까운 119안전센터 직선거리(참고)", `충북 ${fq.stations.total}곳 중 ${fq.stations.geocoded}곳 위치 확인`],
           ["한국전력공사 전력데이터 개방포털", "최신월", "청주 산업용 평균판매단가", `조회 실패 시 ${C.PRICE_FALLBACK.value}원(${C.PRICE_FALLBACK.asOf})`],
-          ["한국전력공사 분산전원연계 정보", gq.meta.fetched, "읍면동·리 단위 배전선로 여유용량(참고, 점수 미반영)", `${gq.areas_ok}개 리 · 선로 여유 ${n(Math.min(...Object.values(gq.summary).map((v) => v.min_kw)))}~${n(Math.max(...Object.values(gq.summary).map((v) => v.max_kw)))}kW`],
+          ["한국전력공사 분산전원연계 정보", gq.meta.fetched, "리 단위 배전선로 여유용량(배전 여유 점수)", `${gq.areas_ok}개 리 · 선로 여유 ${n(Math.min(...Object.values(gq.summary).map((v) => v.min_kw)))}~${n(Math.max(...Object.values(gq.summary).map((v) => v.max_kw)))}kW`],
           ["브이월드(국토교통부)", "–", "위성 배경지도, 주소 좌표 변환", "장애 시 Esri World Imagery로 표시"],
           ["Global Solar Atlas", C.PVOUT.asOf, "연간 발전량 계수", `${n(C.PVOUT.value)} kWh/kWp (36.72N 127.43E)`],
         ]} />

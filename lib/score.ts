@@ -10,12 +10,12 @@ export type PartKey = "scale" | "struct" | "age" | "industry" | "hazmat" | "grid
 
 export const WEIGHTS: Record<PartKey, number> = { scale: 30, struct: 20, age: 15, industry: 15, hazmat: 10, grid: 10 };
 
-/** 전 건물에 데이터가 없는 항목은 만점에서 뺀다(BR-S8). P0: 위험물·배전 미반영 → 80점. */
+/** 전 건물에 데이터가 없는 항목은 만점에서 뺀다(BR-S8). 현재: 위험물 미반영, 배전 여유 반영 → 90점. */
 export interface Availability {
   hazmat: boolean;
   grid: boolean;
 }
-export const P0_AVAILABILITY: Availability = { hazmat: false, grid: false };
+export const P0_AVAILABILITY: Availability = { hazmat: false, grid: true };
 
 export const maxAvailable = (av: Availability = P0_AVAILABILITY) =>
   100 - (av.hazmat ? 0 : WEIGHTS.hazmat) - (av.grid ? 0 : WEIGHTS.grid);
@@ -28,7 +28,9 @@ export interface ScoreInput {
   aprYmd: string | null;
   industry: Industry;
   distHazmatM?: number | null;
-  gridMarginKw?: number | null;
+  /** 그 리(里) 배전선로 여유의 최솟값·최댓값(kW). 어느 선로에 물릴지 몰라 둘 다 본다 */
+  gridMinKw?: number | null;
+  gridMaxKw?: number | null;
 }
 
 export interface Score {
@@ -62,8 +64,9 @@ const scalePoints = (kw: number | null) => (kw === null || kw < 30 ? 0 : kw < 10
 const agePoints = (y: number | null) => (y === null || y >= 30 ? 0 : y < 10 ? 15 : y < 20 ? 12 : 6);
 const industryPoints = (i: Industry) => (i === "HIGH" ? 15 : i === "MFG" ? 8 : 0);
 const hazmatPoints = (m: number | null) => (m === null || m < 50 ? 0 : m < 100 ? 5 : 10);
-const gridPoints = (margin: number | null, kw: number | null) =>
-  margin === null || margin <= 0 || kw === null ? 0 : margin >= kw ? 10 : 5;
+/** 보수적으로: 모든 선로에 여유가 있으면 10, 여유 있는 선로가 하나라도 있으면 5, 없으면 0 */
+const gridPoints = (min: number | null, max: number | null, kw: number | null) =>
+  max === null || kw === null || max <= 0 || max < kw ? 0 : (min ?? 0) >= kw ? 10 : 5;
 
 export function score(input: ScoreInput, baseYmd: string, av: Availability = P0_AVAILABILITY): Score {
   const max = maxAvailable(av);
@@ -111,8 +114,8 @@ export function score(input: ScoreInput, baseYmd: string, av: Availability = P0_
   };
   if (av.hazmat) parts.hazmat = hazmatPoints(input.distHazmatM ?? null);
   if (av.grid) {
-    parts.grid = gridPoints(input.gridMarginKw ?? null, kw);
-    if ((input.gridMarginKw ?? null) === null) flags.push("GRID_NULL");
+    parts.grid = gridPoints(input.gridMinKw ?? null, input.gridMaxKw ?? null, kw);
+    if ((input.gridMaxKw ?? null) === null) flags.push("GRID_NULL");
   }
   const total = Object.values(parts).reduce((a, b) => a + b, 0);
   const ratio = total / max;

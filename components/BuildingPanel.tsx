@@ -263,20 +263,24 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
                 ))}
               </ul>
               {b.stability !== null && (
-                <p className="mt-2 text-xs text-slate-600" title="가중치 4개를 각각 ±20% 범위에서 무작위로 바꿔 1,000번 다시 순위를 매겼을 때, 이 건물이 상위 10%에 든 횟수의 비율입니다">
+                <p className="mt-2 text-xs text-slate-600" title="항목별 가중치를 각각 ±20% 범위에서 무작위로 바꿔 1,000번 다시 순위를 매겼을 때, 이 건물이 상위 10%에 든 횟수의 비율입니다">
                   순위 안정도 <span className="num font-semibold text-ink">{Math.round(b.stability * 100)}%</span>
                   <span className="text-slate-500"> · 가중치를 ±20% 바꾼 1,000회 중 상위 10%({ds.stability.topCount}동)에 든 비율</span>
                 </p>
               )}
               {lines && c.pv_kw !== null && (
                 <div id="GRD-01" className="mt-2 rounded bg-slate-100 px-2 py-1.5 text-xs">
-                  <p className="font-medium">이 지역 배전선로 여유 (참고)</p>
+                  <p className="font-medium">
+                    배전선로 여유({b.grid_level ?? "리"} 단위, 한전 {ds.grid!.meta.fetched.slice(0, 7).replace("-", ".")} 조회) <span className="rounded bg-slate-200 px-1 text-[10px] font-normal" title={ds.grid!.meta.unit_basis}>단위 kW · 한전ON 대조</span>
+                  </p>
                   <p className="num text-slate-700">
-                    선로 {lines.length}개 · {n(Math.min(...lines.map((l) => l.margin_kw)))}~{n(Math.max(...lines.map((l) => l.margin_kw)))}kW
-                    {" · "}설치 용량 {n(c.pv_kw, 1)}kW 이상 여유가 있는 선로 {lines.filter((l) => l.margin_kw >= c.pv_kw!).length}개
+                    {lines[0].dl} {n(lines[0].margin_kw)} 등 {lines.length}개 선로 — 실제 접속 선로는 한전 접수 시 결정
+                  </p>
+                  <p className="num text-slate-700">
+                    설치 용량 {n(c.pv_kw, 1)}kW 이상 여유가 있는 선로 {lines.filter((l) => l.margin_kw >= c.pv_kw!).length}개 / {lines.length}개 · 배전 여유 {s.parts.grid ?? 0}점
                   </p>
                   <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
-                    {ds.grid!.meta.source} {ds.grid!.meta.fetched} 조회 · 리 단위 자료라 이 건물이 어느 선로에 연결되는지는 한전 확인이 필요합니다. 점수에는 넣지 않았습니다.
+                    {ds.grid!.meta.source}. 선로 여유는 변전소·주변압기·선로 여유 중 가장 작은 값입니다. 모든 선로에 여유가 있으면 10점, 일부만 있으면 5점, 없으면 0점.
                   </p>
                 </div>
               )}

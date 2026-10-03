@@ -14,6 +14,10 @@ export interface RawBuilding {
   struct: string | null;
   arch_area: number | null;
   geom_area: number;
+  /** DAT-09: 주소의 리(里)에 걸친 배전선로 여유 최소·최대(kW), 조회 단위(리/읍면) */
+  grid_min_kw?: number;
+  grid_max_kw?: number;
+  grid_level?: string;
   tot_area: number | null;
   apr_ymd: string | null;
   fl_up: number | null;
@@ -76,6 +80,7 @@ export interface Dataset {
 
 export interface GridLine {
   subst: string;
+  mtr?: string;
   dl: string;
   /** 선로·주변압기·변전소 여유 중 가장 작은 값(kW) */
   margin_kw: number;
@@ -83,9 +88,10 @@ export interface GridLine {
   dl_linked_kw: number;
 }
 
-/** DAT-09: 읍면동·리 단위 배전선로 여유용량(참고). 건물이 어느 선로에 물리는지는 알 수 없다. */
+/** DAT-09: 리 단위 배전선로 여유용량. 건물이 어느 선로에 물리는지는 알 수 없어 최소·최대로 점수를 낸다. */
 export interface Grid {
-  meta: { source: string; fetched: string; unit: string };
+  meta: { source: string; fetched: string; unit: string; unit_basis?: string };
+  level?: Record<string, string>;
   areas: Record<string, GridLine[]>;
 }
 
@@ -126,7 +132,7 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
   const roof = roofArea(raw.arch_area, raw.geom_area);
   const c = calc(roof.roof_m2, unitCost, assumptions);
   const industry: Industry = raw.industry ?? null;
-  const s = score({ target: raw.target, calc: c, struct: raw.struct, aprYmd: raw.apr_ymd, industry }, baseYmd);
+  const s = score({ target: raw.target, calc: c, struct: raw.struct, aprYmd: raw.apr_ymd, industry, gridMinKw: raw.grid_min_kw ?? null, gridMaxKw: raw.grid_max_kw ?? null }, baseYmd);
   return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [], stability: null };
 }
 

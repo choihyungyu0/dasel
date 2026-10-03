@@ -10,13 +10,16 @@ const make = (o: Partial<ScoreInput> & { roof?: number | null } = {}): ScoreInpu
   struct: "철근콘크리트구조",
   aprYmd: "20140601",
   industry: "HIGH",
+  gridMinKw: 1000,
+  gridMaxKw: 10000,
   ...o,
 });
 const sum = (p: object) => Object.values(p as Record<string, number>).reduce((a, b) => a + b, 0);
 
 describe("BR-S8 반영 만점", () => {
-  it("P0 = 80, 위험물만 반영 90, 전부 반영 100", () => {
-    expect(maxAvailable()).toBe(80);
+  it("현재(배전 반영·위험물 미반영) = 90, 전부 반영 100", () => {
+    expect(maxAvailable()).toBe(90);
+    expect(maxAvailable({ hazmat: false, grid: false })).toBe(80);
     expect(maxAvailable({ hazmat: true, grid: false })).toBe(90);
     expect(maxAvailable({ hazmat: true, grid: true })).toBe(100);
   });
@@ -33,10 +36,10 @@ describe("점수 = 구성요소 합", () => {
     const s = score(c, BASE);
     expect(sum(s.parts)).toBe(s.score);
     expect(s.score!).toBeLessThanOrEqual(s.max);
-    expect(Object.keys(s.parts).sort()).toEqual(["age", "industry", "scale", "struct"]);
+    expect(Object.keys(s.parts).sort()).toEqual(["age", "grid", "industry", "scale", "struct"]);
   });
   it("배전·위험물 반영 시에도 합 = 점수", () => {
-    const s = score(make({ distHazmatM: 120, gridMarginKw: 300 }), BASE, { hazmat: true, grid: true });
+    const s = score(make({ distHazmatM: 120, gridMinKw: 300, gridMaxKw: 300 }), BASE, { hazmat: true, grid: true });
     expect(s.parts).toEqual({ scale: 22, struct: 20, age: 12, industry: 15, hazmat: 10, grid: 10 });
     expect(s.score).toBe(89);
     expect(s.max).toBe(100);
@@ -69,22 +72,34 @@ describe("구성요소 구간", () => {
   });
 });
 
-describe("BR-S7 단계 (P0 컷 56·40)", () => {
-  it("69점 통과 → 설치 우선", () => {
+describe("DAT-09 배전 여유 점수", () => {
+  const pts = (min: number | null, max: number | null) => score(make({ gridMinKw: min, gridMaxKw: max }), BASE).parts.grid;
+  it("최솟값 ≥ 용량 10 / 최댓값 ≥ 용량 5 / 그 밖 0 (250kW)", () => {
+    expect([pts(250, 9000), pts(0, 250), pts(0, 249), pts(0, 0)]).toEqual([10, 5, 0, 0]);
+  });
+  it("값이 없으면 0점 + GRID_NULL", () => {
+    const s = score(make({ gridMinKw: null, gridMaxKw: null }), BASE);
+    expect([s.parts.grid, s.flags.includes("GRID_NULL")]).toEqual([0, true]);
+  });
+});
+
+describe("BR-S7 단계 (컷 63·45 = 90점의 70%·50%)", () => {
+  const none = { gridMinKw: 0, gridMaxKw: 0 };
+  it("79점 통과 → 설치 우선", () => {
     const s = score(make(), BASE);
-    expect([s.score, s.max, s.gate, s.tier]).toEqual([69, 80, "통과", "설치 우선"]);
+    expect([s.score, s.max, s.gate, s.tier]).toEqual([79, 90, "통과", "설치 우선"]);
   });
-  it("56점 → 설치 우선, 55점 → 검토", () => {
-    const s56 = score(make({ roof: 10000, struct: "일반철골구조", aprYmd: "20000101", industry: "MFG" }), BASE);
-    expect([s56.score, s56.tier]).toEqual([56, "설치 우선"]);
-    const s55 = score(make({ roof: 1000, aprYmd: "20100101", industry: "HIGH" }), BASE);
-    expect([s55.score, s55.tier]).toEqual([55, "검토"]);
+  it("63점 → 설치 우선, 62점 → 검토", () => {
+    const s63 = score(make({ aprYmd: "20000101", ...none }), BASE);
+    expect([s63.score, s63.tier]).toEqual([63, "설치 우선"]);
+    const s62 = score(make({ industry: "MFG", ...none }), BASE);
+    expect([s62.score, s62.tier]).toEqual([62, "검토"]);
   });
-  it("40점 → 검토, 40점 미만 → 보류", () => {
-    const s40 = score(make({ roof: 600, aprYmd: "20100101", industry: null }), BASE);
-    expect([s40.score, s40.tier]).toEqual([40, "검토"]);
-    const s35 = score(make({ roof: 600, struct: "일반철골구조", aprYmd: "20200101", industry: null }), BASE);
-    expect([s35.score, s35.tier]).toEqual([35, "보류"]);
+  it("45점 → 검토, 44점 → 보류", () => {
+    const s45 = score(make({ roof: 600, aprYmd: "20100101", industry: null, gridMinKw: 0, gridMaxKw: 100 }), BASE);
+    expect([s45.score, s45.tier]).toEqual([45, "검토"]);
+    const s44 = score(make({ roof: 600, aprYmd: "20000101", industry: null }), BASE);
+    expect([s44.score, s44.tier]).toEqual([44, "보류"]);
   });
   it("BR-G2 소규모는 점수와 무관하게 보류, 게이트는 그대로", () => {
     const s = score(make({ roof: 500 }), BASE);
@@ -100,7 +115,7 @@ describe("안전 게이트", () => {
   it("BR-G4 구조 결측·30년 이상 → 조건부, 단계 상한 검토", () => {
     const old = score(make({ roof: 10000, aprYmd: "19900101" }), BASE);
     expect(old.flags).toContain("OLD30");
-    expect([old.score, old.gate, old.tier]).toEqual([65, "조건부", "검토"]);
+    expect([old.score, old.gate, old.tier]).toEqual([75, "조건부", "검토"]);
     const noStruct = score(make({ struct: null }), BASE);
     expect(noStruct.flags).toContain("STRUCT_NULL");
     expect(noStruct.gate).toBe("조건부");
@@ -127,7 +142,7 @@ describe("AI-04 근거 문장", () => {
   });
   it("결측 항목은 문장에서 제외", () => {
     const i = make({ struct: null, aprYmd: null });
-    expect(summarySentence(i, score(i, BASE))).toBe("지붕면적 5,000㎡ → 250kW, 재사용 팩 14개, 보류");
+    expect(summarySentence(i, score(i, BASE))).toBe("지붕면적 5,000㎡ → 250kW, 재사용 팩 14개, 검토");
   });
   it("금지 표현 없음", () => {
     const i = make();
