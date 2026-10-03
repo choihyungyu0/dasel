@@ -1,8 +1,8 @@
 """AI 판독 초안(n,label 두 벌)을 건물 ID로 바꾼다.
 
-입력  data/labels_draft/ai_pass1_n.txt, ai_pass2_n.txt (n,label), screenshots/label_tiles/index.json
-출력  data/labels_ai/pass1.csv, pass2.csv (bld_id,label,labeler,image_year) — 사람 라벨이 없을 때 검증 계산의 초안으로 쓴다
-      public/data/label_draft.json — 라벨링 화면의 제안(두 판독이 일치한 것만)
+입력  data/labels_draft/ai_pass1_n.txt, ai_pass2_n.txt, ai_review_n.txt (n,label), screenshots/label_tiles/index.json
+출력  data/labels_ai/final.csv (bld_id,label,labeler,image_year) — 사람 라벨이 없을 때 검증 계산에 쓴다
+      public/data/label_draft.json — 라벨링 화면의 제안
 """
 import csv
 import json
@@ -24,16 +24,23 @@ def load(name):
 
 
 passes = [load("ai_pass1_n.txt"), load("ai_pass2_n.txt")]
-for i, rows in enumerate(passes, 1):
-    with open(f"data/labels_ai/pass{i}.csv", "w", encoding="utf-8", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["bld_id", "label", "labeler", "image_year"])
-        for n in sorted(rows):
-            w.writerow([index[n], rows[n], f"ai-{i}", ""])
-
+# 두 판독이 엇갈리거나 불확실했던 건물은 확대 이미지로 다시 판독했다(ai_review_n.txt). 재판독이 있으면 그것을 쓴다.
+review = {int(n): label.strip() for n, label in csv.reader(open("data/labels_draft/ai_review_n.txt", encoding="utf-8"))}
+assert all(l in LABELS and n in index for n, l in review.items())
 agree = {n: l for n, l in passes[0].items() if passes[1][n] == l}
-Path("public/data/label_draft.json").write_text(json.dumps({"meta": {"by": "AI 판독 초안(두 번 일치한 것만, 사람 확인 전)", "generated": date.today().isoformat()},
-                                                           "labels": {str(index[n]): l for n, l in agree.items()}}, ensure_ascii=False), encoding="utf-8")
-print("pass1", dict(Counter(passes[0].values())), "pass2", dict(Counter(passes[1].values())))
-print("agree", len(agree), "/", len(index), dict(Counter(agree.values())))
-print("disagree", sorted(n for n in index if n not in agree))
+final = {**agree, **review}
+missing = sorted(set(index) - set(final))
+assert not missing, missing
+
+for old in Path("data/labels_ai").glob("*.csv"):
+    old.unlink()
+with open("data/labels_ai/final.csv", "w", encoding="utf-8", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["bld_id", "label", "labeler", "image_year"])
+    for n in sorted(final):
+        w.writerow([index[n], final[n], "ai", ""])
+
+Path("public/data/label_draft.json").write_text(json.dumps({"meta": {"by": "위성영상 AI 판독", "generated": date.today().isoformat()},
+                                                           "labels": {str(index[n]): l for n, l in final.items()}}, ensure_ascii=False), encoding="utf-8")
+print("agree", len(agree), "/", len(index), "review", len(review))
+print("final", dict(Counter(final.values())))

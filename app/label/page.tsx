@@ -38,7 +38,7 @@ export default function LabelPage() {
   const [at, setAt] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
-  // AI가 미리 본 초안(참고용). 사람이 확인해 눌러야 라벨로 기록된다
+  // AI 판독(참고용). 사람이 확인해 눌러야 라벨로 기록된다
   const [draft, setDraft] = useState<Record<string, Label>>({});
   useEffect(() => {
     fetch("/data/label_draft.json")
@@ -156,7 +156,7 @@ export default function LabelPage() {
             </p>
             {draft[b.bld_id] && (
               <p className="mt-1 rounded bg-white px-2 py-1 text-xs">
-                AI 초안: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">— 맞으면 Enter, 다르면 직접 고르세요</span>
+                AI 판독: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">— 맞으면 Enter, 다르면 직접 고르세요</span>
               </p>
             )}
           </div>
@@ -188,7 +188,7 @@ export default function LabelPage() {
             <input ref={file} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </div>
           {note && <p role="status" className="text-xs text-slate-700">{note}</p>}
-          <p className="text-[11px] text-slate-500">AI 초안은 참고용이며 사람이 누른 것만 기록됩니다. 표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
+          <p className="text-[11px] text-slate-500">AI 판독은 참고용이며 사람이 누른 것만 기록됩니다. 표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
         </div>
       </section>
     </main>

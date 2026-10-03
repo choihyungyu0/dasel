@@ -112,7 +112,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {ds.labels?.labels[String(b.bld_id)] === "설치" && (
           <p id="BDG-INST" className="rounded-lg border border-[#12b5d4] bg-[#e8fafd] px-3 py-2 text-[13px]">
-            {ds.labels.meta.basis === "ai" ? "위성영상 AI 판독 초안에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다(사람 확인 전)" : "위성영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
+            {ds.labels.meta.basis === "ai" ? "위성영상 AI 판독에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다" : "위성영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
           </p>
         )}
         <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>

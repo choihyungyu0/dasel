@@ -6,7 +6,7 @@ import { enrich, type RawBuilding } from "../lib/data";
 import { parseLabelCsv, type LabelRow } from "../lib/labels";
 import { consensus, validate } from "../lib/validate";
 
-// 사람이 표시한 data/labels가 비어 있으면 AI 판독 초안(data/labels_ai)으로 계산하고 basis에 'ai'를 남긴다.
+// 사람이 표시한 data/labels가 비어 있으면 AI 판독(data/labels_ai)으로 계산하고 basis에 'ai'를 남긴다.
 function load(dir: string) {
   const files = readdirSync(dir).filter((f) => f.endsWith(".csv"));
   const rows: LabelRow[] = [];

@@ -1,81 +1,70 @@
 {
  "basis": "ai",
  "files": [
-  "pass1.csv",
-  "pass2.csv"
+  "final.csv"
  ],
  "skipped": 0,
  "generated": "2026-10-04",
  "labelers": [
   {
-   "name": "ai-1",
-   "count": 336
-  },
-  {
-   "name": "ai-2",
+   "name": "ai",
    "count": 336
   }
  ],
  "imageYears": [],
- "overlap": 336,
- "agreement": 0.985,
- "kappa": 0.961,
- "conflicts": [
-  124511,
-  125214,
-  122892,
-  244694,
-  121672
- ],
+ "overlap": 0,
+ "agreement": null,
+ "kappa": null,
+ "conflicts": [],
  "candidates": 336,
  "labeled": 336,
  "counts": {
-  "설치": 40,
-  "미설치": 255,
-  "불명": 36,
-  "불일치": 5
+  "설치": 42,
+  "미설치": 261,
+  "불명": 33,
+  "불일치": 0
  },
- "baseRate": 0.136,
+ "baseRate": 0.139,
  "topK": [
   {
    "k": 0.1,
    "n": 34,
-   "judged": 30,
-   "installed": 11,
-   "precision": 0.367,
-   "lift": 2.7,
-   "recall": 0.275
+   "judged": 33,
+   "installed": 12,
+   "precision": 0.364,
+   "lift": 2.62,
+   "recall": 0.286
   },
   {
    "k": 0.2,
    "n": 68,
-   "judged": 60,
-   "installed": 14,
-   "precision": 0.233,
+   "judged": 63,
+   "installed": 15,
+   "precision": 0.238,
    "lift": 1.71,
-   "recall": 0.35
+   "recall": 0.357
   },
   {
    "k": 0.3,
    "n": 101,
-   "judged": 89,
-   "installed": 18,
-   "precision": 0.202,
-   "lift": 1.49,
-   "recall": 0.45
+   "judged": 94,
+   "installed": 20,
+   "precision": 0.213,
+   "lift": 1.53,
+   "recall": 0.476
   }
  ],
- "auc": 0.594,
+ "auc": 0.607,
  "mean": {
-  "installed": 46.6,
-  "notInstalled": 43
+  "installed": 46.8,
+  "notInstalled": 42.8
  },
  "bins": [
   {
    "from": 0,
    "to": 10,
    "installed": 0,
-   "notInstalled": 1
+   "notInstalled": 3
   },
   {
    "from": 10,
@@ -87,31 +76,31 @@
    "from": 20,
    "to": 30,
    "installed": 3,
-   "notInstalled": 12
+   "notInstalled": 13
   },
   {
    "from": 30,
    "to": 40,
    "installed": 4,
-   "notInstalled": 43
+   "notInstalled": 44
   },
   {
    "from": 40,
    "to": 50,
-   "installed": 19,
+   "installed": 20,
    "notInstalled": 159
   },
   {
    "from": 50,
    "to": 60,
-   "installed": 5,
+   "installed": 6,
    "notInstalled": 23
   },
   {
    "from": 60,
    "to": 70,
    "installed": 9,
-   "notInstalled": 14
+   "notInstalled": 16
   },
   {
    "from": 70,
