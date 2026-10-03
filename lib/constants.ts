@@ -1,6 +1,6 @@
 // DAT-07 계산 상수. 화면에 나오는 모든 값은 출처·기준일을 함께 가진다(BR-O1).
 
-export type Kind = "공식" | "가정";
+export type Kind = "공식" | "2차 출처" | "가정";
 
 export interface Const {
   value: number;
@@ -37,6 +37,10 @@ export const CONSTANTS = {
   ESS_DAYS: { value: 250, unit: "일/년", label: "ESS 운영일", kind: "가정", source: "평일 운영을 가정한 초기 가정값", asOf: "2026-10-04" },
   ESS_UNIT_AREA: { value: 40, unit: "㎡/단위", label: "ESS 단위당 필요 면적", kind: "가정", source: "1MWh 이하 컨테이너 1기와 이격 공간을 합친 초기 가정값", asOf: "2026-10-04" },
   SMP: { value: 119.7, unit: "원/kWh", label: "계통한계가격(SMP, 육지)", kind: "공식", source: "전력거래소 월별 SMP 2026년 1~9월 단순평균", asOf: "2026-09" },
+  SUBSIDY_LOW: { value: 414000, unit: "원/kW", label: "건물지원 보조 단가(산단기업·공장 200kW 초과~1,000kW)", kind: "공식", source: "기후에너지환경부 공고 제2026-237호 2026년 재생에너지보급(건물지원)사업 지원 공고문(신재생에너지센터 게시)", asOf: "2026-03-17" },
+  SUBSIDY_HIGH: { value: 525000, unit: "원/kW", label: "건물지원 보조 단가(산단기업·공장 200kW 이하)", kind: "공식", source: "기후에너지환경부 공고 제2026-237호 2026년 재생에너지보급(건물지원)사업 지원 공고문(신재생에너지센터 게시)", asOf: "2026-03-17" },
+  SUBSIDY_TIER_KW: { value: 200, unit: "kW", label: "보조 단가 구간 경계", kind: "공식", source: "기후에너지환경부 공고 제2026-237호 2026년 재생에너지보급(건물지원)사업 지원 공고문(신재생에너지센터 게시)", asOf: "2026-03-17" },
+  SUBSIDY_CAP_KW: { value: 1000, unit: "kW", label: "RE100기업·산단 입주기업·공장 지원 한도", kind: "공식", source: "기후에너지환경부 공고 제2026-237호 2026년 재생에너지보급(건물지원)사업 지원 공고문(신재생에너지센터 게시)", asOf: "2026-03-17" },
   SOC_MIN: { value: 0.1, unit: "", label: "충전율 하한", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
 } as const satisfies Record<string, Const>;
 
@@ -85,3 +89,9 @@ export const BATTERY_OUTLOOK = {
   chungbukShare: 42176 / 1160968,
   chungbukSource: "국토교통부 자동차등록현황보고 2026년 8월(연료별 등록현황): 전기차 전국 1,160,968대·충북 42,176대",
 } as const;
+
+/** CAL-08 시나리오: 보조금은 기본 계산에 넣지 않고 토글로만 본다. */
+export const SUBSIDY_BADGE = "공식 공고 단가 · 2026년 접수 마감(4.24) · 2027 공고 미정";
+
+/** 지붕 임대 사례 문구(언론 보도). 단가가 아니라 사례이며 계산에는 쓰지 않는다. */
+export const RENT_CASE: string | null = "사례: 화성 공장 지붕 100kW 임대, 16년치 임대료 4,800만 원을 33kW 자가용 설비로 한 번에 받음(오마이뉴스 2024.2.23)";

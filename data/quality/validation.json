@@ -1,6 +1,16 @@
 {
  "basis": "ai",
+ "review": {
+  "queue": 92,
+  "done": 0,
+  "agreement": null,
+  "precision": null,
+  "recall": null,
+  "missRate": null,
+  "missChecked": 0
+ },
  "files": [
+  "existing_pv.csv",
   "final.csv"
  ],
  "skipped": 0,
@@ -108,5 +118,14 @@
    "installed": 1,
    "notInstalled": 7
   }
- ]
+ ],
+ "mw": {
+  "u": 6662,
+  "z": 2.25,
+  "p": 0.0243,
+  "effect": 0.215,
+  "n1": 42,
+  "n2": 261
+ },
+ "humanConflicts": []
 }

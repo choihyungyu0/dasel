@@ -124,6 +124,29 @@ export function calc(roofM2: number | null, unitCost: number = C.PRICE_FALLBACK.
   };
 }
 
+export interface Subsidy {
+  /** 전 용량에 낮은 단가(200kW 초과 구간)를 적용한 보수적 지원액(원) */
+  flat: number;
+  /** 용량이 속한 구간의 단가를 전 용량에 적용한 지원액(원) */
+  tiered: number;
+}
+
+/** CAL-08 시나리오: 건물지원 보조금. 30kW 미만은 표시하지 않고, 한도(1,000kW) 초과분은 지원 0. */
+export function subsidy(pvKw: number | null): Subsidy | null {
+  if (pvKw === null || pvKw < C.PV_MIN_KW.value) return null;
+  const kw = Math.min(pvKw, C.SUBSIDY_CAP_KW.value);
+  return {
+    flat: Math.round(kw * C.SUBSIDY_LOW.value),
+    tiered: Math.round(kw * (pvKw <= C.SUBSIDY_TIER_KW.value ? C.SUBSIDY_HIGH.value : C.SUBSIDY_LOW.value)),
+  };
+}
+
+/** 지원액을 뺀 순투자 기준 회수기간 [기준 단가, 하한 단가](년) */
+export function paybackNet(capex: number, support: number, saveBase: number, saveLow: number): [number | null, number | null] {
+  const net = Math.max(0, capex - support);
+  return [saveBase > 0 ? round(net / saveBase, 1) : null, saveLow > 0 ? round(net / saveLow, 1) : null];
+}
+
 /** 원 → 만원(반올림). 화면 표시용. */
 export const toManwon = (won: number) => Math.round(won / 10000);
 
@@ -137,13 +160,16 @@ export interface Summary {
   save_base: number;
   co2_t: number;
   capex: number;
+  /** 보조금 시나리오 합계(전 용량 낮은 단가 / 구간 단가) */
+  subsidy_flat: number;
+  subsidy_tiered: number;
   /** 30kW 미만·제외 건물(합계에 넣지 않음) */
   others: number;
 }
 
 /** CAL-07: pv_kw ≥ 30인 대상 건물만 합산한다. */
 export function summarize(items: { target: boolean; calc: Calc }[]): Summary {
-  const s: Summary = { buildings: 0, mw: 0, gwh: 0, packs: 0, ess_units: 0, save_low: 0, save_base: 0, co2_t: 0, capex: 0, others: 0 };
+  const s: Summary = { buildings: 0, mw: 0, gwh: 0, packs: 0, ess_units: 0, save_low: 0, save_base: 0, co2_t: 0, capex: 0, subsidy_flat: 0, subsidy_tiered: 0, others: 0 };
   let kw = 0, kwh = 0, co2 = 0;
   for (const { target, calc: c } of items) {
     if (!target || c.pv_kw === null || c.small) {
@@ -159,6 +185,9 @@ export function summarize(items: { target: boolean; calc: Calc }[]): Summary {
     s.save_low += c.save_low ?? 0;
     s.save_base += c.save_base ?? 0;
     s.capex += c.capex ?? 0;
+    const sub = subsidy(c.pv_kw);
+    s.subsidy_flat += sub?.flat ?? 0;
+    s.subsidy_tiered += sub?.tiered ?? 0;
   }
   s.mw = round(kw / 1000, 2);
   s.gwh = round(kwh / 1e6, 2);

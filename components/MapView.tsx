@@ -4,14 +4,14 @@ import { LngLatBounds, Map as MlMap, NavigationControl, type ExpressionSpecifica
 import { useEffect, useRef, useState } from "react";
 import type { Dataset } from "@/lib/data";
 
-export const TIER_COLOR = { "설치 우선": "#0b5d34", 검토: "#f08c00", 보류: "#7b8494", 제외: "#d5d9df" } as const;
+export const TIER_COLOR = { "설치 우선": "#0b5d34", 검토: "#f08c00", 보류: "#7b8494", "이미 설치됨": "#1456c8", 제외: "#d5d9df" } as const;
 const NONE = "#aab1bc";
 
 export type ColorBy = "tier" | "kw" | "packs" | "age" | "gate";
 
 /** MAP-03 색상 기준. 범례와 지도 색이 같은 정의를 쓴다. */
 export const COLOR_SCALES: Record<ColorBy, { label: string; prop: string; stops: { label: string; color: string; min?: number; value?: string }[] }> = {
-  tier: { label: "설치 적합도", prop: "tier", stops: [{ label: "설치 우선", color: TIER_COLOR["설치 우선"], value: "설치 우선" }, { label: "검토", color: TIER_COLOR.검토, value: "검토" }, { label: "보류", color: TIER_COLOR.보류, value: "보류" }] },
+  tier: { label: "설치 적합도", prop: "tier", stops: [{ label: "설치 우선", color: TIER_COLOR["설치 우선"], value: "설치 우선" }, { label: "검토", color: TIER_COLOR.검토, value: "검토" }, { label: "보류", color: TIER_COLOR.보류, value: "보류" }, { label: "이미 설치됨", color: TIER_COLOR["이미 설치됨"], value: "이미 설치됨" }] },
   kw: { label: "설치용량", prop: "pv_kw", stops: [{ label: "30kW 미만", color: "#dbe9d5", min: 0 }, { label: "30~99kW", color: "#a6d49a", min: 30 }, { label: "100~199kW", color: "#5fb260", min: 100 }, { label: "200~499kW", color: "#22853f", min: 200 }, { label: "500kW 이상", color: "#084d24", min: 500 }] },
   packs: { label: "필요 팩 수", prop: "packs", stops: [{ label: "1~5개", color: "#c9dcf2", min: 1 }, { label: "6~15개", color: "#85b3e3", min: 6 }, { label: "16~30개", color: "#3d83cc", min: 16 }, { label: "31개 이상", color: "#134c94", min: 31 }] },
   age: { label: "사용승인 경과", prop: "age", stops: [{ label: "10년 미만", color: "#fde3c2", min: 0 }, { label: "10~19년", color: "#f8b36b", min: 10 }, { label: "20~29년", color: "#e07b00", min: 20 }, { label: "30년 이상", color: "#8f3c00", min: 30 }] },

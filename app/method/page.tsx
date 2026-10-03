@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import AppHeader from "@/components/AppHeader";
-import { CONSTANTS, HAZMAT_CHIP_P0, peakSpread, REVIEW_BADGE, TARIFF } from "@/lib/constants";
+import { CONSTANTS, HAZMAT_CHIP_P0, SUBSIDY_BADGE, peakSpread, REVIEW_BADGE, TARIFF } from "@/lib/constants";
 import { enrich, withStability, type RawBuilding } from "@/lib/data";
 import rules from "@/config/complex_rules.json";
 import { maxAvailable, WEIGHTS } from "@/lib/score";
@@ -61,9 +61,11 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
-  const vq = read<Validation & { generated: string; basis?: "human" | "ai" }>("data/quality/validation.json");
+  const vq = read<Validation & { generated: string; basis?: "human" | "ai"; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number } }>("data/quality/validation.json");
+  const rv = vq.review;
   const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
+  const sq = read<{ zoning_source: string; zoning_fetched: string; d35_zone_buildings: number; by_complex: Record<string, Record<string, number>>; total: Record<string, number> }>("data/quality/solar_biz.json");
   const gq = read<{ meta: { fetched: string; source: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
   const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
   const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
@@ -109,7 +111,13 @@ export default function MethodPage() {
 
       <Section id="capex" title="투자비·회수기간">
         <F>태양광 투자비(원) = 설치용량 × kW당 {n(C.CAPEX_PER_KW.value / 10000)}만 원 · 단순 회수기간(년) = 투자비 ÷ 연 절감(기준 단가 ~ 하한 단가)</F>
-        <p>예: 250kW × 140만 원 = 3.5억 원, 회수 5.1~6.5년. kW당 설치비는 {C.CAPEX_PER_KW.source}이며 범위는 {n(C.CAPEX_PER_KW.range[0] / 10000)}만~{n(C.CAPEX_PER_KW.range[1] / 10000)}만 원입니다. 보조금, 유지비, 발전량 저하, 금융비용은 넣지 않은 단순 계산입니다. 전력 판매 방식은 {C.SMP.source} {C.SMP.value}원/kWh만 넣고 REC 수익은 넣지 않았습니다. 지붕 임대 방식은 공식 임대료 자료를 확보하지 못해 계산하지 않았고, ESS 투자비도 재사용 배터리 단가가 정해지지 않아 넣지 않았습니다.</p>
+        <p>예: 250kW × 140만 원 = 3.5억 원, 회수 5.1~6.5년. kW당 설치비는 {C.CAPEX_PER_KW.source}이며 범위는 {n(C.CAPEX_PER_KW.range[0] / 10000)}만~{n(C.CAPEX_PER_KW.range[1] / 10000)}만 원입니다. 유지비, 발전량 저하, 금융비용은 넣지 않은 단순 계산이며 보조금도 기본 계산에는 넣지 않습니다. 전력 판매 방식은 {C.SMP.source} {C.SMP.value}원/kWh만 넣고 REC 수익은 넣지 않았습니다. 지붕 임대 방식은 계산하지 않습니다(공식 임대료 단가가 없고 계약마다 다름). 업체 홍보 단가는 쓰지 않았고, ESS 투자비도 재사용 배터리 단가가 정해지지 않아 넣지 않았습니다.</p>
+      </Section>
+
+      <Section id="subsidy" title="보조금 시나리오">
+        <p>건물 정보창과 시뮬레이터의 '보조금 반영(2026 단가 기준)'을 켜면 지원액을 뺀 순투자로 회수기간을 다시 계산합니다. 기본 계산에는 넣지 않습니다. <span className="rounded bg-amber-100 px-1 py-0.5 text-[11px] text-amber-900">{SUBSIDY_BADGE}</span></p>
+        <Table head={["항목", "값", "신뢰도", "출처·기준일"]} rows={[C.SUBSIDY_LOW, C.SUBSIDY_HIGH, C.SUBSIDY_TIER_KW, C.SUBSIDY_CAP_KW].map((x) => [x.label, `${n(x.value)}${x.unit}`, x.kind, `${x.source} (${x.asOf})`])} />
+        <p>공고문은 "신청용량에 보조금 지원단가를 적용"한다고만 적고 구간별 산식은 밝히지 않았습니다. 그래서 전 용량에 낮은 단가({n(C.SUBSIDY_LOW.value)}원)를 적용한 값을 먼저 보여 주고, 200kW 이하 건물은 그 구간 단가({n(C.SUBSIDY_HIGH.value)}원)를 적용한 값을 괄호로 함께 보여 줍니다. 예: 250kW·투자비 3.5억 원 → 지원 1.035억 원, 순투자 2.465억 원, 회수 3.6~4.6년. {n(C.SUBSIDY_CAP_KW.value)}kW 초과분은 지원 0, {C.PV_MIN_KW.value}kW 미만은 표시하지 않습니다. 이 보조금은 자가소비 설비와 저탄소 모듈에만 지원되고 발전한 전기를 거래·판매하지 않는 조건이어서 자가소비 방식에만 해당합니다.</p>
       </Section>
 
       <Section id="score" title="설치 적합도·설치 조건">
@@ -119,7 +127,7 @@ export default function MethodPage() {
           ["구조", WEIGHTS.struct, "철근콘크리트·철골철근콘크리트·철골콘크리트·프리캐스트콘크리트 20 / 일반철골·경량철골·강파이프·기타강구조 12 / 조적·목조·기타 5 / 정보 없음 0"],
           ["사용 연수", WEIGHTS.age, "10년 미만 15 / 10~19년 12 / 20~29년 6 / 30년 이상·정보 없음 0"],
           ["전력수요 업종", WEIGHTS.industry, "다소비 업종 15 / 그 밖의 제조 8 / 등록공장 미연결 0"],
-          ["안전 이격(위험물)", WEIGHTS.hazmat, "자료 미확보로 미반영"],
+          ["안전 이격(위험물)", WEIGHTS.hazmat, "미반영 — 위험물시설 위치 파일(소방청 15124189)이 공개 다운로드되지 않음"],
           ["배전 여유", WEIGHTS.grid, "주소의 리(里)에 걸친 모든 배전선로 여유 ≥ 설치용량 10 / 여유 있는 선로가 하나라도 있으면 5 / 없으면 0"],
         ]} />
         <Table head={["단계", "기준"]} rows={[
@@ -128,7 +136,7 @@ export default function MethodPage() {
           ["보류", "만점의 50% 미만 또는 30kW 미만"],
         ]} />
         <p><strong>배전 여유</strong>: {gq.meta.source}({gq.meta.fetched} 조회)는 지번 단위로 응답하지 않아 리 단위로 조회했습니다({gq.areas_ok}개 리). 건물이 어느 선로에 접속될지는 한전 접수 때 정해지므로, 그 리에 걸친 선로 여유의 최솟값과 최댓값을 함께 보고 보수적으로 점수를 줍니다. 선로 여유는 변전소·주변압기·배전선로 여유 중 가장 작은 값입니다. 응답에는 단위 표기가 없지만, 한전ON '배전선로 여유용량' 화면이 kW로 표기하고 접속기준용량(변전소 200,000kW·주변압기 50,000kW)이 응답의 누적 연계용량과 여유용량 합과 같아 kW로 확인했습니다. 다만 한전ON은 번지별로 실제 접속 선로를 보여 주고 이 자료는 리 단위 선로 목록이라, 한전ON에 나오는 선로가 목록에 없을 수 있습니다.</p>
-        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획의 입주대상업종에 태양광 발전업이 명시되지 않은 산단은 판매·임대 방식에 '확인 필요'를 표시합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
+        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획의 입주대상업종에 태양광 발전업이 명시되지 않은 산단은 판매·임대 방식에 '확인 필요'를 표시합니다. 위험물시설 위치 파일(소방청 15124189)이 공개 다운로드되지 않아 위험물시설 거리는 점수와 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
       </Section>
 
       <Section id="stability" title="순위 안정도">
@@ -143,22 +151,30 @@ export default function MethodPage() {
       </Section>
 
       {vq.labeled > 0 && (
-        <Section id="validation" title={ai ? "기존 설치 건물로 본 검증 (위성영상 AI 판독)" : "기존 설치 건물로 본 검증"}>
+        <Section id="validation" title={ai ? "기존 설치 건물로 본 검증 (위성영상 AI 판독 · 사람 검수 전)" : "기존 설치 건물로 본 검증"}>
           <p>적합도 점수가 실제와 맞는지 보려고, 후보 {n(vq.candidates)}동의 지붕을 위성영상에서 {ai ? "AI가 판독해" : "사람이 직접 보고"} 태양광 패널이 이미 있는지 표시했습니다{vq.imageYears.length ? ` (영상 ${vq.imageYears.join("·")}년)` : ""}. 이미 설치한 공장은 설치할 만해서 설치한 곳이므로, 점수 상위에 이런 건물이 많이 들어올수록 점수가 현실과 맞는다고 볼 수 있습니다.</p>
-          {ai && <p>건물마다 위성 이미지를 AI가 두 번 판독하고, 두 결과가 엇갈리거나 불확실한 건물은 확대 이미지로 다시 판독했습니다. 영상이 흐리거나 지붕이 보이지 않는 건물은 '불명'으로 두었습니다. 사람이 현장이나 영상으로 확인한 값이 아니므로 부분 설치·짙은 색 금속 지붕·채광창은 틀릴 수 있습니다.</p>}
+          {ai && <p><span className="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">검수 전</span>건물마다 위성 이미지를 AI(Claude Opus 5.5)가 두 번 판독하고, 두 결과가 엇갈리거나 불확실한 건물은 확대 이미지로 다시 판독했습니다. 같은 모델이 한 판독이라 독립된 검수가 아니며, 부분 설치·짙은 색 금속 지붕·채광창은 틀릴 수 있습니다. 영상이 흐리거나 건물이 아직 없는 곳은 '불명'으로 두었습니다. 영상은 브이월드 위성영상이며 촬영연도는 확인하지 못했습니다.</p>}
+          {rv && <p>사람 검수 표본은 AI가 '설치'로 본 건물 전부와 '미설치' 중 무작위 50동(시드 고정), 모두 {n(rv.queue)}동입니다. 지금까지 {n(rv.done)}동을 검수했습니다. 검수한 건물은 사람 표시를, 나머지는 AI 판독을 써서 아래 지표를 계산합니다{rv.done < rv.queue ? ". 검수가 끝나면 수치가 달라질 수 있습니다" : ""}.</p>}
           <Table head={["항목", "값"]} rows={[
             ["표시한 건물", `${n(vq.labeled)}동 / ${n(vq.candidates)}동 (설치 ${n(vq.counts.설치)} · 미설치 ${n(vq.counts.미설치)} · 불명 ${n(vq.counts.불명)}${vq.counts.불일치 ? ` · 불일치 ${n(vq.counts.불일치)}` : ""})`],
             ...(ai ? [] : [
               ["표시한 사람", vq.labelers.map((l) => `${l.count}동`).join(" · ") || "–"],
               ["두 사람이 같이 본 건물의 일치율", vq.overlap ? `${pct(vq.agreement)} (${n(vq.overlap)}동${vq.kappa !== null ? `, 카파 ${vq.kappa}` : ""})` : "한 사람만 표시"],
             ]),
-            ["전체 설치 비율(기준)", pct(vq.baseRate)],
-            ...vq.topK.map((t) => [`점수 상위 ${t.k * 100}% (${n(t.n)}동) 중 설치 비율`, `${pct(t.precision)}${t.lift !== null ? ` · 기준의 ${t.lift}배` : ""}${t.recall !== null ? ` · 설치 건물의 ${pct(t.recall)} 포함` : ""}`]),
+            ...(rv && rv.done > 0 ? [
+              ["AI 판독과 사람 검수의 일치율", `${pct(rv.agreement)} (${n(rv.done)}동)`],
+              ["AI '설치' 중 사람도 '설치'로 본 비율(정밀도)", pct(rv.precision)],
+              ["사람 '설치' 중 AI도 '설치'로 본 비율(재현율, 표본 안)", pct(rv.recall)],
+              ["AI '미설치' 표본 중 사람이 '설치'로 고친 비율", rv.missChecked ? `${pct(rv.missRate)} (${n(rv.missChecked)}동 중)` : "–"],
+            ] : [["AI 판독과 사람 검수의 일치율·정밀도·재현율", "검수 전 — 아직 계산하지 않음"]]),
+            ["전체 설치 비율(무작위로 골랐을 때 기대값)", pct(vq.baseRate)],
+            ...vq.topK.filter((t) => t.k <= 0.2).map((t) => [`점수 상위 ${t.k * 100}% (${n(t.n)}동) 중 설치 비율`, `${pct(t.precision)}${t.lift !== null ? ` · 기준의 ${t.lift}배` : ""}${t.recall !== null ? ` · 설치 건물의 ${pct(t.recall)} 포함` : ""}`]),
             ["설치 건물이 미설치 건물보다 점수가 높을 확률", vq.auc === null ? "–" : pct(vq.auc)],
             ["평균 점수", `설치 ${vq.mean.installed ?? "–"}점 · 미설치 ${vq.mean.notInstalled ?? "–"}점`],
+            ["설치 vs 미설치 점수 분포 (Mann-Whitney U, 양측)", vq.mw ? `U = ${n(vq.mw.u, 1)} · z = ${vq.mw.z} · p = ${vq.mw.p < 0.001 ? "0.001 미만" : vq.mw.p} · 효과크기(순위이연상관) ${vq.mw.effect} · 설치 ${n(vq.mw.n1)}동, 미설치 ${n(vq.mw.n2)}동` : "–"],
           ]} />
           <Table head={["점수 구간", "설치", "미설치"]} rows={vq.bins.filter((b) => b.installed + b.notInstalled > 0).map((b) => [`${b.from}~${b.to}점`, b.installed, b.notInstalled])} />
-          <p>'불명'은 계산에서 뺐습니다. 다시 계산하려면 <code>npx tsx scripts/06_validate.ts</code>를 실행합니다({vq.generated} 계산).</p>
+          <p>'불명'은 계산에서 뺐습니다. 판독에 쓴 모델·지시문·영상 출처는 저장소의 <code>data/labels/README.md</code>에 적었습니다. '설치'로 표시된 건물은 지도와 목록에서 '이미 설치됨'으로 따로 구분하고 '설치 우선' 순위에서 뺍니다. 다시 계산하려면 <code>npx tsx scripts/06_validate.ts</code>를 실행합니다({vq.generated} 계산).</p>
         </Section>
       )}
 
@@ -190,7 +206,9 @@ export default function MethodPage() {
           ["Global Solar Atlas", C.PVOUT.asOf, "연간 발전량 계수", `${n(C.PVOUT.value)} kWh/kWp (36.72N 127.43E)`],
         ]} />
         <p>대상 건물은 산단 경계 안(건물 대표점 기준)에서 용도가 {bq.target_use.join("·")}인 건물입니다. 교육연구시설 중 학교는 뺐습니다. 용도 정보가 없는 건물은 도형 면적 600㎡ 이상이거나 등록공장이 연결된 경우만 대상으로 하고 '용도 미확인'으로 표시합니다(현재 {n(rq.null_after.use)}동). 대상 건물 {n(rq.target_after)}동 가운데 회사가 연결된 건물은 {n(fq.target_with_company)}동입니다.</p>
-        <Table head={["산단", "태양광 발전사업(판매·임대)", "근거"]} rows={Object.entries(rules as unknown as Record<string, { solar_biz_allowed?: boolean | null; source?: string | null }>).filter(([k]) => !k.startsWith("_")).map(([name, r]) => [name, r.solar_biz_allowed === true ? "입주대상업종에 명시" : r.source ? "게시본에 명시 없음(관리기관 확인 필요)" : "확인하지 못함", r.source ?? "–"])} />
+        <Table head={["산단", "대상 건물", "판매·임대형 입주업종", "고시문 근거"]} rows={Object.entries(sq.by_complex).map(([name, c]) => [name, n(Object.values(c).reduce((a, b) => a + b, 0)), Object.entries(c).map(([k, v]) => `${k} ${n(v)}동`).join(" · "), (rules as unknown as Record<string, { source?: string | null; checked?: string | null }>)[name]?.source ?? "–"])} />
+        <p>판정은 세 자료를 봅니다. ① 산단 관리기본계획 고시문의 입주대상업종, ② {sq.zoning_source}의 구역별 유치업종(대상 건물 중 '전기, 가스, 증기' 구역 안 {n(sq.d35_zone_buildings)}동), ③ 같은 자료의 API 조회({sq.zoning_fetched}). 하나라도 전기업(발전업) 계열이 명시되면 '확인됨', 자료를 봤는데 없으면 '확인 안 됨(유치업종 목록에 발전업 없음)'입니다. '확인 안 됨'은 허용되지 않는다는 뜻이 아니며, 유치업종 도면은 구역마다 대표 업종 하나만 적은 축약 표기입니다. 이 판정은 점수에 넣지 않고, 계산은 모두 자가소비 기준입니다.</p>
+        <p>경기도는 산단 관리계획에 태양력 발전업을 넣도록 지원해 산업단지 태양광 발전사업 허가 물량이 2023년 63MW에서 2025년 125MW로 늘었습니다(머니투데이 2026.3.7). 판매·임대형에 입주업종 확인이 필요한 이유입니다. 지붕 임대 사례로는 화성의 한 공장이 지붕 100kW를 16년 빌려주고 임대료 4,800만 원을 33kW 자가용 설비로 한 번에 받은 보도가 있습니다(오마이뉴스 2024.2.23). 사례일 뿐 단가가 아니어서 계산에는 쓰지 않습니다.</p>
         <p>공장이 직접 쓰는 자가소비 설치는 위 표와 별개입니다. 전기를 팔거나 지붕을 빌려주는 사업은 산단 관리기본계획의 입주대상업종에 발전업이 있어야 합니다(산업집적법 시행령 제6조).</p>
         <p>산업단지 경계도면은 공공누리 제4유형(출처표시·비상업·변경금지) 자료입니다.</p>
       </Section>
@@ -201,7 +219,7 @@ export default function MethodPage() {
           <li>지붕 이용률, kW당 면적, 팩 정격, 잔존용량, 저장 시간은 초기 가정값입니다. 시뮬레이터에서 범위를 바꿔 볼 수 있습니다.</li>
           <li>재사용 배터리의 법정 성능등급 기준은 2027년 5월 시행 전이라 정해지지 않았습니다.</li>
           <li>지붕 하중, 방수, 기존 설비, 음영은 반영하지 않았습니다. 구조검토가 필요합니다.</li>
-          <li>위험물시설 거리는 자료를 확보하지 못해 반영하지 않았습니다.</li>
+          <li>위험물시설 위치 파일(소방청 15124189)이 공개 다운로드되지 않아 위험물시설 거리는 반영하지 않았습니다(90점 만점).</li>
           <li>배전선로 여유용량은 한전 자료가 리 단위로만 조회되어, 건물이 어느 선로에 연결되는지 알 수 없습니다. 패널에 참고 정보로만 보여 주고 점수에는 넣지 않았습니다.</li>
           <li>업종은 생산품 문구로 추정한 것이며 실제 전력 사용량과 다를 수 있습니다.</li>
         </ul>

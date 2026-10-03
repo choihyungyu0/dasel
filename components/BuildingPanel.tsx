@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toManwon } from "@/lib/calc";
-import { complexRule, essSpace, extraChips } from "@/lib/chips";
-import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
+import { paybackNet, subsidy, toManwon } from "@/lib/calc";
+import { essSpace, extraChips, solarBizNote } from "@/lib/chips";
+import { CONSTANTS as C, RENT_CASE, REVIEW_BADGE, SUBSIDY_BADGE } from "@/lib/constants";
 import { enrich, gridOf, type Building, type Dataset } from "@/lib/data";
 import { defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
 import { useStore } from "./Store";
@@ -72,6 +72,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
   const { compare, toggleCompare } = useStore();
   const [copied, setCopied] = useState<string | null>(null);
   const [essUse, setEssUse] = useState(ESS_USES[0]);
+  const [withSub, setWithSub] = useState(false);
   // PNL-07: 이 건물만 조건을 바꿔 다시 계산한다. null이면 기본 조건
   const [adj, setAdj] = useState<Scenario | null>(initial);
   const base = useMemo(() => defaultScenario(price.unitCost), [price.unitCost]);
@@ -83,7 +84,9 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
   const excluded = s.tier === "제외";
   const lines = gridOf(ds.grid, b.addr);
   const space = essSpace(b);
-  const saleNote = complexRule(b.complex_nm).solar_biz_allowed === true ? null : "이 산단은 판매 사업 허용 여부 확인 필요";
+  const saleNote = solarBizNote(b);
+  const sub = subsidy(c.pv_kw);
+  const subPay = sub && c.capex !== null ? { flat: paybackNet(c.capex, sub.flat, c.save_base!, c.save_low!), tiered: paybackNet(c.capex, sub.tiered, c.save_base!, c.save_low!) } : null;
   const payback = c.payback_base === null || c.payback_low === null ? "–" : `${n(c.payback_base, 1)}~${n(c.payback_low, 1)}`;
   const title = b.companies[0]?.company ?? b.name ?? b.addr ?? `건물 ${b.bld_id}`;
   const gisSrc = `${ds.meta.source} ${ds.meta.base_date}${b.reg_match ? ` · ${ds.meta.register_source}` : ""}`;
@@ -112,7 +115,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {ds.labels?.labels[String(b.bld_id)] === "설치" && (
           <p id="BDG-INST" className="rounded-lg border border-[#12b5d4] bg-[#e8fafd] px-3 py-2 text-[13px]">
-            {ds.labels.meta.basis === "ai" ? "위성영상 AI 판독에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다" : "위성영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
+            {ds.labels.meta.basis === "ai" ? "위성영상 AI 판독(사람 검수 전)에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다" : "위성영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 그래서 '설치 우선' 순위에서 뺐습니다. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
           </p>
         )}
         <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>
@@ -228,10 +231,28 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
                 </caption>
                 <tbody>
                   <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">자가소비</th><td className="num py-1 text-right">투자 {eok(c.capex!)}억 원 · 회수 {payback}년</td></tr>
-                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">지붕 임대</th><td className="py-1 text-right text-slate-500">임대료 자료 확보 전 — 계산하지 않음</td></tr>
+                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left align-top font-medium">지붕 임대</th><td className="py-1 text-right text-slate-600">공장 투자비 0 · 임대료는 계약별<span className="block text-[10px] text-slate-500">계산하지 않음(공식 임대료 단가 없음){RENT_CASE ? ` · ${RENT_CASE}` : ""}{saleNote ? ` · ${saleNote}` : ""}</span></td></tr>
                   <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">전력 판매</th><td className="num py-1 text-right">연 {n(toManwon(c.pv_kwh! * C.SMP.value))}만 원 · 회수 {c.pv_kwh! > 0 ? n(c.capex! / (c.pv_kwh! * C.SMP.value), 1) : "–"}년<span className="block text-[10px] font-normal text-slate-500">SMP {C.SMP.value}원/kWh만 반영, REC 수익 제외{saleNote ? ` · ${saleNote}` : ""}</span></td></tr>
                 </tbody>
               </table>
+              {sub && subPay && (
+                <div id="SUB-01" className="mt-2 rounded bg-slate-100 px-2 py-1.5 text-xs">
+                  <label className="flex items-center gap-1.5 font-medium">
+                    <input type="checkbox" checked={withSub} onChange={(e) => setWithSub(e.target.checked)} />
+                    보조금 반영(2026 단가 기준)
+                    <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-normal text-amber-900">{SUBSIDY_BADGE}</span>
+                  </label>
+                  {withSub && (
+                    <p className="num mt-1 text-slate-700">
+                      지원 {eok(sub.flat)}억 원 · 순투자 {eok(c.capex! - sub.flat)}억 원 · 회수 {n(subPay.flat[0]!, 1)}~{n(subPay.flat[1]!, 1)}년
+                      {sub.tiered !== sub.flat && <span className="text-slate-500"> (구간 단가 적용 시 지원 {eok(sub.tiered)}억 원 · 회수 {n(subPay.tiered[0]!, 1)}~{n(subPay.tiered[1]!, 1)}년)</span>}
+                      <span className="mt-0.5 block text-[10px] font-normal text-slate-500">
+                        전 용량에 kW당 {n(C.SUBSIDY_LOW.value)}원(200kW 초과 구간 단가)을 적용한 보수적 값. {C.SUBSIDY_LOW.source}. 한도 {n(C.SUBSIDY_CAP_KW.value)}kW 초과분은 지원 0. 자가소비 설비·저탄소 모듈만 지원하며, 공고문에 구간별 적용 산식은 적혀 있지 않습니다.
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
               {c.ess_save !== null && (
                 <p id="TXT-ESS" className="mt-2 rounded bg-slate-100 px-2 py-1.5 text-xs">
                   ESS 시간대 차익 <span className="num font-semibold">약 {n(toManwon(c.ess_save))}만 원/년</span> <span className="rounded bg-slate-200 px-1 py-0.5 text-[11px]">요금표 기준 추정</span>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import { useStore } from "@/components/Store";
 import { summarize, toManwon, type Summary } from "@/lib/calc";
-import { BATTERY_OUTLOOK, CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
+import { BATTERY_OUTLOOK, CONSTANTS as C, REVIEW_BADGE, SUBSIDY_BADGE } from "@/lib/constants";
 import { enrich, type Dataset } from "@/lib/data";
 import { startMiniTour } from "@/lib/tour";
 import { decodeScenario, defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
@@ -58,6 +58,7 @@ export default function SimPage() {
   const { status, reload, base, price } = useStore();
   const [s, setS] = useState<Scenario | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [withSub, setWithSub] = useState(false);
 
   // URL의 s= 조건을 한 번 읽는다(단가는 조회가 끝난 값 기준)
   useEffect(() => {
@@ -149,7 +150,13 @@ export default function SimPage() {
                 <h2 className="text-sm font-semibold">산단별 결과</h2>
                 <span className="badge-review">{REVIEW_BADGE}</span>
                 <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산 · 투자비는 태양광만(참고값)</span>
+                <label id="SUB-02" className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={withSub} onChange={(e) => setWithSub(e.target.checked)} />
+                  보조금 반영(2026 단가 기준)
+                  <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] text-amber-900">{SUBSIDY_BADGE}</span>
+                </label>
               </div>
+              {withSub && <p className="mb-2 text-[11px] text-slate-500">투자비는 지원액을 뺀 순투자입니다. 전 용량에 kW당 {n(C.SUBSIDY_LOW.value)}원을 적용했고, 괄호는 구간 단가(200kW 이하 건물에 {n(C.SUBSIDY_HIGH.value)}원) 적용 시 회수기간입니다. 건물당 {n(C.SUBSIDY_CAP_KW.value)}kW 초과분은 지원 0. {C.SUBSIDY_LOW.source}.</p>}
               <table id="TBL-01" data-tour="sim-result" className="w-full min-w-[860px] border-collapse text-[13px]">
                 <thead className="text-left text-xs text-slate-500">
                   <tr>{["산단", "동", "MW", "GWh", "재사용 팩", "분산 단위", "연 절감(억 원)", "투자비(억 원)", "회수(년)", "tCO2"].map((h, i) => <th key={h} scope="col" className={`px-2 py-1 font-medium ${i ? "text-right" : ""}`}>{h}</th>)}</tr>
@@ -166,8 +173,11 @@ export default function SimPage() {
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.packs)}<Delta now={r.sum.packs} base={b.packs} /></td>
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.ess_units)}<Delta now={r.sum.ess_units} base={b.ess_units} /></td>
                         <td className="num px-2 py-1.5 text-right">{eok(r.sum.save_low)}~{eok(r.sum.save_base)}</td>
-                        <td className="num px-2 py-1.5 text-right">{n(r.sum.capex / 1e8)}</td>
-                        <td className="num px-2 py-1.5 text-right">{r.sum.save_base > 0 ? `${n(r.sum.capex / r.sum.save_base, 1)}~${n(r.sum.capex / r.sum.save_low, 1)}` : "–"}</td>
+                        <td className="num px-2 py-1.5 text-right">{n((r.sum.capex - (withSub ? r.sum.subsidy_flat : 0)) / 1e8)}</td>
+                        <td className="num px-2 py-1.5 text-right">
+                          {r.sum.save_base > 0 ? `${n((r.sum.capex - (withSub ? r.sum.subsidy_flat : 0)) / r.sum.save_base, 1)}~${n((r.sum.capex - (withSub ? r.sum.subsidy_flat : 0)) / r.sum.save_low, 1)}` : "–"}
+                          {withSub && r.sum.save_base > 0 && <span className="block text-[10px] font-normal text-slate-500">({n((r.sum.capex - r.sum.subsidy_tiered) / r.sum.save_base, 1)}~{n((r.sum.capex - r.sum.subsidy_tiered) / r.sum.save_low, 1)})</span>}
+                        </td>
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.co2_t)}<Delta now={r.sum.co2_t} base={b.co2_t} /></td>
                       </tr>
                     );

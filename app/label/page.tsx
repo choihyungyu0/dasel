@@ -40,10 +40,17 @@ export default function LabelPage() {
   const file = useRef<HTMLInputElement>(null);
   // AI 판독(참고용). 사람이 확인해 눌러야 라벨로 기록된다
   const [draft, setDraft] = useState<Record<string, Label>>({});
+  // 사람 검수 표본: AI '설치' 전부 + '미설치' 무작위 50동
+  const [queue, setQueue] = useState<Set<number> | null>(null);
+  const [onlyQueue, setOnlyQueue] = useState(true);
   useEffect(() => {
     fetch("/data/label_draft.json")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.labels && setDraft(d.labels))
+      .catch(() => {});
+    fetch("/data/label_queue.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => Array.isArray(d?.ids) && setQueue(new Set<number>(d.ids)))
       .catch(() => {});
   }, []);
 
@@ -64,9 +71,9 @@ export default function LabelPage() {
   const list = useMemo(
     () =>
       (ds?.buildings ?? [])
-        .filter((b) => b.score.tier !== "제외" && b.calc.pv_kw !== null && !b.calc.small)
+        .filter((b) => b.score.tier !== "제외" && b.calc.pv_kw !== null && !b.calc.small && (!onlyQueue || !queue || queue.has(b.bld_id)))
         .sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0)),
-    [ds],
+    [ds, queue, onlyQueue],
   );
   const b = list[at] ?? null;
   const feature = useMemo(() => (b ? (ds?.geo.features.find((f) => Number(f.properties?.bld_id) === b.bld_id) ?? null) : null), [ds, b]);
@@ -131,7 +138,12 @@ export default function LabelPage() {
             <h1 className="text-[15px] font-semibold">기존 태양광 설치 라벨링</h1>
             <Link href="/" className="text-xs underline">지도로</Link>
           </div>
-          <p className="mt-1 text-xs text-slate-600">30kW 이상 대상 건물 {list.length}동을 점수 순으로 봅니다. 노란 외곽선 안 지붕에 패널이 있는지 표시해 주세요.</p>
+          <p className="mt-1 text-xs text-slate-600">{onlyQueue && queue ? `검수 표본 ${list.length}동(AI 판독 '설치' 전부 + '미설치' 무작위 50동)` : `30kW 이상 대상 건물 ${list.length}동`}을 점수 순으로 봅니다. 노란 외곽선 안 지붕에 패널이 있는지 표시해 주세요.</p>
+          {queue && (
+            <button type="button" onClick={() => { setOnlyQueue(!onlyQueue); setAt(0); }} className="mt-1 rounded border border-slate-300 px-2 py-0.5 text-[11px]">
+              {onlyQueue ? "전체 건물 보기" : "검수 표본만 보기"}
+            </button>
+          )}
         </header>
 
         <div className="grid grid-cols-2 gap-2 text-xs">

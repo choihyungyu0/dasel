@@ -15,13 +15,17 @@ export function complexRule(name: string): Rule {
   return r && typeof r === "object" ? r : { solar_biz_allowed: null, source: null, checked: null };
 }
 
-/** DAT-14: 태양광 발전사업(판매·임대) 허용 여부 문구 */
-export function solarBizChip(name: string): string | null {
-  const rule = complexRule(name);
-  const allowed = rule.solar_biz_allowed;
-  if (allowed === true) return null;
-  if (rule.note) return rule.note;
-  return allowed === false ? "자가소비만 가능(판매·임대 사업은 관리기본계획 변경 필요)" : "판매·임대 사업 허용 여부 확인 필요(산단 관리기본계획)";
+export const SOLAR_BIZ_CHECK = "판매·지붕 임대형은 입주업종 확인 필요 — 자가소비 기준으로 계산했습니다";
+
+/** DAT-14: 판매·임대형 입주업종 확인 칩(건물 단위 판정 solar_biz 기준). 점수에는 넣지 않는다. */
+export function solarBizChip(b: Building): string | null {
+  if (!b.solar_biz) return null;
+  return b.solar_biz === "확인됨" ? `유치업종에 발전업 포함(${b.solar_biz_src ?? "출처 확인 중"})` : SOLAR_BIZ_CHECK;
+}
+
+/** 설치 방식 비교 표의 판매·임대 행에 붙이는 짧은 문구 */
+export function solarBizNote(b: Building): string | null {
+  return b.solar_biz === "확인됨" ? null : "입주업종 확인 필요";
 }
 
 const LIGHT_ROOF = /경량|샌드위치|패널|판넬|슬레이트|기타지붕/;
@@ -33,7 +37,7 @@ export function extraChips(b: Building): string[] {
   if (b.companies.some((c) => GMP.test(`${c.group ?? ""} ${c.product ?? ""}`))) chips.push("의약·식품 업종 — 옥상 설비·청정구역 확인 필요");
   const fit = essSpace(b);
   if (fit && fit.units < (b.calc.ess_units ?? 0)) chips.push("ESS 공간 부족 — 옥상·별동 검토");
-  const biz = solarBizChip(b.complex_nm);
+  const biz = solarBizChip(b);
   if (biz) chips.push(biz);
   return chips;
 }

@@ -16,7 +16,7 @@ export interface Filters {
 }
 
 export const DEFAULT_FILTERS: Filters = { tiers: [], gates: [], minKw: 0, minEss: 0, industries: [], structs: [] };
-export const TIER_OPTIONS: Tier[] = ["설치 우선", "검토", "보류"];
+export const TIER_OPTIONS: Tier[] = ["설치 우선", "검토", "보류", "이미 설치됨"];
 export const GATE_OPTIONS: Gate[] = ["통과", "조건부"];
 export const KW_OPTIONS = [0, 30, 100, 200, 500];
 export const ESS_OPTIONS = [0, 100, 500, 1000];

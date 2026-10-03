@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calc, normalize, roofArea, summarize, toManwon } from "./calc";
+import { paybackNet, subsidy, calc, normalize, roofArea, summarize, toManwon } from "./calc";
 import { CONSTANTS, TARIFF, peakSpread, unsourcedConstants } from "./constants";
 
 describe("5,000㎡ 예시 (CAL-01~04·06)", () => {
@@ -128,5 +128,29 @@ describe("BR-C6 요금표 상수", () => {
     const months = Object.values(TARIFF.energy).flatMap((s) => [...s.months]).sort((a, b) => a - b);
     expect(months).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(TARIFF.basicWonPerKw).toBe(8320);
+  });
+});
+
+describe("CAL-08 보조금 시나리오 (5,000㎡·250kW·투자비 3.5억)", () => {
+  const c = calc(5000, 192);
+  const sub = subsidy(c.pv_kw)!;
+  it("전 용량 414,000원 → 지원 1.035억, 순투자 2.465억, 회수 3.6~4.6년", () => {
+    expect(sub.flat).toBe(103_500_000);
+    expect(c.capex! - sub.flat).toBe(246_500_000);
+    expect(paybackNet(c.capex!, sub.flat, c.save_base!, c.save_low!)).toEqual([3.6, 4.6]);
+  });
+  it("250kW는 200kW 초과 구간이라 구간 단가도 414,000원으로 같다", () => {
+    expect(sub.tiered).toBe(sub.flat);
+  });
+  it("150kW(200kW 이하): 보수적 414,000원 → 0.621억, 구간 단가 525,000원 → 0.7875억", () => {
+    expect(subsidy(150)).toEqual({ flat: 62_100_000, tiered: 78_750_000 });
+  });
+  it("보조금 없음 → 회수 5.1~6.5년(기본 계산은 그대로)", () => {
+    expect([c.payback_base, c.payback_low]).toEqual([5.1, 6.5]);
+  });
+  it("1,000kW 초과분은 지원 0, 30kW 미만은 표시하지 않음, 200kW 이하는 구간 단가가 더 높음", () => {
+    expect(subsidy(1500)).toEqual({ flat: 414_000_000, tiered: 414_000_000 });
+    expect(subsidy(29.9)).toBeNull();
+    expect(subsidy(100)).toEqual({ flat: 41_400_000, tiered: 52_500_000 });
   });
 });

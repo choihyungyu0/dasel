@@ -1,6 +1,8 @@
 // VAL-01 기존 설치 건물 검증: 라벨 합의, 2인 일치율, 상위 k% 적중률, 점수 분포.
 import type { Label, LabelRow } from "./labels";
 
+const round = (v: number, d = 3) => Math.round(v * 10 ** d) / 10 ** d;
+
 export type Consensus = Label | "불일치";
 
 export interface Ranked {
@@ -26,6 +28,44 @@ export interface Validation {
   auc: number | null;
   mean: { installed: number | null; notInstalled: number | null };
   bins: { from: number; to: number; installed: number; notInstalled: number }[];
+  /** 설치 vs 미설치 점수 분포의 Mann-Whitney U 검정(양측, 동점 보정 정규근사). effect = 순위이연상관(2·AUC − 1) */
+  mw: MannWhitney | null;
+}
+
+export interface MannWhitney {
+  u: number;
+  z: number;
+  p: number;
+  effect: number;
+  n1: number;
+  n2: number;
+}
+
+/** 표준정규 누적분포(Abramowitz–Stegun 7.1.26 근사) */
+function phi(z: number): number {
+  const t = 1 / (1 + 0.3275911 * (Math.abs(z) / Math.SQRT2));
+  const erf = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(z * z) / 2);
+  return z >= 0 ? 0.5 * (1 + erf) : 0.5 * (1 - erf);
+}
+
+export function mannWhitney(a: number[], b: number[]): MannWhitney | null {
+  const n1 = a.length, n2 = b.length, N = n1 + n2;
+  if (!n1 || !n2) return null;
+  const all = [...a.map((v) => ({ v, g: 0 })), ...b.map((v) => ({ v, g: 1 }))].sort((x, y) => x.v - y.v);
+  let r1 = 0, ties = 0;
+  for (let i = 0; i < N; ) {
+    let j = i;
+    while (j < N && all[j].v === all[i].v) j++;
+    const rank = (i + 1 + j) / 2; // 동점은 평균 순위
+    const t = j - i;
+    ties += t * t * t - t;
+    for (let k = i; k < j; k++) if (all[k].g === 0) r1 += rank;
+    i = j;
+  }
+  const u = r1 - (n1 * (n1 + 1)) / 2;
+  const sd = Math.sqrt(((n1 * n2) / 12) * (N + 1 - ties / (N * (N - 1))));
+  const z = sd > 0 ? (u - (n1 * n2) / 2) / sd : 0;
+  return { u: round(u, 1), z: round(z, 2), p: round(2 * (1 - phi(Math.abs(z))), 4), effect: round((2 * u) / (n1 * n2) - 1), n1, n2 };
 }
 
 /** 건물별 합의 라벨. 라벨러끼리 다르면 '불일치'(재검토 대상, 계산 제외) */
@@ -43,7 +83,6 @@ export function consensus(rows: LabelRow[]): Map<number, Consensus> {
   return out;
 }
 
-const round = (v: number, d = 3) => Math.round(v * 10 ** d) / 10 ** d;
 const mean = (a: number[]) => (a.length ? round(a.reduce((x, y) => x + y, 0) / a.length, 1) : null);
 
 function pairStats(rows: LabelRow[]) {
@@ -118,5 +157,6 @@ export function validate(rows: LabelRow[], ranked: Ranked[], ks: number[] = [0.1
     auc,
     mean: { installed: mean(inst.map((r) => r.score)), notInstalled: mean(not.map((r) => r.score)) },
     bins,
+    mw: mannWhitney(inst.map((r) => r.score), not.map((r) => r.score)),
   };
 }

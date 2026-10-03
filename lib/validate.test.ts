@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LabelRow } from "./labels";
 import { consensus, validate } from "./validate";
+import { mannWhitney } from "./validate";
 
 const row = (bld_id: number, label: LabelRow["label"], labeler: string): LabelRow => ({ bld_id, label, labeler, image_year: "2025" });
 // 점수 높은 순 10동
@@ -43,4 +44,17 @@ describe("VAL-01 검증 지표", () => {
     const rows = ranked.flatMap((r) => [row(r.bld_id, r.bld_id % 2 ? "설치" : "미설치", "a"), row(r.bld_id, r.bld_id % 2 ? "설치" : "미설치", "b")]);
     expect(validate(rows, ranked).kappa).toBe(1);
   });
+});
+
+describe("VAL-01 Mann-Whitney U", () => {
+  it("완전히 갈리면 U = n1·n2, 효과크기 1", () => {
+    const r = mannWhitney([7, 8, 9], [1, 2, 3, 4])!;
+    expect([r.u, r.effect, r.n1, r.n2]).toEqual([12, 1, 3, 4]);
+    expect(r.p).toBeLessThan(0.05);
+  });
+  it("같은 분포면 효과크기 0, p = 1", () => {
+    const r = mannWhitney([1, 2, 3, 4], [1, 2, 3, 4])!;
+    expect([r.effect, r.z, r.p]).toEqual([0, 0, 1]);
+  });
+  it("한쪽이 비면 null", () => expect(mannWhitney([], [1, 2])).toBeNull());
 });

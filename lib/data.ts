@@ -18,6 +18,12 @@ export interface RawBuilding {
   grid_min_kw?: number;
   grid_max_kw?: number;
   grid_level?: string;
+  /** DAT-14: 판매·임대형 입주업종 확인 결과, 근거, 유치업종 구역 원문 */
+  solar_biz?: string;
+  solar_biz_src?: string;
+  zone?: string;
+  /** VAL-01: 위성 라벨이 '설치'인 건물(loadDataset에서 붙임) */
+  installed?: boolean;
   tot_area: number | null;
   apr_ymd: string | null;
   fl_up: number | null;
@@ -75,7 +81,7 @@ export interface Dataset {
   stability: StabilityResult;
   grid: Grid | null;
   /** VAL-01 위성 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
-  labels: { meta: { basis?: "human" | "ai"; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
+  labels: { meta: { basis?: "human" | "ai"; reviewed?: number; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
 }
 
 export interface GridLine {
@@ -133,6 +139,7 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
   const c = calc(roof.roof_m2, unitCost, assumptions);
   const industry: Industry = raw.industry ?? null;
   const s = score({ target: raw.target, calc: c, struct: raw.struct, aprYmd: raw.apr_ymd, industry, gridMinKw: raw.grid_min_kw ?? null, gridMaxKw: raw.grid_max_kw ?? null }, baseYmd);
+  if (raw.installed && s.tier !== "제외") s.tier = "이미 설치됨";
   return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [], stability: null };
 }
 
@@ -147,6 +154,7 @@ export async function loadDataset(unitCost?: number): Promise<Dataset> {
     fetchJson<Dataset["labels"]>("/data/labels.json").catch(() => null),
   ]);
   const baseYmd = attrs.meta.built.replaceAll("-", "");
+  for (const b of attrs.buildings) if (labels?.labels[String(b.bld_id)] === "설치") b.installed = true;
   const buildings = attrs.buildings.map((b) => enrich(b, baseYmd, unitCost));
   const byId = new Map(buildings.map((b) => [b.bld_id, b]));
   const stability = withStability(buildings);
