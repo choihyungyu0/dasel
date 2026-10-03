@@ -21,12 +21,24 @@ export interface RawBuilding {
   complex_nm: string;
   target: boolean;
   flags: string[];
+  companies?: Company[];
+  industry?: Industry;
+  dist_119_m?: number | null;
+}
+
+export interface Company {
+  company: string;
+  product: string | null;
+  industry: Industry;
+  group: string | null;
+  match: "CONTAIN" | "PNU";
 }
 
 export interface Building extends RawBuilding {
   roof: Roof;
   calc: Calc;
   score: Score;
+  companies: Company[];
   industry: Industry;
 }
 
@@ -68,9 +80,9 @@ async function fetchGzipJson<T>(url: string): Promise<T> {
 export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, assumptions?: Partial<Assumptions>): Building {
   const roof = roofArea(raw.arch_area, raw.geom_area);
   const c = calc(roof.roof_m2, unitCost, assumptions);
-  const industry: Industry = null; // 등록공장 매칭(DAT-04) 후 채운다
+  const industry: Industry = raw.industry ?? null;
   const s = score({ target: raw.target, calc: c, struct: raw.struct, aprYmd: raw.apr_ymd, industry }, baseYmd);
-  return { ...raw, roof, calc: c, score: s, industry };
+  return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [] };
 }
 
 export async function loadDataset(unitCost?: number): Promise<Dataset> {

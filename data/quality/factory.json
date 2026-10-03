@@ -1,0 +1,27 @@
+{
+ "factories": 643,
+ "match": {
+  "CONTAIN": 183,
+  "PNU": 46,
+  "NONE": 414
+ },
+ "geocode_fail": 13,
+ "buildings_with_company": 255,
+ "target": 772,
+ "target_with_company": 240,
+ "target_industry": {
+  "미매칭": 532,
+  "MFG": 120,
+  "HIGH": 120
+ },
+ "promoted_use_null": 32,
+ "target_use_null": 63,
+ "stations": {
+  "total": 47,
+  "geocoded": 46,
+  "failed": [
+   "대소119안전센터"
+  ]
+ },
+ "dist_119_ok": 3425
+}
