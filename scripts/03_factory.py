@@ -125,7 +125,9 @@ def main():
             p = Point(pt["lon"], pt["lat"])
             inside = [ids[j] for j in tree.query(p) if geoms[j].contains(p)]
             if inside:
-                entry["match"], entry["bld_ids"] = "CONTAIN", inside[:1]
+                # 좌표가 떨어진 동 + 같은 필지의 다른 동(공장은 필지 단위로 쓰므로 함께 연결, 동 구분 불가)
+                mates = [i for i in by_lot.get(norm_lot(by_id[inside[0]]["addr"]), []) if i != inside[0]]
+                entry["match"], entry["bld_ids"] = "CONTAIN", inside[:1] + mates
             else:
                 lot = by_lot.get(norm_lot(g.parcel(pt["lon"], pt["lat"])), [])
                 if lot:
@@ -133,7 +135,9 @@ def main():
         stats[entry["match"]] += 1
         for bid in entry["bld_ids"]:
             b = by_id[bid]
-            b["companies"].append({k: entry[k] for k in ("company", "product", "industry", "group", "match")})
+            own = entry["match"] == "CONTAIN" and bid == entry["bld_ids"][0]
+            b["companies"].append({**{k: entry[k] for k in ("company", "product", "industry", "group")}, "match": "CONTAIN" if own else "PNU",
+                                   "mate": entry["match"] == "CONTAIN" and not own})
             if RANK[entry["industry"]] > RANK[b["industry"]]:
                 b["industry"] = entry["industry"]
         search.append(entry)
@@ -144,7 +148,8 @@ def main():
     # --- BR-D1: 용도 결측이어도 등록공장이 연결되면 대상
     promoted = 0
     for b in blds:
-        if not b["target"] and b["use"] is None and b["companies"]:
+        # 같은 필지라는 이유만으로 붙은 회사(mate)는 대상 승격 근거로 쓰지 않는다(소형 부속 건물로 대상 수가 부풀지 않게)
+        if not b["target"] and b["use"] is None and any(not c["mate"] for c in b["companies"]):
             b["target"] = True
             promoted += 1
     target = {b["bld_id"]: b["target"] for b in blds}

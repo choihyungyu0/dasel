@@ -143,7 +143,7 @@ def main():
         if "USE_NULL" in b["flags"] and b["use"] is not None:
             b["flags"] = [f for f in b["flags"] if f != "USE_NULL"]
             school = b["use"] == "교육연구시설" and SCHOOL.search(f"{b['name'] or ''} {b['dong'] or ''}")
-            if not ((b["use"] in TARGET_USE and not school) or b.get("companies")):
+            if not ((b["use"] in TARGET_USE and not school) or any(not c.get("mate") for c in b.get("companies", []))):
                 b["target"] = False
                 demoted += 1
 
