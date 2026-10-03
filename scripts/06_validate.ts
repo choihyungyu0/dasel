@@ -4,7 +4,7 @@
 //
 // 사람 검수 표본(큐) = AI가 '설치'로 본 건물 전부 + '미설치' 중 무작위 50동(시드 고정).
 // 검증에 쓰는 라벨 = 사람이 본 건물은 사람 라벨, 나머지는 AI 판독. 큐를 다 볼 때까지 basis는 'ai'(화면에 '검수 전').
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { enrich, type RawBuilding } from "../lib/data";
 import { parseLabelCsv, type Label, type LabelRow } from "../lib/labels";
 import { consensus, validate } from "../lib/validate";
@@ -83,14 +83,31 @@ const review = {
 };
 const basis: "human" | "ai" = review.done >= review.queue && review.queue > 0 ? "human" : "ai";
 
-// ---- 검증에 쓰는 라벨: 사람이 본 건물은 사람 라벨, 나머지는 AI 판독
+// ---- AI 눈가림 재판독: 앞선 판독을 보지 않은 별도 판독(검수 큐 대상). 사람 검수가 아니다.
+const BLIND = "data/labels_draft/ai_blind_queue.csv";
+const blindLabel = new Map<number, Label>(existsSync(BLIND) ? parseLabelCsv(readFileSync(BLIND, "utf8")).rows.map((r) => [r.bld_id, r.label]) : []);
+const blindIds = queue.filter((id) => blindLabel.has(id));
+const blind = blindIds.length
+  ? {
+      checked: blindIds.length,
+      agreement: round(blindIds.filter((id) => blindLabel.get(id) === aiLabel.get(id)).length / blindIds.length),
+      installedKept: aiInstalled.filter((id) => blindLabel.get(id) === "설치").length,
+      installedTotal: aiInstalled.filter((id) => blindLabel.has(id)).length,
+      notFlipped: sampleNot.filter((id) => blindLabel.get(id) === "설치").length,
+      notTotal: sampleNot.filter((id) => blindLabel.has(id)).length,
+      changed: blindIds.filter((id) => blindLabel.get(id) !== aiLabel.get(id)).length,
+    }
+  : null;
+
+// ---- 검증에 쓰는 라벨: 사람이 본 건물은 사람 라벨, 나머지는 AI 판독(재판독과 엇갈리면 '불명'으로 내려 계산에서 뺀다)
 const merged = new Map<number, Label | "불일치">(aiLabel);
+for (const id of blindIds) if (blindLabel.get(id) !== aiLabel.get(id)) merged.set(id, "불명");
 for (const [id, l] of humanLabel) merged.set(id, l);
 const rows: LabelRow[] = [...merged].filter(([, l]) => l !== "불일치").map(([bld_id, l]) => ({ bld_id, label: l as Label, labeler: humanLabel.has(bld_id) ? "human" : "ai", image_year: "" }));
 const years = [...new Set([...human.rows, ...ai.rows].map((r) => r.image_year).filter(Boolean))].sort();
 
-const result = { basis, review, files: [...human.files, ...ai.files], skipped: human.skipped + ai.skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked, [0.1, 0.2, 0.3]), imageYears: years, humanConflicts: [...humanLabel].filter(([, l]) => l === "불일치").map(([id]) => id) };
+const result = { basis, review, blind, files: [...human.files, ...ai.files], skipped: human.skipped + ai.skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked, [0.1, 0.2, 0.3]), imageYears: years, humanConflicts: [...humanLabel].filter(([, l]) => l === "불일치").map(([id]) => id) };
 writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
 writeFileSync("public/data/labels.json", JSON.stringify({ meta: { basis, reviewed: review.done, image_year: years.join("·") || null, generated: result.generated }, labels: Object.fromEntries(rows.map((r) => [r.bld_id, r.label])) }));
 
-console.log(JSON.stringify({ basis, review, counts: result.counts, baseRate: result.baseRate, topK: result.topK, auc: result.auc, mean: result.mean, mw: result.mw }, null, 1));
+console.log(JSON.stringify({ basis, review, blind, counts: result.counts, baseRate: result.baseRate, topK: result.topK, auc: result.auc, mean: result.mean, mw: result.mw }, null, 1));

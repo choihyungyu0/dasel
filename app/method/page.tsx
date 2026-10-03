@@ -61,7 +61,7 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
-  const vq = read<Validation & { generated: string; basis?: "human" | "ai"; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number } }>("data/quality/validation.json");
+  const vq = read<Validation & { generated: string; basis?: "human" | "ai"; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number }; blind?: { checked: number; agreement: number; installedKept: number; installedTotal: number; notFlipped: number; notTotal: number; changed: number } | null }>("data/quality/validation.json");
   const rv = vq.review;
   const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
@@ -154,6 +154,7 @@ export default function MethodPage() {
         <Section id="validation" title={ai ? "기존 설치 건물로 본 검증 (위성영상 AI 판독 · 사람 검수 전)" : "기존 설치 건물로 본 검증"}>
           <p>적합도 점수가 실제와 맞는지 보려고, 후보 {n(vq.candidates)}동의 지붕을 위성영상에서 {ai ? "AI가 판독해" : "사람이 직접 보고"} 태양광 패널이 이미 있는지 표시했습니다{vq.imageYears.length ? ` (영상 ${vq.imageYears.join("·")}년)` : ""}. 이미 설치한 공장은 설치할 만해서 설치한 곳이므로, 점수 상위에 이런 건물이 많이 들어올수록 점수가 현실과 맞는다고 볼 수 있습니다.</p>
           {ai && <p><span className="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">검수 전</span>건물마다 위성 이미지를 AI(Claude Opus 5.5)가 두 번 판독하고, 두 결과가 엇갈리거나 불확실한 건물은 확대 이미지로 다시 판독했습니다. 같은 모델이 한 판독이라 독립된 검수가 아니며, 부분 설치·짙은 색 금속 지붕·채광창은 틀릴 수 있습니다. 영상이 흐리거나 건물이 아직 없는 곳은 '불명'으로 두었습니다. 영상은 브이월드 위성영상이며 촬영연도는 확인하지 못했습니다.</p>}
+          {vq.blind && <p>검수 표본은 앞선 판독 결과를 보지 않은 별도의 AI 판독으로 한 번 더 봤습니다(순서를 섞고 번호를 새로 붙임). 엇갈린 {n(vq.blind.changed)}동은 '불명'으로 내려 계산에서 뺐습니다. 이것도 AI 판독이며 사람 검수를 대신하지 않습니다.</p>}
           {rv && <p>사람 검수 표본은 AI가 '설치'로 본 건물 전부와 '미설치' 중 무작위 50동(시드 고정), 모두 {n(rv.queue)}동입니다. 지금까지 {n(rv.done)}동을 검수했습니다. 검수한 건물은 사람 표시를, 나머지는 AI 판독을 써서 아래 지표를 계산합니다{rv.done < rv.queue ? ". 검수가 끝나면 수치가 달라질 수 있습니다" : ""}.</p>}
           <Table head={["항목", "값"]} rows={[
             ["표시한 건물", `${n(vq.labeled)}동 / ${n(vq.candidates)}동 (설치 ${n(vq.counts.설치)} · 미설치 ${n(vq.counts.미설치)} · 불명 ${n(vq.counts.불명)}${vq.counts.불일치 ? ` · 불일치 ${n(vq.counts.불일치)}` : ""})`],
@@ -161,6 +162,7 @@ export default function MethodPage() {
               ["표시한 사람", vq.labelers.map((l) => `${l.count}동`).join(" · ") || "–"],
               ["두 사람이 같이 본 건물의 일치율", vq.overlap ? `${pct(vq.agreement)} (${n(vq.overlap)}동${vq.kappa !== null ? `, 카파 ${vq.kappa}` : ""})` : "한 사람만 표시"],
             ]),
+            ...(vq.blind ? [["AI 눈가림 재판독과의 일치(검수 표본)", `${pct(vq.blind.agreement)} (${n(vq.blind.checked)}동) · '설치' ${n(vq.blind.installedKept)}/${n(vq.blind.installedTotal)}동 유지 · '미설치' 표본 ${n(vq.blind.notTotal)}동 중 '설치'로 바뀐 것 ${n(vq.blind.notFlipped)}동`]] : []),
             ...(rv && rv.done > 0 ? [
               ["AI 판독과 사람 검수의 일치율", `${pct(rv.agreement)} (${n(rv.done)}동)`],
               ["AI '설치' 중 사람도 '설치'로 본 비율(정밀도)", pct(rv.precision)],

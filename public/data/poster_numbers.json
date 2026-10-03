@@ -1237,6 +1237,15 @@
    "missRate": null,
    "missChecked": 0
   },
+  "blind": {
+   "checked": 92,
+   "agreement": 0.978,
+   "installedKept": 42,
+   "installedTotal": 42,
+   "notFlipped": 0,
+   "notTotal": 50,
+   "changed": 2
+  },
   "files": [
    "existing_pv.csv",
    "final.csv"
@@ -1258,44 +1267,44 @@
   "labeled": 336,
   "counts": {
    "설치": 42,
-   "미설치": 261,
-   "불명": 33,
+   "미설치": 259,
+   "불명": 35,
    "불일치": 0
   },
-  "baseRate": 0.139,
+  "baseRate": 0.14,
   "topK": [
    {
     "k": 0.1,
     "n": 34,
-    "judged": 32,
+    "judged": 31,
     "installed": 12,
-    "precision": 0.375,
-    "lift": 2.7,
+    "precision": 0.387,
+    "lift": 2.76,
     "recall": 0.286
    },
    {
     "k": 0.2,
     "n": 68,
-    "judged": 63,
+    "judged": 62,
     "installed": 15,
-    "precision": 0.238,
-    "lift": 1.71,
+    "precision": 0.242,
+    "lift": 1.73,
     "recall": 0.357
    },
    {
     "k": 0.3,
     "n": 101,
-    "judged": 94,
+    "judged": 93,
     "installed": 20,
-    "precision": 0.213,
-    "lift": 1.53,
+    "precision": 0.215,
+    "lift": 1.54,
     "recall": 0.476
    }
   ],
-  "auc": 0.608,
+  "auc": 0.609,
   "mean": {
    "installed": 51.9,
-   "notInstalled": 48
+   "notInstalled": 47.9
   },
   "bins": [
    {
@@ -1320,7 +1329,7 @@
     "from": 30,
     "to": 40,
     "installed": 4,
-    "notInstalled": 46
+    "notInstalled": 45
    },
    {
     "from": 40,
@@ -1338,7 +1347,7 @@
     "from": 60,
     "to": 70,
     "installed": 12,
-    "notInstalled": 18
+    "notInstalled": 17
    },
    {
     "from": 70,
@@ -1348,12 +1357,12 @@
    }
   ],
   "mw": {
-   "u": 6662,
-   "z": 2.25,
-   "p": 0.0243,
-   "effect": 0.215,
+   "u": 6622,
+   "z": 2.27,
+   "p": 0.023,
+   "effect": 0.218,
    "n1": 42,
-   "n2": 261
+   "n2": 259
   },
   "humanConflicts": []
  },
