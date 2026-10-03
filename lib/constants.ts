@@ -13,7 +13,7 @@ export interface Const {
   range?: [number, number];
 }
 
-const ASSUMED = "초기 가정값(산정 기준 페이지에 범위 공개, IS-02·IS-08)";
+const ASSUMED = "초기 가정값(시뮬레이터에서 범위 조정 가능)";
 
 export const CONSTANTS = {
   PVOUT: { value: 1427, unit: "kWh/kWp·년", label: "연간 발전량 계수", kind: "공식", source: "Global Solar Atlas (36.72N 127.43E)", asOf: "2026-10-03" },
