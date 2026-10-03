@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toManwon } from "@/lib/calc";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
-import type { Building, Dataset } from "@/lib/data";
+import { gridOf, type Building, type Dataset } from "@/lib/data";
 import type { Price } from "@/lib/price";
 import { summarySentence, WEIGHTS, type PartKey } from "@/lib/score";
 import { TIER_COLOR } from "./MapView";
@@ -56,6 +56,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
   const [copied, setCopied] = useState<string | null>(null);
   const { calc: c, score: s, roof } = b;
   const excluded = s.tier === "제외";
+  const lines = gridOf(ds.grid, b.addr);
   const title = b.companies[0]?.company ?? b.name ?? b.addr ?? `건물 ${b.bld_id}`;
   const gisSrc = `${ds.meta.source} ${ds.meta.base_date}${b.reg_match ? ` · ${ds.meta.register_source}` : ""}`;
   const input = { target: b.target, calc: c, struct: b.struct, aprYmd: b.apr_ymd, industry: b.industry };
@@ -188,6 +189,18 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                   순위 안정도 <span className="num font-semibold text-ink">{Math.round(b.stability * 100)}%</span>
                   <span className="text-slate-500"> · 가중치를 ±20% 바꾼 1,000회 중 상위 10%({ds.stability.topCount}동)에 든 비율</span>
                 </p>
+              )}
+              {lines && c.pv_kw !== null && (
+                <div id="GRD-01" className="mt-2 rounded bg-slate-100 px-2 py-1.5 text-xs">
+                  <p className="font-medium">이 지역 배전선로 여유 (참고)</p>
+                  <p className="num text-slate-700">
+                    선로 {lines.length}개 · {n(Math.min(...lines.map((l) => l.margin_kw)))}~{n(Math.max(...lines.map((l) => l.margin_kw)))}kW
+                    {" · "}설치 용량 {n(c.pv_kw, 1)}kW 이상 여유가 있는 선로 {lines.filter((l) => l.margin_kw >= c.pv_kw!).length}개
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
+                    {ds.grid!.meta.source} {ds.grid!.meta.fetched} 조회 · 리 단위 자료라 이 건물이 어느 선로에 연결되는지는 한전 확인이 필요합니다. 점수에는 넣지 않았습니다.
+                  </p>
+                </div>
               )}
               <ul id="BDG-01" className="mt-2 flex flex-wrap gap-1">
                 {b.flags.includes("USE_NULL") && <li className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">용도 미확인</li>}

@@ -59,6 +59,7 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
+  const gq = read<{ meta: { fetched: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
   const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
   const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
   const baseDate = bq.meta.base_date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
@@ -150,6 +151,7 @@ export default function MethodPage() {
           ["국토교통부 건축HUB 건축물대장 표제부(15134735)", "조회일 기준", "구조·면적·사용승인일·지붕 보강", `대상 ${n(rq.buildings)}동 중 ${n(rq.buildings - rq.reg_null)}동 연결(${Math.round(rq.match_rate * 100)}%)`],
           ["소방청 119안전센터 현황(15065056)", "2026-07-01", "가까운 119안전센터 직선거리(참고)", `충북 ${fq.stations.total}곳 중 ${fq.stations.geocoded}곳 위치 확인`],
           ["한국전력공사 전력데이터 개방포털", "최신월", "청주 산업용 평균판매단가", `조회 실패 시 ${C.PRICE_FALLBACK.value}원(${C.PRICE_FALLBACK.asOf})`],
+          ["한국전력공사 분산전원연계 정보", gq.meta.fetched, "읍면동·리 단위 배전선로 여유용량(참고, 점수 미반영)", `${gq.areas_ok}개 리 · 선로 여유 ${n(Math.min(...Object.values(gq.summary).map((v) => v.min_kw)))}~${n(Math.max(...Object.values(gq.summary).map((v) => v.max_kw)))}kW`],
           ["브이월드(국토교통부)", "–", "위성 배경지도, 주소 좌표 변환", "장애 시 Esri World Imagery로 표시"],
           ["Global Solar Atlas", C.PVOUT.asOf, "연간 발전량 계수", `${n(C.PVOUT.value)} kWh/kWp (36.72N 127.43E)`],
         ]} />
@@ -163,7 +165,8 @@ export default function MethodPage() {
           <li>지붕 이용률, kW당 면적, 팩 정격, 잔존용량, 저장 시간은 초기 가정값입니다. 시뮬레이터에서 범위를 바꿔 볼 수 있습니다.</li>
           <li>재사용 배터리의 법정 성능등급 기준은 2027년 5월 시행 전이라 정해지지 않았습니다.</li>
           <li>지붕 하중, 방수, 기존 설비, 음영은 반영하지 않았습니다. 구조검토가 필요합니다.</li>
-          <li>위험물시설 거리와 배전선로 여유용량은 자료를 확보하지 못해 반영하지 않았습니다.</li>
+          <li>위험물시설 거리는 자료를 확보하지 못해 반영하지 않았습니다.</li>
+          <li>배전선로 여유용량은 한전 자료가 리 단위로만 조회되어, 건물이 어느 선로에 연결되는지 알 수 없습니다. 패널에 참고 정보로만 보여 주고 점수에는 넣지 않았습니다.</li>
           <li>업종은 생산품 문구로 추정한 것이며 실제 전력 사용량과 다를 수 있습니다.</li>
         </ul>
       </Section>
