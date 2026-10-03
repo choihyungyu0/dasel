@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { toManwon } from "@/lib/calc";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
@@ -195,6 +196,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
 
       <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-sm">
         <button id="BTN-05" type="button" onClick={copyLink} className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">링크 복사</button>
+        <Link id="LNK-01" href="/method#pv" className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">계산 근거</Link>
         {copied && <span role="status" className="truncate text-xs text-slate-600">{copied}</span>}
       </footer>
     </aside>
