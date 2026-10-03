@@ -20,6 +20,8 @@ interface Field {
 const FIELDS: Field[] = [
   { code: "sa", key: "aRatio", scale: 100, range: C.A_RATIO.range },
   { code: "sx", key: "socMax", scale: 100, range: C.SOC_MAX.range },
+  { code: "in", key: "indoor", scale: 1, range: [0, 1] },
+  { code: "n", key: "essUnits", scale: 1, range: C.ESS_UNITS.range },
   { code: "u", key: "util", scale: 100, range: C.UTIL.range },
   { code: "a", key: "m2PerKw", scale: 1, range: C.M2_PER_KW.range },
   { code: "p", key: "price", scale: 1, range: PRICE_RANGE },
@@ -31,10 +33,12 @@ const ORDER = ["u", "a", "p", "h", "k", "sa", "sx"];
 export const defaultScenario = (price: number): Scenario => ({ ...DEFAULTS, price });
 
 export function encodeScenario(s: Scenario): string {
-  return ORDER.map((code) => {
+  const part = (code: string) => {
     const f = FIELDS.find((x) => x.code === code)!;
     return `${code}${Math.round(s[f.key] * f.scale * 10) / 10}`;
-  }).join(".");
+  };
+  // 기본값(옥외·1단위)일 때는 예전 형식 그대로 둔다
+  return [...ORDER.map(part), ...(s.essUnits !== DEFAULTS.essUnits ? [part("n")] : []), ...(s.indoor ? [part("in")] : [])].join(".");
 }
 
 /** 범위 밖·해석 불가 값은 기본값으로 바꾸고 adjusted=true로 알린다. */
@@ -49,6 +53,11 @@ export function decodeScenario(text: string | null, price: number): { scenario: 
     const v = f ? Number(num) / f.scale : NaN;
     if (!f || v < f.range[0] || v > f.range[1]) adjusted = true;
     else scenario[f.key] = v;
+  }
+  // 옥내 설치는 충전율 상한 80%까지(BR-L1)
+  if (scenario.indoor && scenario.socMax > C.SOC_MAX_INDOOR.value) {
+    scenario.socMax = C.SOC_MAX_INDOOR.value;
+    adjusted = true;
   }
   return { scenario, adjusted };
 }

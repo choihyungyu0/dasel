@@ -20,5 +20,12 @@ describe("SIM-01 조건 문자열", () => {
     expect(decodeScenario(encodeScenario(s), 192)).toEqual({ scenario: s, adjusted: false });
     expect(encodeScenario(defaultScenario(192.4))).toBe("u50.a10.p192.4.h2.k60.sa70.sx90");
   });
+  it("옥내·단위 수는 기본값이 아닐 때만 붙고, 옥내는 상한 80%로 맞춘다", () => {
+    const s = { ...defaultScenario(192), indoor: 1, socMax: 0.8, essUnits: 3 };
+    expect(encodeScenario(s)).toBe("u50.a10.p192.h2.k60.sa70.sx80.n3.in1");
+    expect(decodeScenario(encodeScenario(s), 192)).toEqual({ scenario: s, adjusted: false });
+    const r = decodeScenario("u50.a10.p192.h2.k60.sa70.sx90.in1", 192);
+    expect([r.scenario.socMax, r.adjusted]).toEqual([0.8, true]);
+  });
   it("없으면 기본값", () => expect(decodeScenario(null, 192.4)).toEqual({ scenario: defaultScenario(192.4), adjusted: false }));
 });

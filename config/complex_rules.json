@@ -1,0 +1,23 @@
+{
+ "_note": "DAT-14: 산업단지계획(관리기본계획) 고시에 태양광 발전사업이 입주 업종·시설로 들어 있는지. true/false/null(확인 필요). 토지이음 고시문으로 확인한 뒤 source·checked를 채운다.",
+ "오창과학": {
+  "solar_biz_allowed": null,
+  "source": null,
+  "checked": null
+ },
+ "오창2": {
+  "solar_biz_allowed": null,
+  "source": null,
+  "checked": null
+ },
+ "오창3": {
+  "solar_biz_allowed": null,
+  "source": null,
+  "checked": null
+ },
+ "오창테크노폴리스": {
+  "solar_biz_allowed": null,
+  "source": null,
+  "checked": null
+ }
+}

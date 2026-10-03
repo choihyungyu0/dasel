@@ -12,7 +12,7 @@ const Thumb = dynamic(() => import("@/components/Thumb"), { ssr: false });
 
 type Opinion = { status: "loading" } | { status: "done"; text: string; source: "llm" | "template"; createdAt: string };
 
-const ROWS: [keyof Facts, string][] = [["설치용량", "설치 용량"], ["연발전량", "연 발전량"], ["ESS", "ESS 목표"], ["재사용팩", "재사용 팩"], ["분산단위", "분산 단위"], ["연절감", "연 절감(하한~기준)"], ["감축", "온실가스 감축"], ["점수", "적합도"]];
+const ROWS: [keyof Facts, string][] = [["설치용량", "설치 용량"], ["연발전량", "연 발전량"], ["ESS", "재사용 ESS(선택)"], ["재사용팩", "재사용 팩"], ["분산단위", "분산 단위"], ["연절감", "연 절감(하한~기준)"], ["태양광투자비", "태양광 투자비"], ["단순회수기간", "단순 회수기간"], ["감축", "온실가스 감축"], ["점수", "적합도"]];
 
 export default function OpinionPage() {
   const id = Number(useParams<{ id: string }>().id);

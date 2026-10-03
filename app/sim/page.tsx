@@ -118,7 +118,16 @@ export default function SimPage() {
               <Slider id="SLD-04" label="ESS 저장 시간" value={s.essHours} min={1} max={4} step={0.5} show={`${s.essHours}시간`} note={C.ESS_HOURS.source} onChange={(v) => set({ essHours: v })} />
               <Slider id="SLD-05" label="재사용 팩 정격" value={s.packKwh} min={40} max={80} step={5} show={`${s.packKwh}kWh`} note={C.PACK_KWH.source} onChange={(v) => set({ packKwh: v })} />
               <Slider id="SLD-06" label="A등급(잔존 80%) 비율" value={Math.round(s.aRatio * 100)} min={0} max={100} step={5} show={`${Math.round(s.aRatio * 100)}%`} note={C.SOH_A.source} onChange={(v) => set({ aRatio: v / 100 })} />
-              <Slider id="SLD-07" label="충전율 상한" value={Math.round(s.socMax * 100)} min={80} max={90} step={1} show={`${Math.round(s.socMax * 100)}%`} note="90%를 넘길 수 없습니다" onChange={(v) => set({ socMax: v / 100 })} />
+              <div>
+                <div role="group" aria-label="ESS 설치 위치" className="mb-1 flex items-center gap-1 text-xs">
+                  <span className="mr-1 text-[13px]">ESS 설치 위치</span>
+                  {([["옥외", 0], ["옥내", 1]] as const).map(([label, v]) => (
+                    <button key={label} type="button" aria-pressed={s.indoor === v} onClick={() => set({ indoor: v, socMax: v ? Math.min(s.socMax, C.SOC_MAX_INDOOR.value) : s.socMax })} className={`rounded-md border px-2 py-0.5 ${s.indoor === v ? "border-ink bg-ink text-white" : "border-slate-300 hover:bg-slate-100"}`}>{label}</button>
+                  ))}
+                </div>
+                <Slider id="SLD-07" label="충전율 상한" value={Math.round(s.socMax * 100)} min={80} max={s.indoor ? 80 : 90} step={1} show={`${Math.round(s.socMax * 100)}%`} note={s.indoor ? "옥내는 80%까지" : "옥외는 90%까지"} disabled={s.indoor === 1} onChange={(v) => set({ socMax: v / 100 })} />
+              </div>
+              <Slider id="SLD-08" label="건물당 재사용 ESS 단위" value={s.essUnits} min={C.ESS_UNITS.range[0]} max={C.ESS_UNITS.range[1]} step={1} show={`${s.essUnits}단위`} note="단위당 1MWh 이하" onChange={(v) => set({ essUnits: v })} />
             </div>
             <div id="BTN-06" data-tour="sim-reset" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
               <button type="button" onClick={() => { setS(defaults); setNote(null); }} className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">기본값으로</button>
@@ -132,11 +141,11 @@ export default function SimPage() {
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold">산단별 결과</h2>
                 <span className="badge-review">{REVIEW_BADGE}</span>
-                <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산</span>
+                <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산 · 투자비는 태양광만(참고값)</span>
               </div>
-              <table id="TBL-01" data-tour="sim-result" className="w-full min-w-[720px] border-collapse text-[13px]">
+              <table id="TBL-01" data-tour="sim-result" className="w-full min-w-[860px] border-collapse text-[13px]">
                 <thead className="text-left text-xs text-slate-500">
-                  <tr>{["산단", "동", "MW", "GWh", "재사용 팩", "분산 단위", "연 절감(억 원)", "tCO2"].map((h, i) => <th key={h} scope="col" className={`px-2 py-1 font-medium ${i ? "text-right" : ""}`}>{h}</th>)}</tr>
+                  <tr>{["산단", "동", "MW", "GWh", "재사용 팩", "분산 단위", "연 절감(억 원)", "투자비(억 원)", "회수(년)", "tCO2"].map((h, i) => <th key={h} scope="col" className={`px-2 py-1 font-medium ${i ? "text-right" : ""}`}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
@@ -150,6 +159,8 @@ export default function SimPage() {
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.packs)}<Delta now={r.sum.packs} base={b.packs} /></td>
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.ess_units)}<Delta now={r.sum.ess_units} base={b.ess_units} /></td>
                         <td className="num px-2 py-1.5 text-right">{eok(r.sum.save_low)}~{eok(r.sum.save_base)}</td>
+                        <td className="num px-2 py-1.5 text-right">{n(r.sum.capex / 1e8)}</td>
+                        <td className="num px-2 py-1.5 text-right">{r.sum.save_base > 0 ? `${n(r.sum.capex / r.sum.save_base, 1)}~${n(r.sum.capex / r.sum.save_low, 1)}` : "–"}</td>
                         <td className="num px-2 py-1.5 text-right">{n(r.sum.co2_t)}<Delta now={r.sum.co2_t} base={b.co2_t} /></td>
                       </tr>
                     );

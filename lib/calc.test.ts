@@ -23,6 +23,10 @@ describe("5,000㎡ 예시 (CAL-01~04·06)", () => {
     expect(base.kwh_per_pack).toBe(36.96);
     expect(base.packs).toBe(14);
   });
+  it("투자비 3.5억, 회수 5.1(192원)~6.5년(150원) — CAL-08", () => {
+    expect(base.capex).toBe(350_000_000);
+    expect([base.payback_base, base.payback_low]).toEqual([5.1, 6.5]);
+  });
   it("단가를 주지 않으면 폴백 192원", () => expect(calc(5000).save_base).toBe(base.save_base));
 });
 
@@ -57,14 +61,22 @@ describe("BR-C3·G2 소규모", () => {
 });
 
 describe("분산 단위·조건 범위", () => {
-  it("단위당 1MWh 이하: 1,200kW → 2,400kWh → 3단위", () => {
-    const c = calc(24000);
-    expect(c.ess_units).toBe(3);
+  it("BR-C3 ESS는 기본 1단위 시범: 657kW → 1,314kWh가 아니라 1,000kWh 1단위", () => {
+    const c = calc(13140);
+    expect(c.pv_kw).toBe(657);
+    expect([c.ess_kwh, c.ess_units]).toEqual([1000, 1]);
+    expect(c.packs).toBe(Math.ceil(1000 / 36.96));
+  });
+  it("단위 수를 늘리면 단위당 1MWh 이하로 분산: 1,200kW·3단위 → 2,400kWh 3단위", () => {
+    const c = calc(24000, 192, { essUnits: 3 });
+    expect([c.ess_kwh, c.ess_units]).toEqual([2400, 3]);
     expect(c.ess_kwh! / c.ess_units!).toBeLessThanOrEqual(1000);
   });
-  it("BR-L1 충전율 상한은 0.80~0.90", () => {
+  it("BR-L1 충전율 상한: 옥외 0.90, 옥내 0.80", () => {
     expect(normalize({ socMax: 0.95 }).socMax).toBe(0.9);
     expect(normalize({ socMax: 0.5 }).socMax).toBe(0.8);
+    expect(normalize({ socMax: 0.9, indoor: 1 }).socMax).toBe(0.8);
+    expect(calc(5000, 192, { indoor: 1 }).packs).toBeGreaterThan(14);
   });
   it("pv_kw ≤ 지붕면적 ÷ 7", () => {
     const c = calc(5000, 192, { util: 0.7, m2PerKw: 3 });
@@ -89,6 +101,7 @@ describe("CAL-07 합계", () => {
     expect(s.mw).toBe(0.5);
     expect(s.packs).toBe(28);
     expect(s.co2_t).toBe(297.8);
+    expect(s.capex).toBe(700_000_000);
   });
 });
 

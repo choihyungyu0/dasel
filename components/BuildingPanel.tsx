@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toManwon } from "@/lib/calc";
+import { extraChips } from "@/lib/chips";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
 import { gridOf, type Building, type Dataset } from "@/lib/data";
 import type { Price } from "@/lib/price";
@@ -11,6 +12,8 @@ import { TIER_COLOR } from "./MapView";
 
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const NA = <span className="text-slate-400">정보 없음</span>;
+const ESS_USES = ["피크 저감(기본요금)", "경부하 충전·최대부하 방전", "정전 대비"];
+const eok = (won: number) => n(won / 1e8, 1);
 const PART_LABEL: Record<PartKey, string> = { scale: "규모", struct: "구조", age: "사용 연수", industry: "전력수요 업종", hazmat: "안전 이격", grid: "배전 여유" };
 
 function Card({ id, tour, title, source, children }: { id: string; tour?: string; title: string; source: string; children: React.ReactNode }) {
@@ -54,9 +57,11 @@ interface Props {
 
 export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [essUse, setEssUse] = useState(ESS_USES[0]);
   const { calc: c, score: s, roof } = b;
   const excluded = s.tier === "제외";
   const lines = gridOf(ds.grid, b.addr);
+  const payback = c.payback_base === null || c.payback_low === null ? "–" : `${n(c.payback_base, 1)}~${n(c.payback_low, 1)}`;
   const title = b.companies[0]?.company ?? b.name ?? b.addr ?? `건물 ${b.bld_id}`;
   const gisSrc = `${ds.meta.source} ${ds.meta.base_date}${b.reg_match ? ` · ${ds.meta.register_source}` : ""}`;
   const input = { target: b.target, calc: c, struct: b.struct, aprYmd: b.apr_ymd, industry: b.industry };
@@ -131,35 +136,56 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
               </div>
             </Card>
 
-            <Card id="CRD-03" tour="card-ess" title="재사용 배터리 ESS" source={`${C.PACK_KWH.source} · 법정 성능등급 기준은 2027.5 시행 전 미정`}>
+            <Card id="CRD-03" tour="card-ess" title="재사용 배터리 ESS (선택)" source={`${C.ESS_UNITS.source} · ${C.SOC_MAX.source} · 법정 성능등급 기준은 2027.5 시행 전 미정`}>
               {c.small ? (
                 <p className="text-[13px]">소규모 — ESS 산정 안 함 (30kW 미만)</p>
               ) : (
                 <>
+                  <p className="mb-2 text-xs text-slate-600">태양광과 따로 정하는 선택 설비입니다. 기본은 재사용 ESS 1단위 시범(1MWh 이하)입니다.</p>
                   <div className="grid grid-cols-3 gap-2">
-                    <Big label="ESS 목표" value={n(c.ess_kwh!)} unit="kWh" />
+                    <Big label="ESS 시범 용량" value={n(c.ess_kwh!)} unit="kWh" />
                     <Big label="재사용 팩" value={n(c.packs!)} unit="개" />
                     <Big label="분산 단위" value={n(c.ess_units!)} unit="개" />
                   </div>
-                  <dl className="mt-2">
+                  <label className="mt-2 flex items-center justify-between gap-2 text-[13px]">
+                    <span className="text-slate-500">쓰임새</span>
+                    <select id="SEL-ESS" value={essUse} onChange={(e) => setEssUse(e.target.value)} className="rounded border border-slate-300 bg-white px-1.5 py-0.5">
+                      {ESS_USES.map((u) => <option key={u}>{u}</option>)}
+                    </select>
+                  </label>
+                  <dl className="mt-1">
                     <Row k="팩당 사용 가능">{n(c.kwh_per_pack, 2)}kWh (정격 {C.PACK_KWH.value}kWh)</Row>
-                    <Row k="운전 충전율">10~90% 고정</Row>
+                    <Row k="운전 충전율">옥외 10~90% · 옥내 10~80%</Row>
                     <Row k="단위당 용량">1MWh 이하</Row>
                   </dl>
+                  <p className="mt-1 text-[11px]"><span className="rounded bg-slate-200 px-1.5 py-0.5">피크 저감 kW는 계약전력 확인 필요</span></p>
                 </>
               )}
             </Card>
 
-            <Card id="CRD-04" tour="card-money" title="절감액·탄소" source={`한국전력공사 전력데이터 개방포털(청주 산업용 평균판매단가) · ${C.EMISSION.source}`}>
+            <Card id="CRD-04" tour="card-money" title="절감액·투자비·탄소" source={`한국전력공사 전력데이터 개방포털(청주 산업용 평균판매단가) · ${C.EMISSION.source} · 설치비 ${C.CAPEX_PER_KW.source}`}>
               <div className="grid grid-cols-2 gap-2">
-                <Big label="연 절감 (하한~기준)" value={`${n(toManwon(c.save_low!))}~${n(toManwon(c.save_base!))}`} unit="만 원" />
+                <Big label="태양광 연 절감 (하한~기준)" value={`${n(toManwon(c.save_low!))}~${n(toManwon(c.save_base!))}`} unit="만 원" />
                 <Big label="온실가스 감축" value={n(c.co2_t!, 1)} unit="tCO2" />
+                <Big label="태양광 투자비" value={eok(c.capex!)} unit="억 원" />
+                <Big label="단순 회수기간" value={payback} unit="년" />
               </div>
               <p className="mt-2 text-xs text-slate-600">
                 하한 {C.PRICE_LOW.value}원 ~ 기준 <span className="num font-medium">{price.unitCost}원/kWh</span> ({price.month})
-                {price.fallback && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">기준값 {C.PRICE_FALLBACK.value}원({C.PRICE_FALLBACK.asOf.replace("-", ".")})으로 계산</span>}
+                {price.fallback && <span className="badge-review ml-1">기준값 {C.PRICE_FALLBACK.value}원({C.PRICE_FALLBACK.asOf.replace("-", ".")})으로 계산</span>}
               </p>
               <p className="mt-1 text-[11px] text-slate-500">평균판매단가에는 기본요금이 들어 있어 실제 절감은 하한에 가까울 수 있습니다. 기후환경요금·연료비조정액은 넣지 않았습니다.</p>
+              <table id="TBL-PAY" className="mt-2 w-full text-xs">
+                <caption className="mb-1 text-left text-[11px] text-slate-500">
+                  설치 방식 비교 <span className="rounded bg-slate-200 px-1 py-0.5">참고값</span> · 설치비 kW당 {n(C.CAPEX_PER_KW.value / 10000)}만 원, 보조금 미반영
+                </caption>
+                <tbody>
+                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">자가소비</th><td className="num py-1 text-right">투자 {eok(c.capex!)}억 원 · 회수 {payback}년</td></tr>
+                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">지붕 임대</th><td className="py-1 text-right text-slate-500">임대료 자료 확보 전 — 계산하지 않음</td></tr>
+                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">전력 판매</th><td className="py-1 text-right text-slate-500">판매단가 반영 전 — 계산하지 않음</td></tr>
+                </tbody>
+              </table>
+              <p className="mt-1 text-[11px] text-slate-500">ESS 몫의 절감과 투자비는 태양광과 따로 봅니다. 재사용 배터리 단가가 정해지지 않아 아직 계산하지 않았습니다.</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="badge-review">{REVIEW_BADGE}</span>
                 <button id="BTN-02" type="button" onClick={onRefreshPrice} disabled={price.loading} className="rounded-md border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-50">
@@ -204,7 +230,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
               )}
               <ul id="BDG-01" className="mt-2 flex flex-wrap gap-1">
                 {b.flags.includes("USE_NULL") && <li className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">용도 미확인</li>}
-                {s.chips.map((chip) => (
+                {[...s.chips, ...extraChips(b)].map((chip) => (
                   <li key={chip} className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px]">{chip}</li>
                 ))}
               </ul>

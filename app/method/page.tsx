@@ -72,7 +72,7 @@ export default function MethodPage() {
           이 지도의 숫자는 공개 데이터와 아래 식으로 계산한 <strong>{REVIEW_BADGE}</strong> 값입니다. 실제 설치 여부와 용량은 현장 조사, 구조검토, 전기·소방 협의를 거쳐 정해집니다.
         </p>
         <nav className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600">
-          {[["pv", "지붕 태양광"], ["ess", "재사용 ESS"], ["money", "절감액·탄소"], ["score", "적합도·설치 조건"], ["stability", "순위 안정도"], ["industry", "업종 분류"], ["constants", "상수"], ["tariff", "요금표"], ["data", "데이터"], ["limits", "한계"]].map(([id, label]) => (
+          {[["pv", "지붕 태양광"], ["ess", "재사용 ESS"], ["money", "절감액·탄소"], ["capex", "투자비·회수기간"], ["score", "적합도·설치 조건"], ["stability", "순위 안정도"], ["industry", "업종 분류"], ["constants", "상수"], ["tariff", "요금표"], ["data", "데이터"], ["limits", "한계"]].map(([id, label]) => (
             <a key={id} href={`#${id}`} className="underline">{label}</a>
           ))}
         </nav>
@@ -84,11 +84,12 @@ export default function MethodPage() {
         <p>예: 5,000㎡ × 0.5 ÷ 10 = 250kW, 250 × 1,427 = 356,750kWh. 도형 면적이 건축면적의 2/3에 못 미치면 두 자료가 맞지 않는 것으로 보고 작은 값을 씁니다.</p>
       </Section>
 
-      <Section id="ess" title="재사용 배터리 ESS">
-        <F>ESS 목표(kWh) = 설치용량 × {C.ESS_HOURS.value}시간 · 분산 단위 = 올림(ESS 목표 ÷ {n(C.ESS_UNIT_MAX.value)}kWh)</F>
+      <Section id="ess" title="재사용 배터리 ESS (선택 설비)">
+        <p>공장은 낮에 만든 태양광 전기를 대부분 그 자리에서 쓰므로, ESS를 태양광 크기에 비례해 붙이지 않습니다. 피크 저감, 경부하 충전·최대부하 방전, 정전 대비 가운데 쓰임새를 골라 따로 정하는 설비로 보고, 기본은 건물당 1단위 시범입니다.</p>
+        <F>ESS 용량(kWh) = min(설치용량 × {C.ESS_HOURS.value}시간, {n(C.ESS_UNIT_MAX.value)}kWh × 단위 수 {C.ESS_UNITS.value}) · 분산 단위 = 올림(ESS 용량 ÷ {n(C.ESS_UNIT_MAX.value)}kWh)</F>
         <F>팩당 사용 가능(kWh) = 정격 {C.PACK_KWH.value} × (A비율 {C.A_RATIO.value} × {C.SOH_A.value} + B비율 × {C.SOH_B.value}) × (충전율 상한 {C.SOC_MAX.value} − 하한 {C.SOC_MIN.value}) = 36.96</F>
-        <F>필요 팩 수 = 올림(ESS 목표 ÷ 팩당 사용 가능)</F>
-        <p>예: 250kW → 500kWh → 1단위, 500 ÷ 36.96 → 14개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 단위당 1MWh 이하, 충전율 10~90% 운전은 고정 조건이며 충전율 상한은 90%를 넘길 수 없습니다.</p>
+        <F>필요 팩 수 = 올림(ESS 용량 ÷ 팩당 사용 가능)</F>
+        <p>예: 250kW → 500kWh → 1단위, 팩 14개. 657kW → 1,314kWh가 아니라 1,000kWh 1단위, 팩 28개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 충전율 상한은 옥외 {C.SOC_MAX.value * 100}%, 옥내 {C.SOC_MAX_INDOOR.value * 100}%입니다({C.SOC_MAX.source}). 피크 저감 효과는 공장 계약전력과 부하 자료가 있어야 계산할 수 있어 넣지 않았습니다.</p>
       </Section>
 
       <Section id="money" title="절감액·탄소">
@@ -97,6 +98,11 @@ export default function MethodPage() {
         <p>
           기준 단가는 한국전력공사 전력데이터 개방포털에서 받아오며, 조회하지 못하면 {C.PRICE_FALLBACK.value}원({C.PRICE_FALLBACK.asOf.replace("-", ".")})으로 계산하고 그 사실을 화면에 표시합니다. 평균판매단가에는 기본요금이 들어 있어 실제 절감은 하한에 가까울 수 있습니다. 기후환경요금·연료비조정액은 넣지 않았습니다. 예: 356,750kWh → 5,351만~6,850만 원, 148.9t.
         </p>
+      </Section>
+
+      <Section id="capex" title="투자비·회수기간">
+        <F>태양광 투자비(원) = 설치용량 × kW당 {n(C.CAPEX_PER_KW.value / 10000)}만 원 · 단순 회수기간(년) = 투자비 ÷ 연 절감(기준 단가 ~ 하한 단가)</F>
+        <p>예: 250kW × 140만 원 = 3.5억 원, 회수 5.1~6.5년. kW당 설치비는 {C.CAPEX_PER_KW.source}이며 범위는 {n(C.CAPEX_PER_KW.range[0] / 10000)}만~{n(C.CAPEX_PER_KW.range[1] / 10000)}만 원입니다. 보조금, 유지비, 발전량 저하, 금융비용은 넣지 않은 단순 계산입니다. 지붕 임대와 전력 판매 방식은 임대료·판매단가 자료를 확보하지 못해 계산하지 않았고, ESS 투자비도 재사용 배터리 단가가 정해지지 않아 넣지 않았습니다.</p>
       </Section>
 
       <Section id="score" title="설치 적합도·설치 조건">
@@ -114,7 +120,7 @@ export default function MethodPage() {
           ["검토", `만점의 50% 이상(현재 ${Math.round(maxAvailable() * 0.5)}점)이거나, 70% 이상이지만 설치 조건 '조건부'`],
           ["보류", "만점의 50% 미만 또는 30kW 미만"],
         ]} />
-        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열은 경량 지붕 하중 확인이 필요합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
+        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획에 태양광 발전사업이 들어 있는지는 아직 확인하지 못해 판매·임대 방식에는 '확인 필요'를 표시합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
       </Section>
 
       <Section id="stability" title="순위 안정도">
