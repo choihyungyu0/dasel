@@ -26,7 +26,13 @@ interface Store {
   /** 둘러보기 다시 보기 요청(값이 바뀌면 지도 화면이 투어를 시작한다) */
   tourNonce: number;
   requestTour: () => void;
+  /** CMP-01 비교에 담은 건물(최대 4동). 가득 차서 못 담으면 false */
+  compare: number[];
+  toggleCompare: (id: number) => boolean;
 }
+
+const COMPARE_KEY = "dasel_compare_v1";
+export const COMPARE_MAX = 4;
 
 const Ctx = createContext<Store | null>(null);
 
@@ -45,6 +51,30 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [tourNonce, setTourNonce] = useState(0);
   const requestTour = useCallback(() => setTourNonce((n) => n + 1), []);
+  const [compare, setCompare] = useState<number[]>([]);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COMPARE_KEY) ?? "[]");
+      if (Array.isArray(saved)) setCompare(saved.filter((x) => Number.isInteger(x)).slice(0, COMPARE_MAX));
+    } catch {
+      // 저장소를 못 쓰면 이번 방문 동안만 기억한다
+    }
+  }, []);
+  const toggleCompare = useCallback(
+    (id: number) => {
+      const has = compare.includes(id);
+      if (!has && compare.length >= COMPARE_MAX) return false;
+      const next = has ? compare.filter((x) => x !== id) : [...compare, id];
+      setCompare(next);
+      try {
+        localStorage.setItem(COMPARE_KEY, JSON.stringify(next));
+      } catch {
+        // 무시
+      }
+      return true;
+    },
+    [compare],
+  );
 
   const reload = useCallback(() => {
     setStatus("loading");
@@ -76,6 +106,6 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     [ds, filters, complexCd],
   );
 
-  const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour };
+  const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour, compare, toggleCompare };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

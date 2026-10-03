@@ -6,6 +6,7 @@ import { useStore } from "@/components/Store";
 import { summarize, toManwon, type Summary } from "@/lib/calc";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
 import { enrich, type Dataset } from "@/lib/data";
+import { startMiniTour } from "@/lib/tour";
 import { decodeScenario, defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
 
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -74,6 +75,12 @@ export default function SimPage() {
   }, [s, code, defaults]);
 
   const rows = useMemo(() => (base && s ? byComplex(base, s) : null), [base, s]);
+  const shown = rows !== null;
+  useEffect(() => {
+    if (!shown) return;
+    const t = setTimeout(() => void startMiniTour("sim"), 600);
+    return () => clearTimeout(t);
+  }, [shown]);
   const baseRows = useMemo(() => (base ? byComplex(base, defaults) : null), [base, defaults]);
   const set = (patch: Partial<Scenario>) => s && setS({ ...s, ...patch });
   const mode = !s ? "기준" : s.price === C.PRICE_LOW.value ? "하한" : s.price === price.unitCost ? "기준" : "직접";

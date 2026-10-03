@@ -27,6 +27,9 @@ export interface RawBuilding {
   dist_119_m?: number | null;
   roof_type?: string | null;
   reg_match?: "EXACT" | "DONG" | "AREA" | null;
+  /** 건축물대장 대지면적과 필지 공지(대지면적 − 건물 바닥면적 합), ㎡ */
+  lot_area?: number | null;
+  lot_open_m2?: number | null;
 }
 
 export interface Company {

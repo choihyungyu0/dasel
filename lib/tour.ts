@@ -229,3 +229,70 @@ export async function startTour(host: TourHost): Promise<TourHandle | null> {
     stop: end,
   };
 }
+
+/** TUR-08 페이지별 미니 투어(첫 진입 1회). 대상이 없으면 그 단계는 건너뛴다. */
+export interface MiniStep {
+  target: string;
+  title: string;
+  body: string;
+  side: Side;
+}
+
+export const MINI_TOURS: Record<"sim" | "list", { key: string; steps: MiniStep[] }> = {
+  sim: {
+    key: "dasel_tour_sim_v1",
+    steps: [
+      { target: "sim-sliders", title: "조건", body: "값을 움직이면 바로 다시 계산됩니다.", side: "right" },
+      { target: "sim-result", title: "산단별 결과", body: "기본값보다 늘거나 준 만큼 함께 보여줍니다.", side: "top" },
+      { target: "sim-reset", title: "저장과 초기화", body: "지금 조건을 링크로 복사하거나 처음 값으로 되돌립니다.", side: "left" },
+    ],
+  },
+  list: {
+    key: "dasel_tour_list_v1",
+    steps: [
+      { target: "list-filter", title: "걸러 보기", body: "지도와 같은 조건이 걸려 있습니다.", side: "bottom" },
+      { target: "list-csv", title: "내려받기", body: "지금 목록을 엑셀에서 열 수 있는 파일로 받습니다.", side: "left" },
+    ],
+  },
+};
+
+export async function startMiniTour(name: keyof typeof MINI_TOURS): Promise<void> {
+  const { key, steps } = MINI_TOURS[name];
+  try {
+    if (localStorage.getItem(key) === DONE) return;
+  } catch {
+    return; // 저장소를 못 쓰면 매번 뜨지 않게 아예 시작하지 않는다
+  }
+  const found = steps.filter((st) => q(st.target));
+  if (!found.length) return;
+  let driverFn: typeof import("driver.js").driver;
+  try {
+    driverFn = (await import("driver.js")).driver;
+  } catch {
+    return;
+  }
+  const done = () => {
+    try {
+      localStorage.setItem(key, DONE);
+    } catch {
+      // 무시
+    }
+  };
+  const d = driverFn({
+    overlayColor: "rgb(17,24,39)",
+    overlayOpacity: 0.62,
+    stagePadding: 8,
+    stageRadius: 10,
+    animate: !matchMedia("(prefers-reduced-motion: reduce)").matches,
+    showProgress: true,
+    progressText: "{{current}}/{{total}}",
+    prevBtnText: "이전",
+    nextBtnText: "다음",
+    doneBtnText: "확인",
+    popoverClass: "dasel-tour",
+    onDestroyed: done,
+    steps: found.map((st) => ({ element: `[data-tour="${st.target}"]`, popover: { title: st.title, description: st.body, side: st.side, align: "center" as const } })),
+  });
+  done(); // 중간에 닫아도 다시 띄우지 않는다
+  d.drive();
+}

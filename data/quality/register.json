@@ -1,19 +1,19 @@
 {
  "lots": 181,
- "lot_ok": 176,
+ "lot_ok": 175,
  "lot_empty": 5,
- "lot_fail": 0,
+ "lot_fail": 1,
  "buildings": 772,
  "matched": {
-  "EXACT": 509,
-  "DONG": 68,
-  "AREA": 54
+  "EXACT": 508,
+  "DONG": 66,
+  "AREA": 53
  },
- "reg_null": 141,
- "match_rate": 0.817,
+ "reg_null": 145,
+ "match_rate": 0.812,
  "changed": {
-  "replaced_arch_area": 68,
-  "replaced_tot_area": 83,
+  "replaced_arch_area": 66,
+  "replaced_tot_area": 81,
   "replaced_fl_up": 12,
   "replaced_h": 14,
   "filled_use": 8,
@@ -41,18 +41,20 @@
  },
  "demoted_by_use": 2,
  "target_after": 770,
+ "lot_area_ok": 492,
+ "lot_open_negative": 15,
  "roof_type": [
   [
    "기타지붕",
-   419
+   418
   ],
   [
    "(철근)콘크리트",
-   207
+   204
   ],
   [
    "(없음)",
-   141
+   145
   ],
   [
    "슬레이트",

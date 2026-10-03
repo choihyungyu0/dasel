@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toManwon } from "@/lib/calc";
-import { extraChips } from "@/lib/chips";
+import { essSpace, extraChips } from "@/lib/chips";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
-import { gridOf, type Building, type Dataset } from "@/lib/data";
+import { enrich, gridOf, type Building, type Dataset } from "@/lib/data";
+import { defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
+import { useStore } from "./Store";
 import type { Price } from "@/lib/price";
 import { summarySentence, WEIGHTS, type PartKey } from "@/lib/score";
 import { TIER_COLOR } from "./MapView";
@@ -53,21 +55,41 @@ interface Props {
   price: Price;
   onRefreshPrice: () => void;
   onClose: () => void;
+  /** 링크(?s=)로 들어온 이 건물 조건 */
+  initial?: Scenario | null;
 }
 
-export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }: Props) {
+function Adjust({ id, label, value, min, max, step, show, onChange }: { id: string; label: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }) {
+  return (
+    <label className="block text-xs">
+      <span className="flex justify-between"><span>{label}</span><span className="num font-semibold">{show}</span></span>
+      <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-ink" />
+    </label>
+  );
+}
+
+export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClose, initial = null }: Props) {
+  const { compare, toggleCompare } = useStore();
   const [copied, setCopied] = useState<string | null>(null);
   const [essUse, setEssUse] = useState(ESS_USES[0]);
+  // PNL-07: 이 건물만 조건을 바꿔 다시 계산한다. null이면 기본 조건
+  const [adj, setAdj] = useState<Scenario | null>(initial);
+  const base = useMemo(() => defaultScenario(price.unitCost), [price.unitCost]);
+  const b = useMemo(() => (adj ? { ...enrich(b0, ds.meta.built.replaceAll("-", ""), adj.price, adj), stability: null } : b0), [adj, b0, ds.meta.built]);
+  const cur = adj ?? base;
+  const change = (patch: Partial<Scenario>) => setAdj({ ...cur, ...patch });
+  const inCompare = compare.includes(b0.bld_id);
   const { calc: c, score: s, roof } = b;
   const excluded = s.tier === "제외";
   const lines = gridOf(ds.grid, b.addr);
+  const space = essSpace(b);
   const payback = c.payback_base === null || c.payback_low === null ? "–" : `${n(c.payback_base, 1)}~${n(c.payback_low, 1)}`;
   const title = b.companies[0]?.company ?? b.name ?? b.addr ?? `건물 ${b.bld_id}`;
   const gisSrc = `${ds.meta.source} ${ds.meta.base_date}${b.reg_match ? ` · ${ds.meta.register_source}` : ""}`;
   const input = { target: b.target, calc: c, struct: b.struct, aprYmd: b.apr_ymd, industry: b.industry };
 
   const copyLink = async () => {
-    const url = `${location.origin}/?b=${b.bld_id}`;
+    const url = `${location.origin}/?b=${b.bld_id}${adj ? `&s=${encodeScenario(adj)}` : ""}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied("링크를 복사했어요");
@@ -93,6 +115,24 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
           </p>
         )}
         <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>
+
+        {!excluded && c.pv_kw !== null && (
+          <details id="PNL-07" open={adj !== null} className="rounded-lg border border-slate-200 bg-white p-3">
+            <summary className="cursor-pointer text-[13px] font-semibold">이 건물 조건 바꾸기{adj && <span className="ml-2 rounded bg-cell/10 px-1.5 py-0.5 text-[11px] font-medium text-cell">조건 변경됨</span>}</summary>
+            <div className="mt-2 space-y-2">
+              <Adjust id="SLD-B1" label="지붕 이용률" value={Math.round(cur.util * 100)} min={30} max={70} step={5} show={`${Math.round(cur.util * 100)}%`} onChange={(v) => change({ util: v / 100 })} />
+              <Adjust id="SLD-B2" label="kW당 설치 면적" value={cur.m2PerKw} min={7} max={12} step={0.5} show={`${cur.m2PerKw}㎡`} onChange={(v) => change({ m2PerKw: v })} />
+              <Adjust id="SLD-B3" label="ESS 저장 시간" value={cur.essHours} min={1} max={4} step={0.5} show={`${cur.essHours}시간`} onChange={(v) => change({ essHours: v })} />
+              <Adjust id="SLD-B4" label="기준 단가" value={cur.price} min={PRICE_RANGE[0]} max={PRICE_RANGE[1]} step={1} show={`${cur.price}원/kWh`} onChange={(v) => change({ price: v })} />
+              {adj && b0.calc.pv_kw !== null && (
+                <p className="num rounded bg-slate-100 px-2 py-1 text-xs">
+                  기본 조건 대비 설치 용량 {c.pv_kw - b0.calc.pv_kw >= 0 ? "+" : "−"}{n(Math.abs(c.pv_kw - b0.calc.pv_kw), 1)}kW · 연 절감(기준) {(c.save_base ?? 0) - (b0.calc.save_base ?? 0) >= 0 ? "+" : "−"}{n(Math.abs(toManwon((c.save_base ?? 0) - (b0.calc.save_base ?? 0))))}만 원
+                </p>
+              )}
+              <button type="button" onClick={() => setAdj(null)} disabled={!adj} className="rounded-md border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-40">기본값으로</button>
+            </div>
+          </details>
+        )}
 
         <Card id="CRD-01" title="건물·회사" source={`${gisSrc}${b.companies.length ? ` · ${ds.meta.factory_source}` : ""}`}>
           {b.companies.length === 0 ? (
@@ -162,6 +202,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                     <Row k="팩당 사용 가능">{n(c.kwh_per_pack, 2)}kWh (정격 {C.PACK_KWH.value}kWh)</Row>
                     <Row k="운전 충전율">옥외 10~90% · 옥내 10~80%</Row>
                     <Row k="단위당 용량">1MWh 이하</Row>
+                    <Row k="필지 공지(대지 − 건물)">{space ? `${n(space.open_m2)}㎡ · ${n(space.units)}단위 놓을 수 있음` : NA}</Row>
                   </dl>
                   <p className="mt-1 text-[11px]"><span className="rounded bg-slate-200 px-1.5 py-0.5">피크 저감 kW는 계약전력 확인 필요</span></p>
                 </>
@@ -176,7 +217,7 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                 <Big label="단순 회수기간" value={payback} unit="년" />
               </div>
               <p className="mt-2 text-xs text-slate-600">
-                하한 {C.PRICE_LOW.value}원 ~ 기준 <span className="num font-medium">{price.unitCost}원/kWh</span> ({price.month})
+                하한 {C.PRICE_LOW.value}원 ~ 기준 <span className="num font-medium">{c.unit_cost}원/kWh</span> {adj && adj.price !== price.unitCost ? "(직접 입력)" : `(${price.month})`}
                 {price.fallback && <span className="badge-review ml-1">기준값 {C.PRICE_FALLBACK.value}원({C.PRICE_FALLBACK.asOf.replace("-", ".")})으로 계산</span>}
               </p>
               <p className="mt-1 text-[11px] text-slate-500">평균판매단가에는 기본요금이 들어 있어 실제 절감은 하한에 가까울 수 있습니다. 기후환경요금·연료비조정액은 넣지 않았습니다.</p>
@@ -190,7 +231,12 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
                   <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">전력 판매</th><td className="py-1 text-right text-slate-500">판매단가 반영 전 — 계산하지 않음</td></tr>
                 </tbody>
               </table>
-              <p className="mt-1 text-[11px] text-slate-500">ESS 몫의 절감과 투자비는 태양광과 따로 봅니다. 재사용 배터리 단가가 정해지지 않아 아직 계산하지 않았습니다.</p>
+              {c.ess_save !== null && (
+                <p id="TXT-ESS" className="mt-2 rounded bg-slate-100 px-2 py-1.5 text-xs">
+                  ESS 시간대 차익 <span className="num font-semibold">약 {n(toManwon(c.ess_save))}만 원/년</span> <span className="rounded bg-slate-200 px-1 py-0.5 text-[11px]">요금표 기준 추정</span>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">태양광 절감과 따로 봅니다. 경부하에 충전해 최대부하에 방전한다고 가정한 값이며, 기본요금(피크) 절감과 ESS 투자비는 넣지 않았습니다.</span>
+                </p>
+              )}
               <div className="mt-2 flex items-center gap-2">
                 <span className="badge-review">{REVIEW_BADGE}</span>
                 <button id="BTN-02" type="button" onClick={onRefreshPrice} disabled={price.loading} className="rounded-md border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-50">
@@ -247,6 +293,11 @@ export default function BuildingPanel({ b, ds, price, onRefreshPrice, onClose }:
       <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-sm">
         {!excluded && c.pv_kw !== null && (
           <Link id="BTN-04" href={`/opinion/${b.bld_id}`} className="rounded-md bg-ink px-2.5 py-1 text-white">검토의견서 만들기</Link>
+        )}
+        {!excluded && c.pv_kw !== null && (
+          <button id="BTN-03" type="button" aria-pressed={inCompare} onClick={() => !toggleCompare(b0.bld_id) && setCopied("비교는 4동까지 담을 수 있어요")} className={`rounded-md border px-2.5 py-1 ${inCompare ? "border-cell bg-cell/10 text-cell" : "border-slate-300 hover:bg-slate-100"}`}>
+            {inCompare ? "비교에서 빼기" : "비교 담기"}
+          </button>
         )}
         <button id="BTN-05" type="button" onClick={copyLink} className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">링크 복사</button>
         <Link id="LNK-01" href="/method#pv" className="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-slate-100">계산 근거</Link>

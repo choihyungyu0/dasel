@@ -14,7 +14,7 @@ const TABS: { href: string; label: string; tour?: string }[] = [
 export default function AppHeader({ children, complexSelect = true }: { children?: React.ReactNode; complexSelect?: boolean }) {
   const path = usePathname();
   const router = useRouter();
-  const { ds, complexCd, setComplexCd, requestTour } = useStore();
+  const { ds, complexCd, setComplexCd, requestTour, compare } = useStore();
   const [menu, setMenu] = useState(false);
   const replay = () => {
     setMenu(false);
@@ -28,6 +28,9 @@ export default function AppHeader({ children, complexSelect = true }: { children
         {TABS.map((t) => (
           <Link key={t.href} href={t.href} data-tour={t.tour} className={`rounded-md px-2.5 py-1 ${path === t.href ? "bg-ink text-white" : "text-ink/70 hover:bg-ink/5"}`}>{t.label}</Link>
         ))}
+        {(compare.length > 0 || path === "/compare") && (
+          <Link href="/compare" className={`rounded-md px-2.5 py-1 ${path === "/compare" ? "bg-ink text-white" : "text-ink/70 hover:bg-ink/5"}`}>비교 <span className="num">{compare.length}</span></Link>
+        )}
       </nav>
       {children}
       {complexSelect && ds && (

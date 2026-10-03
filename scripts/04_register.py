@@ -46,7 +46,7 @@ def fetch(pnu, key):
         if len(rows) >= int(body.get("totalCount") or 0) or not items:
             break
         page += 1
-    keep = ("bldNm", "dongNm", "mainAtchGbCdNm", "mainPurpsCdNm", "strctCdNm", "roofCdNm", "archArea", "totArea", "useAprDay", "grndFlrCnt", "heit")
+    keep = ("bldNm", "dongNm", "mainAtchGbCdNm", "mainPurpsCdNm", "strctCdNm", "roofCdNm", "archArea", "totArea", "useAprDay", "grndFlrCnt", "heit", "platArea")
     rows = [{k: r.get(k) for k in keep} for r in rows]
     CACHE.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
@@ -137,6 +137,18 @@ def main():
             if b["arch_area"]:
                 b["flags"] = [f for f in b["flags"] if f != "AREA_GEOM"]
 
+    # CAL-09: 필지 공지 = 대지면적 − 그 필지 건물들의 바닥면적 합(대상이 아닌 건물도 포함)
+    footprint = Counter()
+    for b in blds:
+        if b["pnu"]:
+            footprint[b["pnu"]] += min(b["arch_area"], b["geom_area"]) if b["arch_area"] else b["geom_area"]
+    for pnu, members in lots.items():
+        rows = fetch(pnu, key) or []
+        lot_area = max((num(r.get("platArea")) or 0 for r in rows), default=0) or None
+        for b in members:
+            b["lot_area"] = lot_area
+            b["lot_open_m2"] = round(lot_area - footprint[pnu], 1) if lot_area else None
+
     # 대장으로 용도가 채워진 건물 재판정(BR-D1)
     demoted = 0
     for b in targets:
@@ -162,7 +174,7 @@ def main():
          "buildings": len(targets), "matched": {k: stats["bld_" + k] for k in ("EXACT", "DONG", "AREA")}, "reg_null": stats["bld_none"],
          "match_rate": round(1 - stats["bld_none"] / len(targets), 3), "changed": dict(changed),
          "null_before": before, "null_after": {k: sum(1 for b in now if b[k] is None) for k in before},
-         "demoted_by_use": demoted, "target_after": len(now),
+         "demoted_by_use": demoted, "target_after": len(now), "lot_area_ok": sum(1 for b in now if b.get("lot_area")), "lot_open_negative": sum(1 for b in now if (b.get("lot_open_m2") or 0) < 0),
          "roof_type": Counter(b.get("roof_type") or "(없음)" for b in now).most_common(8)}
     (ROOT / "data" / "quality" / "register.json").write_text(json.dumps(q, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(q, ensure_ascii=False, indent=1))

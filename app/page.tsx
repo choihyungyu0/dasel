@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import BuildingPanel from "@/components/BuildingPanel";
@@ -12,13 +13,15 @@ import SummaryBanner from "@/components/SummaryBanner";
 import { summarize } from "@/lib/calc";
 import { DEFAULT_FILTERS, isDefault } from "@/lib/filters";
 import { startTour, tourDone, type TourHandle } from "@/lib/tour";
+import { decodeScenario, type Scenario } from "@/lib/url";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"], ["installed", "기존 태양광 설치 건물"]];
 
 export default function Page() {
-  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce } = useStore();
+  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, compare } = useStore();
+  const [linked, setLinked] = useState<{ id: number; scenario: Scenario } | null>(null);
   const [anchorId, setAnchorId] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
   const [sheetTall, setSheetTall] = useState(false);
@@ -64,7 +67,16 @@ export default function Page() {
     if (!base) return;
     const id = Number(new URLSearchParams(location.search).get("b"));
     if (!id) return;
-    if (base.byId.has(id)) setSelectedId(id);
+    if (base.byId.has(id)) {
+      setSelectedId(id);
+      // 링크에 담긴 이 건물 조건(?s=). 단가 조회가 늦어도 링크의 단가를 그대로 쓴다
+      const sText = new URLSearchParams(location.search).get("s");
+      if (sText) {
+        const r = decodeScenario(sText, price.unitCost);
+        setLinked({ id, scenario: r.scenario });
+        if (r.adjusted) setToast("조건 일부를 기본값으로 바꿨어요");
+      }
+    }
     else setToast("건물을 찾지 못했어요");
   }, [base, setSelectedId]);
 
@@ -241,13 +253,18 @@ export default function Page() {
 
           {ds && selected && (
             <div className={`mt-auto flex min-h-0 w-full flex-col md:mt-0 md:h-full md:max-h-full md:w-[380px] md:shrink-0 ${sheetTall ? "h-[75dvh] max-h-[75dvh]" : "max-h-[62dvh]"}`}>
-              <BuildingPanel b={selected} ds={ds} price={price} onRefreshPrice={refreshPrice} onClose={() => setSelectedId(null)} />
+              <BuildingPanel key={selected.bld_id} b={selected} ds={ds} price={price} onRefreshPrice={refreshPrice} onClose={() => setSelectedId(null)} initial={linked?.id === selected.bld_id ? linked.scenario : null} />
             </div>
           )}
         </div>
       </div>
 
 
+      {compare.length > 0 && !tour.current && (
+        <Link id="TRY-01" href="/compare" className={`absolute right-3 z-20 rounded-full bg-cell px-3 py-1.5 text-sm font-medium text-white shadow-lg ${selected ? "bottom-3 max-md:hidden md:right-[404px]" : "bottom-40 md:bottom-36"}`}>
+          비교 {compare.length}동 보기
+        </Link>
+      )}
       {chip && !tour.current && (
         <button id="CHP-T1" type="button" onClick={runTour} className="absolute bottom-24 right-3 z-20 rounded-full bg-ink px-3 py-1.5 text-sm text-white shadow-lg">처음이세요? 둘러보기</button>
       )}

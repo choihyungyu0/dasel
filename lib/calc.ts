@@ -1,5 +1,5 @@
 // CAL-01~04·06·07 (BR-C1~C5·C7, BR-L1). 결측은 0이 아니라 null(BR-D2).
-import { CONSTANTS as C } from "./constants";
+import { CONSTANTS as C, peakSpread } from "./constants";
 
 export interface Assumptions {
   util: number;
@@ -78,6 +78,8 @@ export interface Calc {
   capex: number | null;
   payback_base: number | null;
   payback_low: number | null;
+  /** ESS 시간대 차익 추정(원/년): 경부하 충전 → 최대부하 방전. 기본요금 절감은 넣지 않는다(CAL-05) */
+  ess_save: number | null;
   /** pv_kw < 30 (BR-G2) */
   small: boolean;
 }
@@ -92,7 +94,7 @@ export function calc(roofM2: number | null, unitCost: number = C.PRICE_FALLBACK.
   const perPack = kwhPerPack(a);
   const empty = { ess_kwh: null, ess_units: null, packs: null };
   if (roofM2 === null || !(roofM2 > 0)) {
-    return { roof_m2: null, pv_kw: null, pv_kwh: null, ...empty, kwh_per_pack: perPack, save_low: null, save_base: null, unit_cost: unitCost, co2_t: null, capex: null, payback_base: null, payback_low: null, small: false };
+    return { roof_m2: null, pv_kw: null, pv_kwh: null, ...empty, kwh_per_pack: perPack, save_low: null, save_base: null, unit_cost: unitCost, co2_t: null, capex: null, payback_base: null, payback_low: null, ess_save: null, small: false };
   }
   const pv_kw = round((roofM2 * a.util) / a.m2PerKw, 1);
   const pv_kwh = Math.round(pv_kw * C.PVOUT.value);
@@ -117,6 +119,7 @@ export function calc(roofM2: number | null, unitCost: number = C.PRICE_FALLBACK.
     capex,
     payback_base: save_base > 0 ? round(capex / save_base, 1) : null,
     payback_low: save_low > 0 ? round(capex / save_low, 1) : null,
+    ess_save: ess_kwh === null ? null : Math.round(ess_kwh * C.ESS_EFF.value * C.ESS_DAYS.value * peakSpread()),
     small,
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import Filters from "@/components/Filters";
 import { TIER_COLOR } from "@/components/MapView";
@@ -11,6 +11,7 @@ import { REVIEW_BADGE } from "@/lib/constants";
 import { toCsv } from "@/lib/csv";
 import type { Building } from "@/lib/data";
 import { DEFAULT_FILTERS } from "@/lib/filters";
+import { startMiniTour } from "@/lib/tour";
 
 const n = (v: number | null, d = 0) => (v === null ? "–" : v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 
@@ -18,7 +19,7 @@ type SortKey = "score" | "kw" | "kwh" | "ess" | "packs" | "save" | "company" | "
 const COLUMNS: { key: SortKey | null; label: string; num?: boolean }[] = [
   { key: null, label: "순위", num: true }, { key: "company", label: "회사" }, { key: "complex", label: "산단" }, { key: "kw", label: "kW", num: true },
   { key: "kwh", label: "연 kWh", num: true }, { key: "ess", label: "ESS kWh", num: true }, { key: "packs", label: "팩", num: true },
-  { key: "save", label: "연 절감(만 원)", num: true }, { key: null, label: "게이트" }, { key: "score", label: "단계·점수" },
+  { key: "save", label: "연 절감(만 원)", num: true }, { key: null, label: "게이트" }, { key: "score", label: "단계·점수" }, { key: null, label: "비교" },
 ];
 const VALUE: Record<SortKey, (b: Building) => number | string> = {
   score: (b) => b.score.score ?? -1, kw: (b) => b.calc.pv_kw ?? -1, kwh: (b) => b.calc.pv_kwh ?? -1, ess: (b) => b.calc.ess_kwh ?? -1,
@@ -27,9 +28,15 @@ const VALUE: Record<SortKey, (b: Building) => number | string> = {
 
 export default function ListPage() {
   const router = useRouter();
-  const { status, reload, ds, price, filtered, setFilters, setSelectedId } = useStore();
+  const { status, reload, ds, price, filtered, setFilters, setSelectedId, compare, toggleCompare } = useStore();
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    const t = setTimeout(() => void startMiniTour("list"), 600);
+    return () => clearTimeout(t);
+  }, [status]);
 
   const rank = useMemo(() => new Map(filtered.map((b, i) => [b.bld_id, i + 1])), [filtered]);
   const rows = useMemo(() => {
@@ -77,7 +84,7 @@ export default function ListPage() {
           <p className="p-6 text-sm">조건에 맞는 건물이 없어요. 단계를 넓히거나 <button type="button" onClick={() => setFilters(DEFAULT_FILTERS)} className="underline">필터를 해제</button>해 보세요.</p>
         )}
         {rows.length > 0 && (
-          <table id="TBL-02" className="w-full min-w-[860px] border-collapse text-[13px]">
+          <table id="TBL-02" className="w-full min-w-[920px] border-collapse text-[13px]">
             <thead className="sticky top-0 bg-slate-100 text-left text-xs text-slate-600">
               <tr>
                 {COLUMNS.map((c) => (
@@ -109,6 +116,11 @@ export default function ListPage() {
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <span className="rounded px-1.5 py-0.5 text-xs font-medium text-white" style={{ background: TIER_COLOR[b.score.tier] }}>{b.score.tier}</span>
                     <span className="num ml-1 text-xs text-slate-600">{b.score.score}/{b.score.max}</span>
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <button type="button" aria-pressed={compare.includes(b.bld_id)} onClick={(e) => { e.stopPropagation(); if (!toggleCompare(b.bld_id)) { setToast("비교는 4동까지 담을 수 있어요"); setTimeout(() => setToast(null), 3000); } }} onKeyDown={(e) => e.stopPropagation()} className={`rounded border px-1.5 py-0.5 text-xs ${compare.includes(b.bld_id) ? "border-cell bg-cell/10 text-cell" : "border-slate-300 hover:bg-slate-100"}`}>
+                      {compare.includes(b.bld_id) ? "담김" : "담기"}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -92,7 +92,9 @@ export default function MethodPage() {
         <F>ESS 용량(kWh) = min(설치용량 × {C.ESS_HOURS.value}시간, {n(C.ESS_UNIT_MAX.value)}kWh × 단위 수 {C.ESS_UNITS.value}) · 분산 단위 = 올림(ESS 용량 ÷ {n(C.ESS_UNIT_MAX.value)}kWh)</F>
         <F>팩당 사용 가능(kWh) = 정격 {C.PACK_KWH.value} × (A비율 {C.A_RATIO.value} × {C.SOH_A.value} + B비율 × {C.SOH_B.value}) × (충전율 상한 {C.SOC_MAX.value} − 하한 {C.SOC_MIN.value}) = 36.96</F>
         <F>필요 팩 수 = 올림(ESS 용량 ÷ 팩당 사용 가능)</F>
-        <p>예: 250kW → 500kWh → 1단위, 팩 14개. 657kW → 1,314kWh가 아니라 1,000kWh 1단위, 팩 28개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 충전율 상한은 옥외 {C.SOC_MAX.value * 100}%, 옥내 {C.SOC_MAX_INDOOR.value * 100}%입니다({C.SOC_MAX.source}). 피크 저감 효과는 공장 계약전력과 부하 자료가 있어야 계산할 수 있어 넣지 않았습니다.</p>
+        <F>ESS 시간대 차익(원/년, 추정) = ESS 용량 × 왕복 효율 {C.ESS_EFF.value} × 운영일 {C.ESS_DAYS.value} × 최대−경부하 단가차 {peakSpread().toFixed(1)}원</F>
+        <F>필지 공지(㎡) = 대지면적 − 그 필지 건물 바닥면적 합 · 놓을 수 있는 단위 수 = 내림(공지 ÷ {C.ESS_UNIT_AREA.value}㎡)</F>
+        <p>예: 250kW → 500kWh → 1단위, 팩 14개. 657kW → 1,314kWh가 아니라 1,000kWh 1단위, 팩 28개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 충전율 상한은 옥외 {C.SOC_MAX.value * 100}%, 옥내 {C.SOC_MAX_INDOOR.value * 100}%입니다({C.SOC_MAX.source}). 피크 저감 효과는 공장 계약전력과 부하 자료가 있어야 계산할 수 있어 넣지 않았습니다. 시간대 차익은 요금표만으로 추정한 값(예: 500kWh → 약 744만 원/년)이라 태양광 절감과 따로 표시합니다. 공지가 ESS 단위 수보다 모자라면 'ESS 공간 부족 — 옥상·별동 검토'를 표시하며, 대지면적을 모르는 건물은 판단하지 않습니다.</p>
       </Section>
 
       <Section id="money" title="절감액·탄소">

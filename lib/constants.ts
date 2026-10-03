@@ -33,6 +33,9 @@ export const CONSTANTS = {
   SOC_MAX_INDOOR: { value: 0.8, unit: "", label: "충전율 상한(옥내 설치)", kind: "공식", source: "산업통상자원부 ESS 추가 안전대책(신규 설비 옥내 80%·옥외 90%)", asOf: "2020-02-06" },
   ESS_UNITS: { value: 1, unit: "단위", label: "재사용 ESS 시범 단위 수", kind: "가정", source: "1MWh 이하 1단위 시범을 기본으로 가정", asOf: "2026-10-04", range: [1, 5] },
   CAPEX_PER_KW: { value: 1400000, unit: "원/kW", label: "태양광 kW당 설치비(참고값)", kind: "가정", source: "시공사 공개 견적(2026) 기준 참고값 — 공식 지원·표준단가 확보 시 교체", asOf: "2026", range: [1300000, 1650000] },
+  ESS_EFF: { value: 0.85, unit: "", label: "ESS 왕복 효율", kind: "가정", source: "초기 가정값", asOf: "2026-10-04" },
+  ESS_DAYS: { value: 250, unit: "일/년", label: "ESS 운영일", kind: "가정", source: "평일 운영을 가정한 초기 가정값", asOf: "2026-10-04" },
+  ESS_UNIT_AREA: { value: 40, unit: "㎡/단위", label: "ESS 단위당 필요 면적", kind: "가정", source: "1MWh 이하 컨테이너 1기와 이격 공간을 합친 초기 가정값", asOf: "2026-10-04" },
   SOC_MIN: { value: 0.1, unit: "", label: "충전율 하한", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
 } as const satisfies Record<string, Const>;
 
