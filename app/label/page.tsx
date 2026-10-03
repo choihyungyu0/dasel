@@ -38,6 +38,14 @@ export default function LabelPage() {
   const [at, setAt] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  // AI가 미리 본 초안(참고용). 사람이 확인해 눌러야 라벨로 기록된다
+  const [draft, setDraft] = useState<Record<string, Label>>({});
+  useEffect(() => {
+    fetch("/data/label_draft.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.labels && setDraft(d.labels))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setSaved(load());
@@ -83,12 +91,13 @@ export default function LabelPage() {
       if (e.key === "1") mark("설치");
       else if (e.key === "2") mark("미설치");
       else if (e.key === "3") mark("불명");
+      else if (e.key === "Enter" && b && draft[b.bld_id]) mark(draft[b.bld_id]);
       else if (e.key === "ArrowLeft") go(at - 1);
       else if (e.key === "ArrowRight") go(at + 1);
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [mark, go, at]);
+  }, [mark, go, at, b, draft]);
 
   const download = () => {
     const rows = list.filter((x) => saved.labels[x.bld_id]).map((x) => ({ bld_id: x.bld_id, label: saved.labels[x.bld_id], labeler: saved.labeler, image_year: saved.imageYear }));
@@ -145,6 +154,11 @@ export default function LabelPage() {
             <p className="mt-1 text-xs">
               현재 표시: <strong>{saved.labels[b.bld_id] ?? "없음"}</strong>
             </p>
+            {draft[b.bld_id] && (
+              <p className="mt-1 rounded bg-white px-2 py-1 text-xs">
+                AI 초안: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">— 맞으면 Enter, 다르면 직접 고르세요</span>
+              </p>
+            )}
           </div>
         )}
 
@@ -174,7 +188,7 @@ export default function LabelPage() {
             <input ref={file} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </div>
           {note && <p role="status" className="text-xs text-slate-700">{note}</p>}
-          <p className="text-[11px] text-slate-500">표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
+          <p className="text-[11px] text-slate-500">AI 초안은 참고용이며 사람이 누른 것만 기록됩니다. 표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
         </div>
       </section>
     </main>

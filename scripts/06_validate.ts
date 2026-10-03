@@ -6,7 +6,9 @@ import { enrich, type RawBuilding } from "../lib/data";
 import { parseLabelCsv, type LabelRow } from "../lib/labels";
 import { consensus, validate } from "../lib/validate";
 
-const DIR = "data/labels";
+// 인자로 다른 폴더를 주면(예: data/labels_draft) 결과만 출력하고 파일은 쓰지 않는다
+const DIR = process.argv[2] ?? "data/labels";
+const DRY = process.argv.length > 2;
 const files = readdirSync(DIR).filter((f) => f.endsWith(".csv"));
 const rows: LabelRow[] = [];
 let skipped = 0;
@@ -24,10 +26,10 @@ const ranked = data.buildings
   .map((b) => ({ bld_id: b.bld_id, score: b.score.score ?? 0 }));
 
 const result = { files, skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked) };
-writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
+if (!DRY) writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
 
 const cons = consensus(rows);
 const year = result.imageYears.join("·") || null;
-writeFileSync("public/data/labels.json", JSON.stringify({ meta: { image_year: year, generated: result.generated }, labels: Object.fromEntries([...cons].filter(([, l]) => l !== "불일치")) }));
+if (!DRY) writeFileSync("public/data/labels.json", JSON.stringify({ meta: { image_year: year, generated: result.generated }, labels: Object.fromEntries([...cons].filter(([, l]) => l !== "불일치")) }));
 
 console.log(JSON.stringify(result, null, 1));
