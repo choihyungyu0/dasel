@@ -39,7 +39,7 @@ export function useStore(): Store {
 export default function StoreProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [base, setBase] = useState<Dataset | null>(null);
-  const [price, setPrice] = useState<Price>(FALLBACK_PRICE);
+  const [price, setPrice] = useState<Price>({ ...FALLBACK_PRICE, loading: true }); // 첫 조회가 끝날 때까지 loading
   const [complexCd, setComplexCd] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<number | null>(null);

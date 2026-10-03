@@ -81,3 +81,10 @@ body {
     box-shadow: 0 0 0 4px rgb(15 107 60 / 0.45);
   }
 }
+
+/* 모바일은 손가락으로 확대하므로 하단 시트와 겹치는 확대 버튼을 숨긴다 */
+@media (max-width: 767px) {
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+    display: none;
+  }
+}

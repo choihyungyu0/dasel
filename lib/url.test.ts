@@ -14,5 +14,11 @@ describe("SIM-01 조건 문자열", () => {
     expect(r.adjusted).toBe(true);
     expect(r.scenario).toEqual(defaultScenario(192));
   });
+  it("소수 단가(192.4원)도 그대로 복원", () => {
+    const s = { ...defaultScenario(192.4), aRatio: 0.4, essHours: 2.5 };
+    expect(encodeScenario(s)).toBe("u50.a10.p192.4.h2.5.k60.sa40.sx90");
+    expect(decodeScenario(encodeScenario(s), 192)).toEqual({ scenario: s, adjusted: false });
+    expect(encodeScenario(defaultScenario(192.4))).toBe("u50.a10.p192.4.h2.k60.sa70.sx90");
+  });
   it("없으면 기본값", () => expect(decodeScenario(null, 192.4)).toEqual({ scenario: defaultScenario(192.4), adjusted: false }));
 });

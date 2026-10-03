@@ -41,15 +41,13 @@ export function encodeScenario(s: Scenario): string {
 export function decodeScenario(text: string | null, price: number): { scenario: Scenario; adjusted: boolean } {
   const scenario = defaultScenario(price);
   if (!text) return { scenario, adjusted: false };
-  let adjusted = false;
-  for (const part of text.split(".")) {
-    const f = FIELDS.find((x) => part.startsWith(x.code) && /^-?\d+(\.\d+)?$/.test(part.slice(x.code.length)));
-    if (!f) {
-      adjusted = true;
-      continue;
-    }
-    const v = Number(part.slice(f.code.length)) / f.scale;
-    if (v < f.range[0] || v > f.range[1]) adjusted = true;
+  // 값에 소수점이 올 수 있으므로(예: p192.4) 구분자로 자르지 않고 "코드+숫자" 단위로 읽는다
+  const tokens = [...text.matchAll(/([a-z]+)(\d+(?:\.\d+)?)/g)];
+  let adjusted = tokens.map((t) => t[0]).join(".") !== text;
+  for (const [, code, num] of tokens) {
+    const f = FIELDS.find((x) => x.code === code);
+    const v = f ? Number(num) / f.scale : NaN;
+    if (!f || v < f.range[0] || v > f.range[1]) adjusted = true;
     else scenario[f.key] = v;
   }
   return { scenario, adjusted };

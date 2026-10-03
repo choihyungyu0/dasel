@@ -70,6 +70,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
+  const [tip, setTip] = useState<{ x: number; y: number; id: number } | null>(null);
   const [anchorBox, setAnchorBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const cb = useRef({ onSelect, onFallback });
   cb.current = { onSelect, onFallback };
@@ -126,11 +127,13 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
         if (id !== undefined) m.setFeatureState({ source: "bld", id }, { hover: true });
         hovered = id ?? null;
         m.getCanvas().style.cursor = id === undefined ? "" : "pointer";
+        setTip(id === undefined ? null : { x: e.point.x, y: e.point.y, id });
       });
       m.on("mouseleave", "LYR-02", () => {
         if (hovered !== null) m.setFeatureState({ source: "bld", id: hovered }, { hover: false });
         hovered = null;
         m.getCanvas().style.cursor = "";
+        setTip(null);
       });
       m.on("click", (e: MapMouseEvent) => {
         const f = m.queryRenderedFeatures(e.point, { layers: ["LYR-02"] })[0];
@@ -225,9 +228,17 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, ds, anchorId]);
 
+  const tipB = tip ? ds.byId.get(tip.id) : null;
+
   return (
     <div id="MAP-01" data-tour="map" className="absolute inset-0">
       <div ref={el} className="h-full w-full" />
+      {tipB && tip && (
+        <div role="tooltip" className="pointer-events-none absolute z-10 max-w-[240px] rounded-md bg-slate-900/90 px-2 py-1 text-xs text-white shadow" style={{ left: tip.x + 12, top: tip.y + 12 }}>
+          <p className="truncate font-medium">{tipB.companies[0]?.company ?? tipB.name ?? tipB.addr ?? "건물"}</p>
+          <p className="num text-slate-300">{tipB.score.tier === "제외" ? "일반 건물" : `${tipB.score.tier} · ${tipB.calc.pv_kw === null ? "면적 정보 없음" : `${tipB.calc.pv_kw.toLocaleString("ko-KR")}kW`}`}</p>
+        </div>
+      )}
       {anchorBox && (
         <button type="button" id="TUR-ANCHOR" data-tour="map-building" aria-label="적합도 1순위 건물" onClick={onAnchorClick} className="absolute cursor-pointer bg-transparent" style={anchorBox} />
       )}
