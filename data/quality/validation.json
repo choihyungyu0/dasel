@@ -1,0 +1,106 @@
+{
+ "files": [
+  "existing_pv.csv"
+ ],
+ "skipped": 0,
+ "generated": "2026-10-04",
+ "labelers": [],
+ "imageYears": [],
+ "overlap": 0,
+ "agreement": null,
+ "kappa": null,
+ "conflicts": [],
+ "candidates": 336,
+ "labeled": 0,
+ "counts": {
+  "설치": 0,
+  "미설치": 0,
+  "불명": 0,
+  "불일치": 0
+ },
+ "baseRate": null,
+ "topK": [
+  {
+   "k": 0.1,
+   "n": 34,
+   "judged": 0,
+   "installed": 0,
+   "precision": null,
+   "lift": null,
+   "recall": null
+  },
+  {
+   "k": 0.2,
+   "n": 68,
+   "judged": 0,
+   "installed": 0,
+   "precision": null,
+   "lift": null,
+   "recall": null
+  },
+  {
+   "k": 0.3,
+   "n": 101,
+   "judged": 0,
+   "installed": 0,
+   "precision": null,
+   "lift": null,
+   "recall": null
+  }
+ ],
+ "auc": null,
+ "mean": {
+  "installed": null,
+  "notInstalled": null
+ },
+ "bins": [
+  {
+   "from": 0,
+   "to": 10,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 10,
+   "to": 20,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 20,
+   "to": 30,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 30,
+   "to": 40,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 40,
+   "to": 50,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 50,
+   "to": 60,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 60,
+   "to": 70,
+   "installed": 0,
+   "notInstalled": 0
+  },
+  {
+   "from": 70,
+   "to": 80,
+   "installed": 0,
+   "notInstalled": 0
+  }
+ ]
+}

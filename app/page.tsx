@@ -15,7 +15,7 @@ import { startTour, tourDone, type TourHandle } from "@/lib/tour";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
-const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"]];
+const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"], ["installed", "기존 태양광 설치 건물"]];
 
 export default function Page() {
   const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce } = useStore();
@@ -27,7 +27,7 @@ export default function Page() {
   const tour = useRef<TourHandle | null>(null);
   const topRef = useRef<number | null>(null);
   const [colorBy, setColorBy] = useState<ColorBy>("tier");
-  const [layers, setLayers] = useState<Layers>({ complex: true, target: true, general: true, station: false });
+  const [layers, setLayers] = useState<Layers>({ complex: true, target: true, general: true, station: false, installed: true });
   const [showFilter, setShowFilter] = useState(false);
   const [fallbackImagery, setFallbackImagery] = useState(false);
   const [flyTo, setFlyTo] = useState<{ lon: number; lat: number; n: number } | null>(null);
@@ -128,6 +128,7 @@ export default function Page() {
   const scope = `${ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체"}${isDefault(filters) ? "" : " · 필터 적용"}`;
   const selected = ds && selectedId !== null ? (ds.byId.get(selectedId) ?? null) : null;
   const scale = COLOR_SCALES[colorBy];
+  const installedCount = ds?.labels ? Object.values(ds.labels.labels).filter((l) => l === "설치").length : 0;
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
@@ -196,7 +197,7 @@ export default function Page() {
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                       {LAYER_LABEL.map(([k, label], i) => (
                         <label key={k} className="flex items-center gap-1">
-                          <input id={`LYR-0${i === 3 ? 4 : i < 2 ? i + 1 : 2}${i === 2 ? "b" : ""}`} type="checkbox" checked={layers[k]} disabled={k === "station" && !ds.stationGeo} onChange={(e) => setLayers({ ...layers, [k]: e.target.checked })} />
+                          <input id={`LYR-0${["1", "2", "2b", "4", "6"][i]}`} type="checkbox" checked={layers[k]} disabled={(k === "station" && !ds.stationGeo) || (k === "installed" && installedCount === 0)} title={k === "installed" && installedCount === 0 ? "위성 라벨링 결과가 아직 없습니다" : undefined} onChange={(e) => setLayers({ ...layers, [k]: e.target.checked })} />
                           {label}
                         </label>
                       ))}
@@ -213,6 +214,7 @@ export default function Page() {
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
+                    {installedCount > 0 && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />설치됨 <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 md:block">
                     {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물·배전 여유는 아직 반영하지 않아 80점 만점입니다

@@ -42,6 +42,8 @@ export interface Layers {
   target: boolean;
   general: boolean;
   station: boolean;
+  /** LYR-06 기존 태양광 설치 건물(위성 라벨) */
+  installed: boolean;
 }
 
 interface Props {
@@ -116,6 +118,8 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
           "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3, ["boolean", ["feature-state", "hover"], false], 2, 0.5],
         },
       });
+      // LYR-06: 위성 라벨에서 이미 태양광이 확인된 건물
+      m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#38e1ff", "line-width": 2.5, "line-dasharray": [2, 1] } });
       if (ds.stationGeo) {
         m.addSource("station", { type: "geojson", data: ds.stationGeo });
         m.addLayer({ id: "LYR-04", type: "circle", source: "station", layout: { visibility: "none" }, paint: { "circle-radius": 7, "circle-color": "#d7263d", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
@@ -160,6 +164,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     m.setFilter("LYR-02", show);
     m.setFilter("bld-outline", show);
     if (m.getLayer("LYR-04")) m.setLayoutProperty("LYR-04", "visibility", vis(layers.station));
+    m.setLayoutProperty("LYR-06", "visibility", vis(layers.installed));
   }, [ready, layers]);
 
   // 필터 밖 대상 건물은 흐리게

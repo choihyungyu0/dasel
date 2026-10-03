@@ -67,6 +67,8 @@ export interface Dataset {
   factories: Factory[];
   stability: StabilityResult;
   grid: Grid | null;
+  /** VAL-01 위성 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
+  labels: { meta: { image_year: string | null; generated: string }; labels: Record<string, string> } | null;
 }
 
 export interface GridLine {
@@ -126,13 +128,14 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
 }
 
 export async function loadDataset(unitCost?: number): Promise<Dataset> {
-  const [attrs, geo, complexGeo, stationGeo, fac, grid] = await Promise.all([
+  const [attrs, geo, complexGeo, stationGeo, fac, grid, labels] = await Promise.all([
     fetchJson<{ meta: Dataset["meta"]; buildings: RawBuilding[] }>("/data/buildings.json"),
     fetchGzipJson<FeatureCollection>("/data/buildings.geojson.gz"),
     fetchJson<FeatureCollection>("/data/complex.geojson"),
     fetchJson<FeatureCollection>("/data/station.geojson").catch(() => null),
     fetchJson<{ factories: Factory[] }>("/data/factories.json").catch(() => ({ factories: [] })),
     fetchJson<Grid>("/data/grid.json").catch(() => null),
+    fetchJson<Dataset["labels"]>("/data/labels.json").catch(() => null),
   ]);
   const baseYmd = attrs.meta.built.replaceAll("-", "");
   const buildings = attrs.buildings.map((b) => enrich(b, baseYmd, unitCost));
@@ -140,9 +143,9 @@ export async function loadDataset(unitCost?: number): Promise<Dataset> {
   const stability = withStability(buildings);
   for (const f of geo.features) {
     const b = byId.get(Number(f.properties?.bld_id));
-    if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1 };
+    if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1, installed: labels?.labels[String(b.bld_id)] === "설치" };
   }
-  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories, stability, grid };
+  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories, stability, grid, labels };
 }
 
 /** 30kW 이상 대상 건물을 후보로 순위 안정도를 계산해 각 건물에 붙인다. */
