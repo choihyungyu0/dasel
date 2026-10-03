@@ -51,7 +51,9 @@ def main():
             "KSIC": " / ".join(dict.fromkeys(k["ksic"] for k in hits)),
             "근거키워드": ", ".join(dict.fromkeys(k["keyword"] for k in hits)),
             "키워드출처": "+".join(origins), "명세키워드만_분류": spec_only,
-            "복수업종군": "Y" if len(groups) > 1 else "", "검수결과": "", "검수메모": "",
+            "복수업종군": "Y" if len(groups) > 1 else "",
+            "비제조의심": "Y" if cls == "MFG" and re.search("정비|수리|판매|임대|도매", r["생산품"]) else "",
+            "검수결과": "", "검수메모": "",
         })
     out.sort(key=lambda x: (-x["점수"], x["업종군"], x["회사명"]))
 

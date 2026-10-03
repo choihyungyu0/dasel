@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --color-tier-go: #0f6b3c;
+  --color-tier-review: #e07b00;
+  --color-tier-hold: #7b8494;
+  --color-tier-out: #d5d9df;
+  --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}

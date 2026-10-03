@@ -7,3 +7,5 @@ node_modules/
 data/raw/
 *.tsbuildinfo
 __pycache__/
+.next/
+next-env.d.ts
