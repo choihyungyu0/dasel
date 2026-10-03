@@ -75,10 +75,13 @@ export function unsourcedConstants(): string[] {
 export const REVIEW_BADGE = "1차 검토(현장·구조검토 전)";
 export const HAZMAT_CHIP_P0 = "위험물시설 거리 미반영 — 설치 전 관할 소방서 확인";
 
-/** SIM-03: 사용후 배터리 발생 전망. 두 값 모두 2차 자료 재인용이라 화면에 '추정'으로 표시한다. */
+/** SIM-03: 사용후 배터리 발생 전망. 전국 전망은 보도 재인용이라 화면에 '추정'으로 표시한다. */
 export const BATTERY_OUTLOOK = {
   nationwide2030: 107500,
   nationwideSource: "환경부 추정(뉴스핌 2026-05-20 보도 재인용)",
-  chungbukShare: 0.0371,
-  chungbukSource: "전기차 등록 2026-05 전국 1,053,623대·충북 39,109대(국토교통부 자동차등록 통계 재인용, 원자료 확인 전)",
+  // 전기차 등록: 승용·승합·화물·특수 합계
+  evNationwide: 1160968,
+  evChungbuk: 42176,
+  chungbukShare: 42176 / 1160968,
+  chungbukSource: "국토교통부 자동차등록현황보고 2026년 8월(연료별 등록현황): 전기차 전국 1,160,968대·충북 42,176대",
 } as const;
