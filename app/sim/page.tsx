@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import { useStore } from "@/components/Store";
 import { summarize, toManwon, type Summary } from "@/lib/calc";
-import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
+import { BATTERY_OUTLOOK, CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
 import { enrich, type Dataset } from "@/lib/data";
 import { startMiniTour } from "@/lib/tour";
 import { decodeScenario, defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
@@ -192,6 +192,26 @@ export default function SimPage() {
               <p className="mt-3 text-[11px] text-slate-500">
                 팩당 사용 가능 용량 = 정격 × (A비율×{C.SOH_A.value} + B비율×{C.SOH_B.value}) × (충전율 상한 − {C.SOC_MIN.value}) · 배출계수 {C.EMISSION.value}tCO2/MWh({C.EMISSION.source}) · 발전량 {n(C.PVOUT.value)}kWh/kWp({C.PVOUT.source}) · {base!.meta.source} {base!.meta.base_date}
               </p>
+            </div>
+
+            <div id="CHT-02" className="surface bg-white p-4">
+              <h2 className="mb-2 text-sm font-semibold">재사용 팩 수요와 충북 사용후 배터리 발생 전망 <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] font-normal">추정</span></h2>
+              {(() => {
+                const need = rows[rows.length - 1].sum.packs;
+                const supply = Math.round(BATTERY_OUTLOOK.nationwide2030 * BATTERY_OUTLOOK.chungbukShare);
+                const max = Math.max(need, supply, 1);
+                return (
+                  <>
+                    <ul className="space-y-2 text-xs">
+                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>오창 산단 필요 팩</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-[#3d83cc]" style={{ width: `${(need / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(need)}개</span></span></li>
+                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 전망</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-400" style={{ width: `${(supply / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(supply)}개</span></span></li>
+                    </ul>
+                    <p className="mt-3 text-[11px] text-slate-500">
+                      충북 전망 = 전국 2030년 {n(BATTERY_OUTLOOK.nationwide2030)}개 × 충북 전기차 등록 비중 {(BATTERY_OUTLOOK.chungbukShare * 100).toFixed(2)}%. {BATTERY_OUTLOOK.nationwideSource} · {BATTERY_OUTLOOK.chungbukSource}. 발생한 배터리가 모두 재사용 등급을 받는 것은 아닙니다.
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           </section>
         </div>

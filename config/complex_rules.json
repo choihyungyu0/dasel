@@ -1,22 +1,26 @@
 {
- "_note": "DAT-14: 산업단지계획(관리기본계획) 고시에 태양광 발전사업이 입주 업종·시설로 들어 있는지. true/false/null(확인 필요). 토지이음 고시문으로 확인한 뒤 source·checked를 채운다.",
+ "_note": "DAT-14: 산업단지 관리기본계획 고시의 입주대상업종에 태양에너지(태양력) 발전업이 들어 있는지. solar_biz_allowed는 true(명시됨)/false(금지 명시)/null(명시 없음·미확인), note는 화면 문구.",
  "오창과학": {
-  "solar_biz_allowed": null,
-  "source": null,
-  "checked": null
+  "solar_biz_allowed": true,
+  "note": null,
+  "source": "충청북도 고시 제2018-91호 오창과학산업단지 관리기본계획 변경 승인 고시",
+  "checked": "2018-04-27"
  },
  "오창2": {
   "solar_biz_allowed": null,
-  "source": null,
-  "checked": null
+  "note": "관리기본계획 게시본에 태양광 발전업 명시 없음 — 판매·임대 사업은 관리기관 확인 필요",
+  "source": "충청북도 고시 제2014-76호(청주시 산단 사이트 게시본, 이후 변경 고시는 확인하지 못함)",
+  "checked": "2014-03-28"
  },
  "오창3": {
   "solar_biz_allowed": null,
-  "source": null,
-  "checked": null
+  "note": "관리기본계획 게시본에 태양광 발전업 명시 없음 — 판매·임대 사업은 관리기관 확인 필요",
+  "source": "청주시 고시 제2018-443호(청주시 산단 사이트 게시본, 이후 변경 고시는 확인하지 못함)",
+  "checked": "2018-12-21"
  },
  "오창테크노폴리스": {
   "solar_biz_allowed": null,
+  "note": null,
   "source": null,
   "checked": null
  }

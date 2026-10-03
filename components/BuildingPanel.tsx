@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toManwon } from "@/lib/calc";
-import { essSpace, extraChips } from "@/lib/chips";
+import { complexRule, essSpace, extraChips } from "@/lib/chips";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
 import { enrich, gridOf, type Building, type Dataset } from "@/lib/data";
 import { defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
@@ -83,6 +83,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
   const excluded = s.tier === "제외";
   const lines = gridOf(ds.grid, b.addr);
   const space = essSpace(b);
+  const saleNote = complexRule(b.complex_nm).solar_biz_allowed === true ? null : "이 산단은 판매 사업 허용 여부 확인 필요";
   const payback = c.payback_base === null || c.payback_low === null ? "–" : `${n(c.payback_base, 1)}~${n(c.payback_low, 1)}`;
   const title = b.companies[0]?.company ?? b.name ?? b.addr ?? `건물 ${b.bld_id}`;
   const gisSrc = `${ds.meta.source} ${ds.meta.base_date}${b.reg_match ? ` · ${ds.meta.register_source}` : ""}`;
@@ -209,7 +210,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
               )}
             </Card>
 
-            <Card id="CRD-04" tour="card-money" title="절감액·투자비·탄소" source={`한국전력공사 전력데이터 개방포털(청주 산업용 평균판매단가) · ${C.EMISSION.source} · 설치비 ${C.CAPEX_PER_KW.source}`}>
+            <Card id="CRD-04" tour="card-money" title="절감액·투자비·탄소" source={`한국전력공사 전력데이터 개방포털(청주 산업용 평균판매단가) · ${C.EMISSION.source} · 설치비 ${C.CAPEX_PER_KW.source} · ${C.SMP.source}`}>
               <div className="grid grid-cols-2 gap-2">
                 <Big label="태양광 연 절감 (하한~기준)" value={`${n(toManwon(c.save_low!))}~${n(toManwon(c.save_base!))}`} unit="만 원" />
                 <Big label="온실가스 감축" value={n(c.co2_t!, 1)} unit="tCO2" />
@@ -228,7 +229,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
                 <tbody>
                   <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">자가소비</th><td className="num py-1 text-right">투자 {eok(c.capex!)}억 원 · 회수 {payback}년</td></tr>
                   <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">지붕 임대</th><td className="py-1 text-right text-slate-500">임대료 자료 확보 전 — 계산하지 않음</td></tr>
-                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">전력 판매</th><td className="py-1 text-right text-slate-500">판매단가 반영 전 — 계산하지 않음</td></tr>
+                  <tr className="border-t border-slate-200"><th scope="row" className="py-1 text-left font-medium">전력 판매</th><td className="num py-1 text-right">연 {n(toManwon(c.pv_kwh! * C.SMP.value))}만 원 · 회수 {c.pv_kwh! > 0 ? n(c.capex! / (c.pv_kwh! * C.SMP.value), 1) : "–"}년<span className="block text-[10px] font-normal text-slate-500">SMP {C.SMP.value}원/kWh만 반영, REC 수익 제외{saleNote ? ` · ${saleNote}` : ""}</span></td></tr>
                 </tbody>
               </table>
               {c.ess_save !== null && (

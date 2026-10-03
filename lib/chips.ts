@@ -5,6 +5,7 @@ import type { Building } from "./data";
 
 interface Rule {
   solar_biz_allowed: boolean | null;
+  note?: string | null;
   source: string | null;
   checked: string | null;
 }
@@ -16,8 +17,10 @@ export function complexRule(name: string): Rule {
 
 /** DAT-14: 태양광 발전사업(판매·임대) 허용 여부 문구 */
 export function solarBizChip(name: string): string | null {
-  const allowed = complexRule(name).solar_biz_allowed;
+  const rule = complexRule(name);
+  const allowed = rule.solar_biz_allowed;
   if (allowed === true) return null;
+  if (rule.note) return rule.note;
   return allowed === false ? "자가소비만 가능(판매·임대 사업은 관리기본계획 변경 필요)" : "판매·임대 사업 허용 여부 확인 필요(산단 관리기본계획)";
 }
 

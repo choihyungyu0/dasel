@@ -36,6 +36,7 @@ export const CONSTANTS = {
   ESS_EFF: { value: 0.85, unit: "", label: "ESS 왕복 효율", kind: "가정", source: "초기 가정값", asOf: "2026-10-04" },
   ESS_DAYS: { value: 250, unit: "일/년", label: "ESS 운영일", kind: "가정", source: "평일 운영을 가정한 초기 가정값", asOf: "2026-10-04" },
   ESS_UNIT_AREA: { value: 40, unit: "㎡/단위", label: "ESS 단위당 필요 면적", kind: "가정", source: "1MWh 이하 컨테이너 1기와 이격 공간을 합친 초기 가정값", asOf: "2026-10-04" },
+  SMP: { value: 119.7, unit: "원/kWh", label: "계통한계가격(SMP, 육지)", kind: "공식", source: "전력거래소 월별 SMP 2026년 1~9월 단순평균", asOf: "2026-09" },
   SOC_MIN: { value: 0.1, unit: "", label: "충전율 하한", kind: "가정", source: ASSUMED, asOf: "2026-10-03" },
 } as const satisfies Record<string, Const>;
 
@@ -73,3 +74,11 @@ export function unsourcedConstants(): string[] {
 
 export const REVIEW_BADGE = "1차 검토(현장·구조검토 전)";
 export const HAZMAT_CHIP_P0 = "위험물시설 거리 미반영 — 설치 전 관할 소방서 확인";
+
+/** SIM-03: 사용후 배터리 발생 전망. 두 값 모두 2차 자료 재인용이라 화면에 '추정'으로 표시한다. */
+export const BATTERY_OUTLOOK = {
+  nationwide2030: 107500,
+  nationwideSource: "환경부 추정(뉴스핌 2026-05-20 보도 재인용)",
+  chungbukShare: 0.0371,
+  chungbukSource: "전기차 등록 2026-05 전국 1,053,623대·충북 39,109대(국토교통부 자동차등록 통계 재인용, 원자료 확인 전)",
+} as const;

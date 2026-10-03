@@ -3,6 +3,7 @@ import path from "node:path";
 import AppHeader from "@/components/AppHeader";
 import { CONSTANTS, HAZMAT_CHIP_P0, peakSpread, REVIEW_BADGE, TARIFF } from "@/lib/constants";
 import { enrich, withStability, type RawBuilding } from "@/lib/data";
+import rules from "@/config/complex_rules.json";
 import { maxAvailable, WEIGHTS } from "@/lib/score";
 import { STABILITY } from "@/lib/stability";
 import type { Validation } from "@/lib/validate";
@@ -107,7 +108,7 @@ export default function MethodPage() {
 
       <Section id="capex" title="투자비·회수기간">
         <F>태양광 투자비(원) = 설치용량 × kW당 {n(C.CAPEX_PER_KW.value / 10000)}만 원 · 단순 회수기간(년) = 투자비 ÷ 연 절감(기준 단가 ~ 하한 단가)</F>
-        <p>예: 250kW × 140만 원 = 3.5억 원, 회수 5.1~6.5년. kW당 설치비는 {C.CAPEX_PER_KW.source}이며 범위는 {n(C.CAPEX_PER_KW.range[0] / 10000)}만~{n(C.CAPEX_PER_KW.range[1] / 10000)}만 원입니다. 보조금, 유지비, 발전량 저하, 금융비용은 넣지 않은 단순 계산입니다. 지붕 임대와 전력 판매 방식은 임대료·판매단가 자료를 확보하지 못해 계산하지 않았고, ESS 투자비도 재사용 배터리 단가가 정해지지 않아 넣지 않았습니다.</p>
+        <p>예: 250kW × 140만 원 = 3.5억 원, 회수 5.1~6.5년. kW당 설치비는 {C.CAPEX_PER_KW.source}이며 범위는 {n(C.CAPEX_PER_KW.range[0] / 10000)}만~{n(C.CAPEX_PER_KW.range[1] / 10000)}만 원입니다. 보조금, 유지비, 발전량 저하, 금융비용은 넣지 않은 단순 계산입니다. 전력 판매 방식은 {C.SMP.source} {C.SMP.value}원/kWh만 넣고 REC 수익은 넣지 않았습니다. 지붕 임대 방식은 공식 임대료 자료를 확보하지 못해 계산하지 않았고, ESS 투자비도 재사용 배터리 단가가 정해지지 않아 넣지 않았습니다.</p>
       </Section>
 
       <Section id="score" title="설치 적합도·설치 조건">
@@ -125,7 +126,7 @@ export default function MethodPage() {
           ["검토", `만점의 50% 이상(현재 ${Math.round(maxAvailable() * 0.5)}점)이거나, 70% 이상이지만 설치 조건 '조건부'`],
           ["보류", "만점의 50% 미만 또는 30kW 미만"],
         ]} />
-        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획에 태양광 발전사업이 들어 있는지는 아직 확인하지 못해 판매·임대 방식에는 '확인 필요'를 표시합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
+        <p><strong>설치 조건</strong>: 구조 정보가 없거나 사용승인 30년 이상이면 '조건부(구조검토 필수)'입니다. 철골 계열과 경량 지붕은 하중·방수 확인이 필요하고, 의약·식품 업종은 옥상 설비와 청정구역 확인이 필요합니다. 산단 관리기본계획의 입주대상업종에 태양광 발전업이 명시되지 않은 산단은 판매·임대 방식에 '확인 필요'를 표시합니다. 위험물시설 거리는 자료를 확보하지 못해 판정에 쓰지 않으며, 모든 건물에 “{HAZMAT_CHIP_P0}”을 표시합니다.</p>
       </Section>
 
       <Section id="stability" title="순위 안정도">
@@ -184,6 +185,8 @@ export default function MethodPage() {
           ["Global Solar Atlas", C.PVOUT.asOf, "연간 발전량 계수", `${n(C.PVOUT.value)} kWh/kWp (36.72N 127.43E)`],
         ]} />
         <p>대상 건물은 산단 경계 안(건물 대표점 기준)에서 용도가 {bq.target_use.join("·")}인 건물입니다. 교육연구시설 중 학교는 뺐습니다. 용도 정보가 없는 건물은 도형 면적 600㎡ 이상이거나 등록공장이 연결된 경우만 대상으로 하고 '용도 미확인'으로 표시합니다(현재 {n(rq.null_after.use)}동). 대상 건물 {n(rq.target_after)}동 가운데 회사가 연결된 건물은 {n(fq.target_with_company)}동입니다.</p>
+        <Table head={["산단", "태양광 발전사업(판매·임대)", "근거"]} rows={Object.entries(rules as unknown as Record<string, { solar_biz_allowed?: boolean | null; source?: string | null }>).filter(([k]) => !k.startsWith("_")).map(([name, r]) => [name, r.solar_biz_allowed === true ? "입주대상업종에 명시" : r.source ? "게시본에 명시 없음(관리기관 확인 필요)" : "확인하지 못함", r.source ?? "–"])} />
+        <p>공장이 직접 쓰는 자가소비 설치는 위 표와 별개입니다. 전기를 팔거나 지붕을 빌려주는 사업은 산단 관리기본계획의 입주대상업종에 발전업이 있어야 합니다(산업집적법 시행령 제6조).</p>
         <p>산업단지 경계도면은 공공누리 제4유형(출처표시·비상업·변경금지) 자료입니다.</p>
       </Section>
 
