@@ -13,3 +13,5 @@ next-env.d.ts
 .vercel
 data/register/
 docs/
+screenshots/poster/*.png
+screenshots/poster/*.pdf

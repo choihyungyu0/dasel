@@ -154,3 +154,11 @@ body {
   right: var(--map-right, 0px);
   transition: bottom 0.2s, right 0.2s;
 }
+
+.dasel-tour .driver-popover-progress-text {
+  margin-right: 10px;
+}
+.dasel-tour .driver-popover-navigation-btns {
+  flex-grow: 1;
+  gap: 6px;
+}
