@@ -60,6 +60,19 @@ export interface Dataset {
   geo: FeatureCollection;
   complexes: Complex[];
   complexGeo: FeatureCollection;
+  stationGeo: FeatureCollection | null;
+  factories: Factory[];
+}
+
+export interface Factory {
+  company: string;
+  product: string | null;
+  complex: string | null;
+  addr: string;
+  match: "CONTAIN" | "PNU" | "NONE";
+  bld_ids: number[];
+  lon?: number;
+  lat?: number;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -88,19 +101,21 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
 }
 
 export async function loadDataset(unitCost?: number): Promise<Dataset> {
-  const [attrs, geo, complexGeo] = await Promise.all([
+  const [attrs, geo, complexGeo, stationGeo, fac] = await Promise.all([
     fetchJson<{ meta: Dataset["meta"]; buildings: RawBuilding[] }>("/data/buildings.json"),
     fetchGzipJson<FeatureCollection>("/data/buildings.geojson.gz"),
     fetchJson<FeatureCollection>("/data/complex.geojson"),
+    fetchJson<FeatureCollection>("/data/station.geojson").catch(() => null),
+    fetchJson<{ factories: Factory[] }>("/data/factories.json").catch(() => ({ factories: [] })),
   ]);
   const baseYmd = attrs.meta.built.replaceAll("-", "");
   const buildings = attrs.buildings.map((b) => enrich(b, baseYmd, unitCost));
   const byId = new Map(buildings.map((b) => [b.bld_id, b]));
   for (const f of geo.features) {
     const b = byId.get(Number(f.properties?.bld_id));
-    if (b) f.properties = { ...f.properties, tier: b.score.tier, pv_kw: b.calc.pv_kw, small: b.calc.small };
+    if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1 };
   }
-  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo };
+  return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories };
 }
 
 /** 운영 중 산단의 대상 건물 합계. complexCd가 있으면 그 산단만. */

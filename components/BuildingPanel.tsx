@@ -4,19 +4,13 @@ import { useState } from "react";
 import { toManwon } from "@/lib/calc";
 import { CONSTANTS as C, REVIEW_BADGE } from "@/lib/constants";
 import type { Building, Dataset } from "@/lib/data";
+import type { Price } from "@/lib/price";
 import { summarySentence, WEIGHTS, type PartKey } from "@/lib/score";
 import { TIER_COLOR } from "./MapView";
 
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const NA = <span className="text-slate-400">정보 없음</span>;
 const PART_LABEL: Record<PartKey, string> = { scale: "규모", struct: "구조", age: "사용 연수", industry: "전력수요 업종", hazmat: "안전 이격", grid: "배전 여유" };
-
-export interface Price {
-  unitCost: number;
-  month: string;
-  fallback: boolean;
-  loading: boolean;
-}
 
 function Card({ id, tour, title, source, children }: { id: string; tour?: string; title: string; source: string; children: React.ReactNode }) {
   return (

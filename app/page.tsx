@@ -1,131 +1,145 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import BuildingPanel, { type Price } from "@/components/BuildingPanel";
+import { useEffect, useMemo, useState } from "react";
+import AppHeader from "@/components/AppHeader";
+import BuildingPanel from "@/components/BuildingPanel";
+import Filters from "@/components/Filters";
+import { COLOR_SCALES, TIER_COLOR, type ColorBy, type Layers } from "@/components/MapView";
+import SearchBox from "@/components/SearchBox";
+import { useStore } from "@/components/Store";
 import SummaryBanner from "@/components/SummaryBanner";
-import { TIER_COLOR, USING_FALLBACK_IMAGERY } from "@/components/MapView";
-import { CONSTANTS } from "@/lib/constants";
-import { loadDataset, reprice, summaryOf, topBuilding, type Dataset } from "@/lib/data";
+import { summarize } from "@/lib/calc";
+import { DEFAULT_FILTERS, isDefault } from "@/lib/filters";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
-type State = { status: "loading" } | { status: "error" } | { status: "ready"; ds: Dataset };
-
-const FALLBACK_PRICE: Price = {
-  unitCost: CONSTANTS.PRICE_FALLBACK.value,
-  month: CONSTANTS.PRICE_FALLBACK.asOf.replace("-", "."),
-  fallback: true,
-  loading: false,
-};
+const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"]];
 
 export default function Page() {
-  const [state, setState] = useState<State>({ status: "loading" });
-  const [complexCd, setComplexCd] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [price, setPrice] = useState<Price>(FALLBACK_PRICE);
+  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId } = useStore();
+  const [colorBy, setColorBy] = useState<ColorBy>("tier");
+  const [layers, setLayers] = useState<Layers>({ complex: true, target: true, general: true, station: false });
+  const [showFilter, setShowFilter] = useState(false);
+  const [fallbackImagery, setFallbackImagery] = useState(false);
+  const [flyTo, setFlyTo] = useState<{ lon: number; lat: number; n: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [wide, setWide] = useState(true);
 
-  const load = useCallback(() => {
-    setState({ status: "loading" });
-    loadDataset()
-      .then((ds) => {
-        setState({ status: "ready", ds });
-        // MAP-07: ?b=건물ID 딥링크
-        const id = Number(new URLSearchParams(location.search).get("b"));
-        if (id) {
-          if (ds.byId.has(id)) setSelectedId(id);
-          else setToast("건물을 찾지 못했어요");
-        }
-      })
-      .catch(() => setState({ status: "error" }));
+  useEffect(() => {
+    const mq = matchMedia("(min-width: 768px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
   }, []);
-  useEffect(load, [load]);
 
-  // DAT-08: 최신 단가. 실패해도 기준값으로 계속 동작한다.
-  const refreshPrice = useCallback(() => {
-    setPrice((p) => ({ ...p, loading: true }));
-    fetch("/api/tariff", { signal: AbortSignal.timeout(5000) })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((t: { latest: number; month: string; fallback: boolean }) => setPrice({ unitCost: t.latest, month: t.month, fallback: t.fallback, loading: false }))
-      .catch(() => setPrice({ ...FALLBACK_PRICE }));
-  }, []);
-  useEffect(refreshPrice, [refreshPrice]);
+  // MAP-07: ?b=건물ID 딥링크
+  useEffect(() => {
+    if (!base) return;
+    const id = Number(new URLSearchParams(location.search).get("b"));
+    if (!id) return;
+    if (base.byId.has(id)) setSelectedId(id);
+    else setToast("건물을 찾지 못했어요");
+  }, [base, setSelectedId]);
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
+    const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
 
-  const base = state.status === "ready" ? state.ds : null;
-  const ds = useMemo(() => (base ? reprice(base, price.unitCost) : null), [base, price.unitCost]);
-  const summary = useMemo(() => (ds ? summaryOf(ds, complexCd) : null), [ds, complexCd]);
-  const top = useMemo(() => (ds ? topBuilding(ds, complexCd) : null), [ds, complexCd]);
-  const scope = ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체";
+  const summary = useMemo(() => summarize(filtered), [filtered]);
+  const top = filtered.find((b) => b.score.tier === "설치 우선") ?? null;
+  const passIds = useMemo(() => (isDefault(filters) && !complexCd ? null : new Set(filtered.map((b) => b.bld_id))), [filters, complexCd, filtered]);
+  const scope = `${ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체"}${isDefault(filters) ? "" : " · 필터 적용"}`;
   const selected = ds && selectedId !== null ? (ds.byId.get(selectedId) ?? null) : null;
-  const tierCounts = useMemo(() => {
-    const out: Record<string, number> = {};
-    ds?.buildings.forEach((b) => (!complexCd || b.complex_cd === complexCd) && (out[b.score.tier] = (out[b.score.tier] ?? 0) + 1));
-    return out;
-  }, [ds, complexCd]);
+  const scale = COLOR_SCALES[colorBy];
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
-      {base && <MapView ds={base} complexCd={complexCd} selectedId={selectedId} onSelect={setSelectedId} />}
-
-      {state.status === "loading" && (
-        <div className="absolute inset-0 grid place-items-center bg-slate-800 text-sm text-slate-200">공장 건물 불러오는 중</div>
+      {base && (
+        <MapView
+          ds={base} complexCd={complexCd} selectedId={selectedId} onSelect={setSelectedId} colorBy={colorBy} layers={layers} passIds={passIds} flyTo={flyTo}
+          padding={selected ? (wide ? { right: 400, bottom: 0 } : { right: 0, bottom: Math.round(innerHeight * 0.6) }) : { right: 0, bottom: 0 }}
+          onFallback={() => setFallbackImagery(true)}
+        />
       )}
-      {state.status === "error" && (
+
+      {status === "loading" && <div className="absolute inset-0 grid place-items-center bg-slate-800 text-sm text-slate-200">공장 건물 불러오는 중</div>}
+      {status === "error" && (
         <div className="absolute inset-0 grid place-items-center bg-slate-100">
           <div className="text-center">
             <p className="mb-3 text-sm">건물 데이터를 불러오지 못했어요</p>
-            <button type="button" onClick={load} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">다시 시도</button>
+            <button type="button" onClick={reload} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">다시 시도</button>
           </div>
         </div>
       )}
 
       <div className="pointer-events-none absolute inset-0 flex flex-col gap-2 p-2 md:p-3">
-        <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-white/92 px-3 py-2 shadow-sm ring-1 ring-slate-900/10 backdrop-blur">
-          <h1 className="text-base font-bold tracking-tight">다셀</h1>
-          <nav id="NAV-01" className="flex gap-1 whitespace-nowrap text-sm">
-            <span className="rounded-md bg-slate-900 px-2.5 py-1 text-white">지도</span>
-            <span data-tour="nav-sim" className="rounded-md px-2.5 py-1 text-slate-400">시뮬레이터</span>
-            <span className="rounded-md px-2.5 py-1 text-slate-400">후보 목록</span>
-          </nav>
+        <AppHeader>
           {ds && (
-            <div id="SEG-02" data-tour="complex" className="flex gap-1 overflow-x-auto whitespace-nowrap text-sm md:ml-auto">
-              <button type="button" onClick={() => setComplexCd(null)} className={`rounded-md px-2.5 py-1 ${complexCd === null ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}>전체</button>
-              {ds.complexes.map((c) =>
-                c.status === "조성 중" ? (
-                  <span key={c.complex_cd} title="대상 건물이 아직 없습니다" className="rounded-md px-2.5 py-1 text-slate-400">{c.complex_nm} <small>조성 중</small></span>
-                ) : (
-                  <button key={c.complex_cd} type="button" onClick={() => setComplexCd(c.complex_cd)} className={`rounded-md px-2.5 py-1 ${complexCd === c.complex_cd ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}>{c.complex_nm}</button>
-                ),
-              )}
-            </div>
+            <SearchBox
+              ds={ds}
+              onPick={(it) => {
+                if (it.bldId !== null) setSelectedId(it.bldId);
+                else if (it.lon !== undefined && it.lat !== undefined) {
+                  setSelectedId(null);
+                  setFlyTo({ lon: it.lon, lat: it.lat, n: Date.now() });
+                  setToast("등록공장 주소 위치로 이동했어요. 연결된 건물은 없습니다");
+                } else setToast("주소 위치를 찾지 못한 공장이에요");
+              }}
+            />
           )}
-        </header>
+        </AppHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:items-start">
-          <div className={`flex min-w-0 flex-1 flex-col gap-2 ${selected ? "max-md:hidden" : ""}`}>
-            {ds && summary && (
-              <div className="pointer-events-auto">
+          <div className={`flex min-w-0 flex-1 flex-col items-start gap-2 ${selected ? "max-md:hidden" : ""}`}>
+            {ds && (
+              <div className="pointer-events-auto w-full">
                 <SummaryBanner
-                  summary={summary}
-                  scope={scope}
-                  baseDate={ds.meta.base_date}
-                  unitCost={price.unitCost}
+                  summary={summary} scope={scope} baseDate={ds.meta.base_date} unitCost={price.unitCost}
                   priceLabel={price.fallback ? `기준값(${price.month})` : `한전 ${price.month}`}
-                  hasTop={top !== null}
-                  onTop={() => top && setSelectedId(top.bld_id)}
+                  hasTop={top !== null} onTop={() => top && setSelectedId(top.bld_id)}
                 />
               </div>
             )}
-            {ds && USING_FALLBACK_IMAGERY && (
-              <p className="pointer-events-auto self-start rounded-md bg-slate-900/80 px-2 py-1 text-[11px] text-white">위성 배경: Esri World Imagery로 표시 중</p>
+            {ds && (
+              <div className="pointer-events-auto max-w-full rounded-xl bg-white/92 p-2 shadow-sm ring-1 ring-slate-900/10 backdrop-blur">
+                <div className="flex flex-wrap items-center gap-1 text-xs">
+                  <div id="SEG-01" data-tour="color-by" role="group" aria-label="색상 기준" className="flex flex-wrap gap-1">
+                    {(Object.keys(COLOR_SCALES) as ColorBy[]).map((k) => (
+                      <button key={k} type="button" aria-pressed={colorBy === k} onClick={() => setColorBy(k)} className={`rounded-md px-2 py-1 ${colorBy === k ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}>{COLOR_SCALES[k].label}</button>
+                    ))}
+                  </div>
+                  <button type="button" aria-expanded={showFilter} onClick={() => setShowFilter((v) => !v)} className="rounded-md border border-slate-300 px-2 py-1 hover:bg-slate-100">
+                    필터·레이어 <span className="num">{filtered.length.toLocaleString("ko-KR")}동</span>
+                  </button>
+                </div>
+                {showFilter && (
+                  <div className="mt-2 space-y-2 border-t border-slate-200 pt-2">
+                    <Filters id="FLT-01" tour="filter" />
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                      {LAYER_LABEL.map(([k, label], i) => (
+                        <label key={k} className="flex items-center gap-1">
+                          <input id={`LYR-0${i === 3 ? 4 : i < 2 ? i + 1 : 2}${i === 2 ? "b" : ""}`} type="checkbox" checked={layers[k]} disabled={k === "station" && !ds.stationGeo} onChange={(e) => setLayers({ ...layers, [k]: e.target.checked })} />
+                          {label}
+                        </label>
+                      ))}
+                      <label className="flex items-center gap-1 text-slate-400" title="위험물시설 자료를 아직 확보하지 못했습니다">
+                        <input id="LYR-03" type="checkbox" disabled /> 위험물시설
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
+            {ds && filtered.length === 0 && (
+              <p className="pointer-events-auto rounded-lg bg-white px-3 py-2 text-sm shadow">
+                조건에 맞는 건물이 없어요 <button type="button" onClick={() => setFilters(DEFAULT_FILTERS)} className="ml-1 underline">필터 해제</button>
+              </p>
+            )}
+            {ds && fallbackImagery && <p className="pointer-events-auto rounded-md bg-slate-900/80 px-2 py-1 text-[11px] text-white">위성 배경: Esri World Imagery로 표시 중</p>}
           </div>
 
           {ds && selected && (
@@ -138,14 +152,13 @@ export default function Page() {
 
       {ds && (
         <aside id="LGD-01" className={`absolute bottom-3 left-3 max-w-[280px] rounded-xl bg-white/92 px-3 py-2 text-[11px] shadow-sm ring-1 ring-slate-900/10 backdrop-blur ${selected ? "max-md:hidden" : ""}`}>
-          <p className="mb-1 font-semibold">설치 적합도 단계</p>
+          <p className="mb-1 font-semibold">{scale.label}</p>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            {(Object.keys(TIER_COLOR) as (keyof typeof TIER_COLOR)[]).map((t) => (
-              <li key={t} className="flex items-center gap-1.5">
-                <i className="inline-block size-2.5 rounded-sm" style={{ background: TIER_COLOR[t] }} />
-                {t === "제외" ? "일반 건물" : t} <span className="num text-slate-500">{(tierCounts[t] ?? 0).toLocaleString("ko-KR")}</span>
-              </li>
+            {scale.stops.map((s) => (
+              <li key={s.label} className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</li>
             ))}
+            {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm bg-[#aab1bc]" />정보 없음</li>}
+            <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
           </ul>
           <p className="mt-1 text-slate-500">
             {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물·배전 여유는 아직 반영하지 않아 80점 만점입니다
@@ -153,7 +166,7 @@ export default function Page() {
         </aside>
       )}
 
-      {toast && <p role="status" className="absolute left-1/2 top-20 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white shadow-lg">{toast}</p>}
+      {toast && <p role="status" className="absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white shadow-lg">{toast}</p>}
     </main>
   );
 }
