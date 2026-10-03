@@ -61,7 +61,8 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
-  const vq = read<Validation & { generated: string }>("data/quality/validation.json");
+  const vq = read<Validation & { generated: string; basis?: "human" | "ai" }>("data/quality/validation.json");
+  const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
   const gq = read<{ meta: { fetched: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
   const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
@@ -141,19 +142,20 @@ export default function MethodPage() {
       </Section>
 
       {vq.labeled > 0 && (
-        <Section id="validation" title="기존 설치 건물로 본 검증">
-          <p>적합도 점수가 실제와 맞는지 보려고, 후보 {n(vq.candidates)}동의 지붕을 위성영상에서 사람이 직접 보고 태양광 패널이 이미 있는지 표시했습니다{vq.imageYears.length ? ` (영상 ${vq.imageYears.join("·")}년)` : ""}. 이미 설치한 공장은 설치할 만해서 설치한 곳이므로, 점수 상위에 이런 건물이 많이 들어올수록 점수가 현실과 맞는다고 볼 수 있습니다.</p>
+        <Section id="validation" title={ai ? "기존 설치 건물로 본 검증 (AI 판독 초안)" : "기존 설치 건물로 본 검증"}>
+          <p>적합도 점수가 실제와 맞는지 보려고, 후보 {n(vq.candidates)}동의 지붕을 위성영상에서 {ai ? "AI가 두 번 독립적으로 판독해" : "사람이 직접 보고"} 태양광 패널이 이미 있는지 표시했습니다{vq.imageYears.length ? ` (영상 ${vq.imageYears.join("·")}년)` : ""}. 이미 설치한 공장은 설치할 만해서 설치한 곳이므로, 점수 상위에 이런 건물이 많이 들어올수록 점수가 현실과 맞는다고 볼 수 있습니다.</p>
+          {ai && <p className="rounded bg-amber-50 px-2 py-1.5 text-amber-900">아래 수치는 사람이 확인하기 전의 초안입니다. 축소한 위성 이미지를 AI가 판독한 것이라 일부 지붕(부분 설치, 짙은 색 금속 지붕, 채광창)은 틀릴 수 있습니다. 두 번의 판독은 같은 AI 모델이 한 것이라 일치율이 높게 나오며, 사람 두 명의 교차 확인과 같은 뜻이 아닙니다. 사람이 확인한 표시로 바꾸면 수치가 달라질 수 있습니다.</p>}
           <Table head={["항목", "값"]} rows={[
-            ["표시한 건물", `${n(vq.labeled)}동 / ${n(vq.candidates)}동 (설치 ${n(vq.counts.설치)} · 미설치 ${n(vq.counts.미설치)} · 불명 ${n(vq.counts.불명)} · 두 사람 불일치 ${n(vq.counts.불일치)})`],
-            ["표시한 사람", vq.labelers.map((l) => `${l.count}동`).join(" · ") || "–"],
-            ["두 사람이 같이 본 건물의 일치율", vq.overlap ? `${pct(vq.agreement)} (${n(vq.overlap)}동${vq.kappa !== null ? `, 카파 ${vq.kappa}` : ""})` : "한 사람만 표시"],
+            ["표시한 건물", `${n(vq.labeled)}동 / ${n(vq.candidates)}동 (설치 ${n(vq.counts.설치)} · 미설치 ${n(vq.counts.미설치)} · 불명 ${n(vq.counts.불명)} · 판독 불일치 ${n(vq.counts.불일치)})`],
+            [ai ? "판독 횟수" : "표시한 사람", vq.labelers.map((l) => `${l.count}동`).join(" · ") || "–"],
+            [ai ? "두 번의 판독이 일치한 비율" : "두 사람이 같이 본 건물의 일치율", vq.overlap ? `${pct(vq.agreement)} (${n(vq.overlap)}동${vq.kappa !== null ? `, 카파 ${vq.kappa}` : ""})` : "한 사람만 표시"],
             ["전체 설치 비율(기준)", pct(vq.baseRate)],
             ...vq.topK.map((t) => [`점수 상위 ${t.k * 100}% (${n(t.n)}동) 중 설치 비율`, `${pct(t.precision)}${t.lift !== null ? ` · 기준의 ${t.lift}배` : ""}${t.recall !== null ? ` · 설치 건물의 ${pct(t.recall)} 포함` : ""}`]),
             ["설치 건물이 미설치 건물보다 점수가 높을 확률", vq.auc === null ? "–" : pct(vq.auc)],
             ["평균 점수", `설치 ${vq.mean.installed ?? "–"}점 · 미설치 ${vq.mean.notInstalled ?? "–"}점`],
           ]} />
           <Table head={["점수 구간", "설치", "미설치"]} rows={vq.bins.filter((b) => b.installed + b.notInstalled > 0).map((b) => [`${b.from}~${b.to}점`, b.installed, b.notInstalled])} />
-          <p>'불명'과 두 사람의 표시가 다른 건물은 계산에서 뺐습니다. 다시 계산하려면 <code>npx tsx scripts/06_validate.ts</code>를 실행합니다({vq.generated} 계산).</p>
+          <p>'불명'과 두 표시가 서로 다른 건물은 계산에서 뺐습니다. 다시 계산하려면 <code>npx tsx scripts/06_validate.ts</code>를 실행합니다({vq.generated} 계산).</p>
         </Section>
       )}
 

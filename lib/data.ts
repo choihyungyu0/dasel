@@ -71,7 +71,7 @@ export interface Dataset {
   stability: StabilityResult;
   grid: Grid | null;
   /** VAL-01 위성 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
-  labels: { meta: { image_year: string | null; generated: string }; labels: Record<string, string> } | null;
+  labels: { meta: { basis?: "human" | "ai"; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
 }
 
 export interface GridLine {

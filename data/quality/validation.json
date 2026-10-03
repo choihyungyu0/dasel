@@ -1,106 +1,123 @@
 {
+ "basis": "ai",
  "files": [
-  "existing_pv.csv"
+  "pass1.csv",
+  "pass2.csv"
  ],
  "skipped": 0,
  "generated": "2026-10-04",
- "labelers": [],
+ "labelers": [
+  {
+   "name": "ai-1",
+   "count": 336
+  },
+  {
+   "name": "ai-2",
+   "count": 336
+  }
+ ],
  "imageYears": [],
- "overlap": 0,
- "agreement": null,
- "kappa": null,
- "conflicts": [],
+ "overlap": 336,
+ "agreement": 0.985,
+ "kappa": 0.961,
+ "conflicts": [
+  124511,
+  125214,
+  122892,
+  244694,
+  121672
+ ],
  "candidates": 336,
- "labeled": 0,
+ "labeled": 336,
  "counts": {
-  "설치": 0,
-  "미설치": 0,
-  "불명": 0,
-  "불일치": 0
+  "설치": 40,
+  "미설치": 255,
+  "불명": 36,
+  "불일치": 5
  },
- "baseRate": null,
+ "baseRate": 0.136,
  "topK": [
   {
    "k": 0.1,
    "n": 34,
-   "judged": 0,
-   "installed": 0,
-   "precision": null,
-   "lift": null,
-   "recall": null
+   "judged": 30,
+   "installed": 11,
+   "precision": 0.367,
+   "lift": 2.7,
+   "recall": 0.275
   },
   {
    "k": 0.2,
    "n": 68,
-   "judged": 0,
-   "installed": 0,
-   "precision": null,
-   "lift": null,
-   "recall": null
+   "judged": 60,
+   "installed": 14,
+   "precision": 0.233,
+   "lift": 1.71,
+   "recall": 0.35
   },
   {
    "k": 0.3,
    "n": 101,
-   "judged": 0,
-   "installed": 0,
-   "precision": null,
-   "lift": null,
-   "recall": null
+   "judged": 89,
+   "installed": 18,
+   "precision": 0.202,
+   "lift": 1.49,
+   "recall": 0.45
   }
  ],
- "auc": null,
+ "auc": 0.594,
  "mean": {
-  "installed": null,
-  "notInstalled": null
+  "installed": 46.6,
+  "notInstalled": 43
  },
  "bins": [
   {
    "from": 0,
    "to": 10,
    "installed": 0,
-   "notInstalled": 0
+   "notInstalled": 1
   },
   {
    "from": 10,
    "to": 20,
    "installed": 0,
-   "notInstalled": 0
+   "notInstalled": 1
   },
   {
    "from": 20,
    "to": 30,
-   "installed": 0,
-   "notInstalled": 0
+   "installed": 3,
+   "notInstalled": 12
   },
   {
    "from": 30,
    "to": 40,
-   "installed": 0,
-   "notInstalled": 0
+   "installed": 4,
+   "notInstalled": 43
   },
   {
    "from": 40,
    "to": 50,
-   "installed": 0,
-   "notInstalled": 0
+   "installed": 19,
+   "notInstalled": 159
   },
   {
    "from": 50,
    "to": 60,
-   "installed": 0,
-   "notInstalled": 0
+   "installed": 5,
+   "notInstalled": 23
   },
   {
    "from": 60,
    "to": 70,
-   "installed": 0,
-   "notInstalled": 0
+   "installed": 9,
+   "notInstalled": 14
   },
   {
    "from": 70,
    "to": 80,
    "installed": 0,
-   "notInstalled": 0
+   "notInstalled": 2
   }
  ]
 }

@@ -6,17 +6,22 @@ import { enrich, type RawBuilding } from "../lib/data";
 import { parseLabelCsv, type LabelRow } from "../lib/labels";
 import { consensus, validate } from "../lib/validate";
 
-// 인자로 다른 폴더를 주면(예: data/labels_draft) 결과만 출력하고 파일은 쓰지 않는다
-const DIR = process.argv[2] ?? "data/labels";
-const DRY = process.argv.length > 2;
-const files = readdirSync(DIR).filter((f) => f.endsWith(".csv"));
-const rows: LabelRow[] = [];
-let skipped = 0;
-for (const f of files) {
-  const r = parseLabelCsv(readFileSync(`${DIR}/${f}`, "utf8"));
-  rows.push(...r.rows);
-  skipped += r.skipped;
+// 사람이 표시한 data/labels가 비어 있으면 AI 판독 초안(data/labels_ai)으로 계산하고 basis에 'ai'를 남긴다.
+function load(dir: string) {
+  const files = readdirSync(dir).filter((f) => f.endsWith(".csv"));
+  const rows: LabelRow[] = [];
+  let skipped = 0;
+  for (const f of files) {
+    const r = parseLabelCsv(readFileSync(`${dir}/${f}`, "utf8"));
+    rows.push(...r.rows);
+    skipped += r.skipped;
+  }
+  return { files, rows, skipped };
 }
+
+const human = load("data/labels");
+const basis: "human" | "ai" = human.rows.length ? "human" : "ai";
+const { files, rows, skipped } = basis === "human" ? human : load("data/labels_ai");
 
 const data = JSON.parse(readFileSync("public/data/buildings.json", "utf8")) as { meta: { built: string }; buildings: RawBuilding[] };
 const ranked = data.buildings
@@ -25,11 +30,11 @@ const ranked = data.buildings
   .sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0))
   .map((b) => ({ bld_id: b.bld_id, score: b.score.score ?? 0 }));
 
-const result = { files, skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked) };
-if (!DRY) writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
+const result = { basis, files, skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked) };
+writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
 
 const cons = consensus(rows);
 const year = result.imageYears.join("·") || null;
-if (!DRY) writeFileSync("public/data/labels.json", JSON.stringify({ meta: { image_year: year, generated: result.generated }, labels: Object.fromEntries([...cons].filter(([, l]) => l !== "불일치")) }));
+writeFileSync("public/data/labels.json", JSON.stringify({ meta: { basis, image_year: year, generated: result.generated }, labels: Object.fromEntries([...cons].filter(([, l]) => l !== "불일치")) }));
 
 console.log(JSON.stringify(result, null, 1));
