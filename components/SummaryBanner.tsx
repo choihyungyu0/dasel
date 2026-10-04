@@ -35,8 +35,8 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
         <button type="button" aria-expanded={open} aria-controls="CRD-00-body" onClick={() => setOpen((v) => !v)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[11px] text-ink/55">{scope} 합계 · {REVIEW_BADGE}</span>
-            <span className="readout block truncate !text-[17px]">
-              {n(s.buildings)}<span className="unit">동</span> · {n(s.mw, 1)}<span className="unit">MW</span> · {eok(s.save_low)}~{eok(s.save_base)}<span className="unit">억 원/년</span>
+            <span className="readout block truncate !text-[16px]">
+              {n(s.buildings)}<span className="unit">동</span> · {n(s.mw, 1)}<span className="unit">MW</span> · 연 {n(s.save_low / 1e8)}~{n(s.save_base / 1e8)}<span className="unit">억</span>
             </span>
           </span>
           <span aria-hidden className={`grid size-6 shrink-0 place-items-center rounded-full border border-ink/15 text-[10px] text-ink/60 transition-transform ${open ? "rotate-180" : ""}`}>▲</span>
