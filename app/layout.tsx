@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Semi_Condensed, IBM_Plex_Sans_KR } from "next/font/google";
 import StoreProvider from "@/components/Store";
+import { IN_APP_SCRIPT } from "@/lib/inapp";
 import "./globals.css";
 
 const body = IBM_Plex_Sans_KR({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-body", display: "swap" });
@@ -14,6 +15,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={`${body.variable} ${readout.variable}`}>
+      <head>
+        {/* 카카오톡 등 인앱 브라우저로 열리면 크롬(바깥 브라우저)으로 넘긴다 */}
+        <script dangerouslySetInnerHTML={{ __html: IN_APP_SCRIPT }} />
+      </head>
       <body className="bg-[#e9edf1] text-ink antialiased">
         <StoreProvider>{children}</StoreProvider>
       </body>
