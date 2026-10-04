@@ -15,7 +15,7 @@ function extend(coords: unknown, acc: LngLatBounds): LngLatBounds {
   return acc;
 }
 
-/** 검토의견서 상단 위성 썸네일. 지도가 뜨지 않으면 아무것도 그리지 않는다(지도 없이 인쇄). */
+/** 검토의견서 상단 항공영상 썸네일. 지도가 뜨지 않으면 아무것도 그리지 않는다(지도 없이 인쇄). */
 export default function Thumb({ feature }: { feature: Feature }) {
   const el = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);

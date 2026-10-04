@@ -40,7 +40,7 @@ with open("data/labels_ai/final.csv", "w", encoding="utf-8", newline="") as f:
     for n in sorted(final):
         w.writerow([index[n], final[n], "ai", ""])
 
-Path("public/data/label_draft.json").write_text(json.dumps({"meta": {"by": "위성영상 AI 판독", "generated": date.today().isoformat()},
+Path("public/data/label_draft.json").write_text(json.dumps({"meta": {"by": "항공영상 AI 판독", "generated": date.today().isoformat()},
                                                            "labels": {str(index[n]): l for n, l in final.items()}}, ensure_ascii=False), encoding="utf-8")
 print("agree", len(agree), "/", len(index), "review", len(review))
 print("final", dict(Counter(final.values())))

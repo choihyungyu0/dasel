@@ -42,7 +42,7 @@ export interface Layers {
   target: boolean;
   general: boolean;
   station: boolean;
-  /** LYR-06 기존 태양광 설치 건물(위성 라벨) */
+  /** LYR-06 기존 태양광 설치 건물(항공영상 라벨) */
   installed: boolean;
 }
 
@@ -88,7 +88,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     });
     map.current = m;
     if (!VWORLD_KEY) cb.current.onFallback();
-    // ST-M4: 브이월드 타일이 막히면 Esri 위성으로 바꾼다
+    // ST-M4: 브이월드 타일이 막히면 Esri World Imagery로 바꾼다
     let swapped = !VWORLD_KEY;
     m.on("error", (e) => {
       if (swapped || (e as { sourceId?: string }).sourceId !== "sat") return;
@@ -118,8 +118,8 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
           "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3, ["boolean", ["feature-state", "hover"], false], 2, 0.5],
         },
       });
-      // LYR-06: 위성 라벨에서 이미 태양광이 확인된 건물
-      m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#38e1ff", "line-width": 2.5, "line-dasharray": [2, 1] } });
+      // LYR-06: 항공영상 라벨에서 이미 태양광이 확인된 건물
+      m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#1456c8", "line-width": 2.5, "line-dasharray": [2, 1] } });
       if (ds.stationGeo) {
         m.addSource("station", { type: "geojson", data: ds.stationGeo });
         m.addLayer({ id: "LYR-04", type: "circle", source: "station", layout: { visibility: "none" }, paint: { "circle-radius": 7, "circle-color": "#d7263d", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });

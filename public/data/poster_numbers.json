@@ -11,7 +11,7 @@
   },
   "sources": {
    "capacity": "국토교통부 GIS건물통합정보(15083092)(기준일 20260909) · 국토교통부 건축HUB 건축물대장 표제부(15134735) — 지붕면적×이용률÷kW당 면적(lib/calc.ts 기본 가정), 30kW 이상 대상 건물",
-   "tiers_by_complex": "설치 적합도 점수(lib/score.ts, 90점 만점) 단계 · '이미 설치됨'은 위성영상 판독 라벨(public/data/labels.json, basis=ai)",
+   "tiers_by_complex": "설치 적합도 점수(lib/score.ts, 90점 만점) 단계 · '이미 설치됨'은 항공영상 판독 라벨(public/data/labels.json, basis=ai)",
    "tariff": "한전 전력데이터 개방포털 계약종별 전력사용량(청주시 산업용 평균판매단가)",
    "validation": "data/quality/validation.json (scripts/06_validate.ts 산출)",
    "sensitivity": "lib/stability.ts — 가중치 ±20% 균등 난수 1000회, 시드 20261003"

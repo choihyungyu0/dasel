@@ -15,7 +15,7 @@ function extend(coords: unknown, acc: LngLatBounds): LngLatBounds {
   return acc;
 }
 
-/** 라벨링용 위성 확대 지도. 지붕이 보이도록 건물은 채우지 않고 외곽선만 그린다. */
+/** 라벨링용 항공영상 확대 지도. 지붕이 보이도록 건물은 채우지 않고 외곽선만 그린다. */
 export default function LabelMap({ feature }: { feature: Feature }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);

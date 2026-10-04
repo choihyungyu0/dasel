@@ -1,4 +1,4 @@
-"""라벨링 초안용: 건물별 위성 이미지(screenshots/label_tiles)를 12장씩 한 장에 모은다."""
+"""라벨링 초안용: 건물별 항공영상(screenshots/label_tiles)를 12장씩 한 장에 모은다."""
 import json
 from pathlib import Path
 

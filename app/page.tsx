@@ -209,7 +209,7 @@ export default function Page() {
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                       {LAYER_LABEL.map(([k, label], i) => (
                         <label key={k} className="flex items-center gap-1">
-                          <input id={`LYR-0${["1", "2", "2b", "4", "6"][i]}`} type="checkbox" checked={layers[k]} disabled={(k === "station" && !ds.stationGeo) || (k === "installed" && installedCount === 0)} title={k === "installed" && installedCount === 0 ? "위성 라벨링 결과가 아직 없습니다" : undefined} onChange={(e) => setLayers({ ...layers, [k]: e.target.checked })} />
+                          <input id={`LYR-0${["1", "2", "2b", "4", "6"][i]}`} type="checkbox" checked={layers[k]} disabled={(k === "station" && !ds.stationGeo) || (k === "installed" && installedCount === 0)} title={k === "installed" && installedCount === 0 ? "항공영상 라벨링 결과가 아직 없습니다" : undefined} onChange={(e) => setLayers({ ...layers, [k]: e.target.checked })} />
                           {label}
                         </label>
                       ))}
@@ -226,7 +226,7 @@ export default function Page() {
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
-                    {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
+                    {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#1456c8]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 md:block">
                     {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물시설 거리는 반영하지 않아 90점 만점입니다
@@ -239,7 +239,7 @@ export default function Page() {
                 조건에 맞는 건물이 없어요 <button type="button" onClick={() => setFilters(DEFAULT_FILTERS)} className="ml-1 underline">필터 해제</button>
               </p>
             )}
-            {ds && fallbackImagery && <p className="pointer-events-auto rounded-md bg-ink/80 px-2 py-1 text-[11px] text-white">위성 배경: Esri World Imagery로 표시 중</p>}
+            {ds && fallbackImagery && <p className="pointer-events-auto rounded-md bg-ink/80 px-2 py-1 text-[11px] text-white">배경 영상: Esri World Imagery로 표시 중</p>}
             {ds && (
               <div className="pointer-events-auto mt-auto w-full">
                 <SummaryBanner

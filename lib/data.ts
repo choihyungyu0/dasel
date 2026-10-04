@@ -22,7 +22,7 @@ export interface RawBuilding {
   solar_biz?: string;
   solar_biz_src?: string;
   zone?: string;
-  /** VAL-01: 위성 라벨이 '설치'인 건물(loadDataset에서 붙임) */
+  /** VAL-01: 항공영상 라벨이 '설치'인 건물(loadDataset에서 붙임) */
   installed?: boolean;
   tot_area: number | null;
   apr_ymd: string | null;
@@ -80,7 +80,7 @@ export interface Dataset {
   factories: Factory[];
   stability: StabilityResult;
   grid: Grid | null;
-  /** VAL-01 위성 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
+  /** VAL-01 항공영상 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
   labels: { meta: { basis?: "human" | "ai"; reviewed?: number; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
 }
 

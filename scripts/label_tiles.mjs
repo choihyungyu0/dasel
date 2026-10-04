@@ -1,4 +1,4 @@
-// 라벨링 초안용: /label 화면을 넘기며 후보 건물의 위성 확대 이미지를 한 장씩 저장한다.
+// 라벨링 초안용: /label 화면을 넘기며 후보 건물의 항공영상 확대 이미지를 한 장씩 저장한다.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright-core";
 

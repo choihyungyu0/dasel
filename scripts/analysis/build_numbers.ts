@@ -231,7 +231,7 @@ async function main() {
       labels: labelsDoc?.meta ?? null,
       sources: {
         capacity: `${doc.meta.source}(기준일 ${doc.meta.base_date}) · ${doc.meta.register_source ?? "건축물대장"} — 지붕면적×이용률÷kW당 면적(lib/calc.ts 기본 가정), 30kW 이상 대상 건물`,
-        tiers_by_complex: `설치 적합도 점수(lib/score.ts, ${maxAvailable()}점 만점) 단계 · '이미 설치됨'은 위성영상 판독 라벨(public/data/labels.json, basis=${String(labelsDoc?.meta?.basis ?? "없음")})`,
+        tiers_by_complex: `설치 적합도 점수(lib/score.ts, ${maxAvailable()}점 만점) 단계 · '이미 설치됨'은 항공영상 판독 라벨(public/data/labels.json, basis=${String(labelsDoc?.meta?.basis ?? "없음")})`,
         tariff: "한전 전력데이터 개방포털 계약종별 전력사용량(청주시 산업용 평균판매단가)",
         validation: "data/quality/validation.json (scripts/06_validate.ts 산출)",
         sensitivity: `lib/stability.ts — 가중치 ±${STABILITY.spread * 100}% 균등 난수 ${STABILITY.runs}회, 시드 ${STABILITY.seed}`,

@@ -30,7 +30,7 @@ function load(): Saved {
   }
 }
 
-/** VAL-01 라벨링 화면: 30kW 이상 대상 건물을 점수 순으로 위성 확대해 기존 태양광 설치 여부를 표시한다. */
+/** VAL-01 라벨링 화면: 30kW 이상 대상 건물을 점수 순으로 항공영상 확대해 기존 태양광 설치 여부를 표시한다. */
 export default function LabelPage() {
   const { status, ds } = useStore();
   const [saved, setSaved] = useState<Saved>({ labeler: "", imageYear: "", labels: {} });
