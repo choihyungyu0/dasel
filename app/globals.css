@@ -162,3 +162,11 @@ body {
   flex-grow: 1;
   gap: 6px;
 }
+
+/* 가로로 넘기는 한 줄 메뉴: 스크롤바는 숨기고 넘김만 남긴다 */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

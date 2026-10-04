@@ -192,14 +192,14 @@ export default function Page() {
         <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:items-stretch">
           <div className={`flex min-w-0 flex-1 flex-col items-start gap-2 ${selected || anchorId !== null ? "max-md:hidden" : ""}`}>
             {ds && (
-              <div className="pointer-events-auto max-w-full surface p-2">
-                <div className="flex flex-wrap items-center gap-1 text-xs">
-                  <div id="SEG-01" data-tour="color-by" role="group" aria-label="색상 기준" className="flex flex-wrap gap-1">
+              <div className="pointer-events-auto max-w-full surface p-1.5 md:p-2">
+                <div className="no-scrollbar flex items-center gap-1 whitespace-nowrap text-xs max-md:overflow-x-auto md:flex-wrap">
+                  <div id="SEG-01" data-tour="color-by" role="group" aria-label="색상 기준" className="flex gap-1 md:flex-wrap">
                     {(Object.keys(COLOR_SCALES) as ColorBy[]).map((k) => (
                       <button key={k} type="button" aria-pressed={colorBy === k} onClick={() => setColorBy(k)} className={`rounded-md px-2 py-1 ${colorBy === k ? "bg-ink text-white" : "hover:bg-slate-100"}`}>{COLOR_SCALES[k].label}</button>
                     ))}
                   </div>
-                  <button type="button" aria-expanded={showFilter} onClick={() => setShowFilter((v) => !v)} className="rounded-md border border-slate-300 px-2 py-1 hover:bg-slate-100">
+                  <button type="button" aria-expanded={showFilter} onClick={() => setShowFilter((v) => !v)} className="shrink-0 rounded-md border border-slate-300 px-2 py-1 hover:bg-slate-100 max-md:order-first">
                     필터·레이어 <span className="num">{filtered.length.toLocaleString("ko-KR")}동</span>
                   </button>
                 </div>
@@ -219,14 +219,14 @@ export default function Page() {
                     </div>
                   </div>
                 )}
-                <div id="LGD-01" className="mt-2 border-t border-ink/10 pt-2 text-[11px]">
-                  <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
+                <div id="LGD-01" className="mt-1.5 border-t border-ink/10 pt-1.5 text-[11px] md:mt-2 md:pt-2">
+                  <ul className="no-scrollbar flex gap-x-3 gap-y-0.5 whitespace-nowrap max-md:overflow-x-auto md:flex-wrap">
                     {scale.stops.map((st) => (
-                      <li key={st.label} className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: st.color }} />{st.label}</li>
+                      <li key={st.label} className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: st.color }} />{st.label}{st.label === "이미 설치됨" && <span className="text-ink/50">{ds.labels?.meta.basis === "ai" ? "(AI 판독) " : ""}<span className="num">{installedCount}</span></span>}</li>
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
-                    {installedCount > 0 && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
+                    {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#12b5d4]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 md:block">
                     {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물시설 거리는 반영하지 않아 90점 만점입니다

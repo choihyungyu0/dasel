@@ -22,7 +22,7 @@ export default function AppHeader({ children, complexSelect = true }: { children
     else router.push("/?tour=1");
   };
   return (
-    <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1.5 surface px-3 py-2">
+    <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 surface px-2.5 py-1.5 md:gap-y-1.5 md:px-3 md:py-2">
       <h1 className="flex items-center gap-1.5 text-[17px] font-bold tracking-tight"><i aria-hidden className="cell-mark" />다셀</h1>
       <nav id="NAV-01" className="flex gap-1 whitespace-nowrap text-sm">
         {TABS.map((t) => (
@@ -34,7 +34,7 @@ export default function AppHeader({ children, complexSelect = true }: { children
       </nav>
       {children}
       {complexSelect && ds && (
-        <div id="SEG-02" data-tour="complex" className="flex max-w-full gap-1 overflow-x-auto whitespace-nowrap text-sm max-md:order-3 md:ml-auto">
+        <div id="SEG-02" data-tour="complex" className="no-scrollbar flex max-w-full gap-1 overflow-x-auto whitespace-nowrap text-sm max-md:order-3 max-md:w-full max-md:text-[13px] md:ml-auto">
           <button type="button" onClick={() => setComplexCd(null)} className={`rounded-md px-2.5 py-1 ${complexCd === null ? "bg-ink text-white" : "hover:bg-slate-100"}`}>전체</button>
           {ds.complexes.map((c) =>
             c.status === "조성 중" ? (
