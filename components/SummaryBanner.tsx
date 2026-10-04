@@ -31,12 +31,12 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
   return (
     <section id="CRD-00" data-tour="summary" className="surface @container overflow-hidden">
       {/* 좁은 화면: 한 줄 요약 */}
-      <div className="flex items-center gap-2 px-2.5 py-1.5 md:hidden">
+      <div className="flex items-center gap-2 px-2.5 py-1.5 roomy:hidden">
         <button type="button" aria-expanded={open} aria-controls="CRD-00-body" onClick={() => setOpen((v) => !v)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[11px] text-ink/55">{scope} 합계 · {REVIEW_BADGE}</span>
             <span className="readout block truncate !text-[16px]">
-              {n(s.buildings)}<span className="unit">동</span> · {n(s.mw, 1)}<span className="unit">MW</span> · 연 {n(s.save_low / 1e8)}~{n(s.save_base / 1e8)}<span className="unit">억</span>
+              {n(s.buildings)}<span className="unit">동</span> · <span className="max-[359px]:hidden">{n(s.mw, 1)}<span className="unit">MW</span> · </span>연 {n(s.save_low / 1e8)}~{n(s.save_base / 1e8)}<span className="unit">억</span>
             </span>
           </span>
           <span aria-hidden className={`grid size-6 shrink-0 place-items-center rounded-full border border-ink/15 text-[10px] text-ink/60 transition-transform ${open ? "rotate-180" : ""}`}>▲</span>
@@ -46,12 +46,12 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
           <button type="button" onClick={onTop} className="shrink-0 rounded-md bg-tier-go px-3 py-2 text-[13px] font-semibold text-white">1순위 보기</button>
         )}
       </div>
-      <div className="hidden flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 px-3 py-1.5 md:flex md:px-4">
+      <div className="hidden flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 px-3 py-1.5 roomy:flex roomy:px-4">
         <h2 className="text-[13px] font-semibold">{scope} 합계</h2>
         <span className="badge-review">{REVIEW_BADGE}</span>
         <span className="text-[11px] text-ink/55">그 외 {n(s.others)}동(30kW 미만·대상 아님)은 합계에 넣지 않았습니다</span>
       </div>
-      <div id="CRD-00-body" className={`flex-col @4xl:flex-row @4xl:items-stretch md:flex ${open ? "flex border-t border-ink/10" : "hidden"}`}>
+      <div id="CRD-00-body" className={`flex-col @4xl:flex-row @4xl:items-stretch roomy:flex ${open ? "flex border-t border-ink/10" : "hidden"}`}>
         <dl className="grid flex-1 grid-cols-2 @md:grid-cols-3 @4xl:grid-cols-6 @4xl:divide-x @4xl:divide-ink/10">
           {items.map((it) => (
             <div key={it.label} title={it.source} className="min-w-0 px-3 py-1.5 @4xl:py-2">
@@ -65,11 +65,11 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
           ))}
         </dl>
         {hasTop && (
-          <button id="BTN-01" data-tour="top1" type="button" onClick={onTop} className="m-2 hidden shrink-0 rounded-md bg-tier-go px-4 py-2 text-sm font-semibold text-white hover:brightness-110 md:block @4xl:my-2 @4xl:mr-3">
+          <button id="BTN-01" data-tour="top1" type="button" onClick={onTop} className="m-2 hidden shrink-0 rounded-md bg-tier-go px-4 py-2 text-sm font-semibold text-white hover:brightness-110 roomy:block @4xl:my-2 @4xl:mr-3">
             적합도 1순위 건물 보기
           </button>
         )}
-        <p className="px-3 pb-2 text-[11px] text-ink/55 md:hidden">그 외 {n(s.others)}동(30kW 미만·대상 아님)은 합계에 넣지 않았습니다</p>
+        <p className="px-3 pb-2 text-[11px] text-ink/55 roomy:hidden">그 외 {n(s.others)}동(30kW 미만·대상 아님)은 합계에 넣지 않았습니다</p>
       </div>
     </section>
   );

@@ -22,11 +22,11 @@ export default function AppHeader({ children, complexSelect = true }: { children
     else router.push("/?tour=1");
   };
   return (
-    <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 surface px-2.5 py-1.5 md:gap-y-1.5 md:px-3 md:py-2">
-      <h1 className="flex items-center gap-1.5 text-[17px] font-bold tracking-tight"><i aria-hidden className="cell-mark" />다셀</h1>
-      <nav id="NAV-01" className="flex gap-1 whitespace-nowrap text-sm">
+    <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 surface px-2.5 py-1.5 max-[374px]:gap-x-1.5 md:gap-y-1.5 md:px-3 md:py-2">
+      <h1 className="flex items-center gap-1.5 text-[17px] font-bold tracking-tight max-[374px]:text-[15px]"><i aria-hidden className="cell-mark" />다셀</h1>
+      <nav id="NAV-01" className="flex gap-1 whitespace-nowrap text-sm max-[374px]:gap-0 max-[374px]:text-[13px]">
         {TABS.map((t) => (
-          <Link key={t.href} href={t.href} data-tour={t.tour} className={`rounded-md px-2.5 py-1 ${path === t.href ? "bg-ink text-white" : "text-ink/70 hover:bg-ink/5"}`}>{t.label}</Link>
+          <Link key={t.href} href={t.href} data-tour={t.tour} className={`rounded-md px-2.5 py-1 max-[374px]:px-2 ${path === t.href ? "bg-ink text-white" : "text-ink/70 hover:bg-ink/5"}`}>{t.label}</Link>
         ))}
         {(compare.length > 0 || path === "/compare") && (
           <Link href="/compare" className={`rounded-md px-2.5 py-1 ${path === "/compare" ? "bg-ink text-white" : "text-ink/70 hover:bg-ink/5"}`}>비교 <span className="num">{compare.length}</span></Link>

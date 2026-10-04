@@ -170,3 +170,6 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* 넓고 충분히 높은 화면에서만 큰 합계 띠를 편다. 가로로 눕힌 폰(높이가 낮음)은 한 줄 요약을 쓴다 */
+@custom-variant roomy (@media (min-width: 768px) and (min-height: 600px));

@@ -105,7 +105,7 @@ export default function SimPage() {
       {status === "loading" && <p className="rounded-xl bg-white p-6 text-sm text-slate-500">공장 건물 불러오는 중</p>}
       {status === "error" && <p className="rounded-xl bg-white p-6 text-sm">건물 데이터를 불러오지 못했어요 <button type="button" onClick={reload} className="ml-1 underline">다시 시도</button></p>}
       {s && rows && baseRows && (
-        <div className="grid gap-2 md:grid-cols-[340px_1fr]">
+        <div className="grid gap-2 md:grid-cols-[340px_minmax(0,1fr)]">
           <section className="surface bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold">조건</h2>
             <div data-tour="sim-sliders" className="space-y-3">
