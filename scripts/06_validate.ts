@@ -83,6 +83,15 @@ const review = {
 };
 const basis: "human" | "ai" = review.done >= review.queue && review.queue > 0 ? "human" : "ai";
 
+/** 코헨 카파: 두 판독이 우연히 맞을 확률을 뺀 일치도 */
+function kappaOf(pairs: [string, string][]): number | null {
+  if (!pairs.length) return null;
+  const cats = [...new Set(pairs.flat())];
+  const po = pairs.filter(([a, b]) => a === b).length / pairs.length;
+  const pe = cats.reduce((sum, c) => sum + (pairs.filter(([a]) => a === c).length / pairs.length) * (pairs.filter(([, b]) => b === c).length / pairs.length), 0);
+  return pe === 1 ? 1 : round((po - pe) / (1 - pe));
+}
+
 // ---- AI 눈가림 재판독: 앞선 판독을 보지 않은 별도 판독(검수 큐 대상). 사람 검수가 아니다.
 const BLIND = "data/labels_draft/ai_blind_queue.csv";
 const blindLabel = new Map<number, Label>(existsSync(BLIND) ? parseLabelCsv(readFileSync(BLIND, "utf8")).rows.map((r) => [r.bld_id, r.label]) : []);
@@ -96,6 +105,7 @@ const blind = blindIds.length
       notFlipped: sampleNot.filter((id) => blindLabel.get(id) === "설치").length,
       notTotal: sampleNot.filter((id) => blindLabel.has(id)).length,
       changed: blindIds.filter((id) => blindLabel.get(id) !== aiLabel.get(id)).length,
+      kappa: kappaOf(blindIds.map((id) => [aiLabel.get(id) as string, blindLabel.get(id) as string])),
     }
   : null;
 

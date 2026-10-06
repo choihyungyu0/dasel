@@ -7,7 +7,7 @@
    "basis": "ai",
    "reviewed": 0,
    "image_year": null,
-   "generated": "2026-10-04"
+   "generated": "2026-10-06"
   },
   "sources": {
    "capacity": "국토교통부 GIS건물통합정보(15083092)(기준일 20260909) · 국토교통부 건축HUB 건축물대장 표제부(15134735) — 지붕면적×이용률÷kW당 면적(lib/calc.ts 기본 가정), 30kW 이상 대상 건물",
@@ -1918,14 +1918,16 @@
    "installedTotal": 42,
    "notFlipped": 0,
    "notTotal": 50,
-   "changed": 2
+   "changed": 2,
+   "kappa": 0.957
   },
   "files": [
    "existing_pv.csv",
-   "final.csv"
+   "final.csv",
+   "roof_usable.csv"
   ],
-  "skipped": 0,
-  "generated": "2026-10-04",
+  "skipped": 34,
+  "generated": "2026-10-06",
   "labelers": [
    {
     "name": "ai",

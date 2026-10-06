@@ -61,7 +61,7 @@ export default function MethodPage() {
   const fq = read<FactoryQ>("data/quality/factory.json");
   const rq = read<RegisterQ>("data/quality/register.json");
   const C = CONSTANTS;
-  const vq = read<Validation & { generated: string; basis?: "human" | "ai"; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number }; blind?: { checked: number; agreement: number; installedKept: number; installedTotal: number; notFlipped: number; notTotal: number; changed: number } | null }>("data/quality/validation.json");
+  const vq = read<Validation & { generated: string; basis?: "human" | "ai"; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number }; blind?: { checked: number; agreement: number; installedKept: number; installedTotal: number; notFlipped: number; notTotal: number; changed: number; kappa?: number | null } | null }>("data/quality/validation.json");
   const rv = vq.review;
   const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
@@ -168,7 +168,7 @@ export default function MethodPage() {
               ["표시한 사람", vq.labelers.map((l) => `${l.count}동`).join(" · ") || "–"],
               ["두 사람이 같이 본 건물의 일치율", vq.overlap ? `${pct(vq.agreement)} (${n(vq.overlap)}동${vq.kappa !== null ? `, 카파 ${vq.kappa}` : ""})` : "한 사람만 표시"],
             ]),
-            ...(vq.blind ? [["AI 눈가림 재판독과의 일치(검수 표본)", `${pct(vq.blind.agreement)} (${n(vq.blind.checked)}동) · '설치' ${n(vq.blind.installedKept)}/${n(vq.blind.installedTotal)}동 유지 · '미설치' 표본 ${n(vq.blind.notTotal)}동 중 '설치'로 바뀐 것 ${n(vq.blind.notFlipped)}동`]] : []),
+            ...(vq.blind ? [["AI 눈가림 재판독과의 일치(검수 표본)", `${pct(vq.blind.agreement)} (${n(vq.blind.checked)}동${vq.blind.kappa != null ? `, 카파 ${vq.blind.kappa}` : ""}) · '설치' ${n(vq.blind.installedKept)}/${n(vq.blind.installedTotal)}동 유지 · '미설치' 표본 ${n(vq.blind.notTotal)}동 중 '설치'로 바뀐 것 ${n(vq.blind.notFlipped)}동`]] : []),
             ...(rv && rv.done > 0 ? [
               ["AI 판독과 사람 검수의 일치율", `${pct(rv.agreement)} (${n(rv.done)}동)`],
               ["AI '설치' 중 사람도 '설치'로 본 비율(정밀도)", pct(rv.precision)],
