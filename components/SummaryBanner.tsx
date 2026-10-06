@@ -44,7 +44,7 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
           <span className="sr-only">{open ? "합계 접기" : "합계 펼치기"}</span>
         </button>
         {hasTop && (
-          <button type="button" onClick={onTop} className="shrink-0 rounded-md bg-tier-go px-3 py-2 text-[13px] font-semibold text-white">1순위 보기</button>
+          <button id="BTN-01M" type="button" onClick={onTop} className="shrink-0 rounded-md bg-tier-go px-3 py-2 text-[13px] font-semibold text-white">1순위 보기</button>
         )}
       </div>
       <div className="hidden flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 px-3 py-1.5 roomy:flex roomy:px-4">

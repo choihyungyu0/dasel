@@ -37,7 +37,7 @@ for (const size of SIZES) {
   n["1 지도 첫 화면"] = { 합계: await all(page, "#CRD-00 dd"), 범위: await text(page, "#CRD-00 h2") };
 
   // 2) 1순위 건물 패널
-  await page.click("#BTN-01");
+  await page.click("#BTN-01:visible, #BTN-01M:visible");
   await page.waitForSelector("#WF2");
   await settle(page, 5000);
   await shot("2_panel");
