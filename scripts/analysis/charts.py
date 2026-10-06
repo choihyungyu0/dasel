@@ -107,7 +107,7 @@ def chart_capacity():
         fig, "01_capacity", "지붕 태양광 설치 가능 용량은 소수의 큰 건물에 몰려 있다",
         f"출처: {META['sources']['capacity']}\n"
         f"구간별 동 수: {hist} · 건물 자료 기준일 {ymd(META['buildings_base_date'])} · 계산일 {META['generated']} · 현장 확인 전 1차 추정값",
-        subtitle=f"30kW 이상 대상 건물 {n(c['count'])}동 · 합계 {c['total_mw']:.1f}MW · 가장 큰 건물 {n(c['max_kw'])}kW · 중앙값 {n(c['median_kw'])}kW",
+        subtitle=f"이미 설치된 건물을 뺀 30kW 이상 대상 건물 {n(c['count'])}동 · 합계 {c['total_mw']:.1f}MW · 가장 큰 건물 {n(c['max_kw'])}kW · 중앙값 {n(c['median_kw'])}kW",
     )
 
 

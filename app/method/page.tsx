@@ -8,7 +8,7 @@ import { maxAvailable, WEIGHTS } from "@/lib/score";
 import { STABILITY } from "@/lib/stability";
 import type { Validation } from "@/lib/validate";
 
-export const metadata = { title: "산정 기준 — 다셀" };
+export const metadata = { title: "산정 기준 | 다셀" };
 
 const read = <T,>(file: string): T => JSON.parse(readFileSync(path.join(process.cwd(), file), "utf8"));
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -66,6 +66,12 @@ export default function MethodPage() {
   const ai = vq.basis === "ai";
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
   const sq = read<{ zoning_source: string; zoning_fetched: string; d35_zone_buildings: number; by_complex: Record<string, Record<string, number>>; total: Record<string, number> }>("data/quality/solar_biz.json");
+  const uq = read<{ meta: { rule: string; source: string; targets: string }; targets: number; read: number; unreadable: number[]; pass_agreement: { same: number; within10: number; max_diff: number }; usable: { mean: number; mean_not_installed: number; at_floor: number; at_cap: number; assumed: number }; capacity_kw: { not_installed: { n: number; assumed: number; ai: number } }; top20_kept: number; tier_moves: Record<string, number>; example: { usable: number | null; assumed: { pv_kw: number }; ai: { pv_kw: number } } }>("data/quality/roof_usable.json");
+  type Packs = { base: number; a_only: number; b_only: number };
+  type BatTier = { buildings: number; ess_kwh: number; ess_units: number; packs: Packs; ess_save_won: number; site: Record<string, number> };
+  const bat = read<{ meta: { generated: string }; by_tier: Record<string, BatTier>; total: BatTier; outlook: { chungbuk_2030: number; formula: string; nationwide_source: string; chungbuk_source: string; caveat: string; need_vs_outlook: { total: { base_pct: number; a_only_pct: number; b_only_pct: number } } } }>("data/quality/battery.json");
+  type MS = { mean: number; std: number };
+  const ml = read<{ generated: string; n: number; positives: number; negatives: number; excluded_unknown: number; rule: { auc_folds: MS }; models: Record<"logistic" | "gradient_boosting", { auc_folds: MS }>; diff_ml_minus_rule: Record<"logistic" | "gradient_boosting", { mean: number; share_folds_positive: number }>; group_importance: Record<"logistic" | "gradient_boosting", Record<string, MS>>; rule_weights: Record<string, number>; rank_correlation: Record<"logistic" | "gradient_boosting", { spearman_rho: number; p_value: number }> }>("data/quality/ml_check.json");
   const gq = read<{ meta: { fetched: string; source: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
   const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
   const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
@@ -98,7 +104,7 @@ export default function MethodPage() {
         <F>필요 팩 수 = 올림(ESS 용량 ÷ 팩당 사용 가능)</F>
         <F>ESS 시간대 차익(원/년, 추정) = ESS 용량 × 왕복 효율 {C.ESS_EFF.value} × 운영일 {C.ESS_DAYS.value} × 최대−경부하 단가차 {peakSpread().toFixed(1)}원</F>
         <F>필지 공지(㎡) = 대지면적 − 그 필지 건물 바닥면적 합 · 놓을 수 있는 단위 수 = 내림(공지 ÷ {C.ESS_UNIT_AREA.value}㎡)</F>
-        <p>예: 250kW → 500kWh → 1단위, 팩 14개. 657kW → 1,314kWh가 아니라 1,000kWh 1단위, 팩 28개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 충전율 상한은 옥외 {C.SOC_MAX.value * 100}%, 옥내 {C.SOC_MAX_INDOOR.value * 100}%입니다({C.SOC_MAX.source}). 피크 저감 효과는 공장 계약전력과 부하 자료가 있어야 계산할 수 있어 넣지 않았습니다. 시간대 차익은 요금표만으로 추정한 값(예: 500kWh → 약 744만 원/년)이라 태양광 절감과 따로 표시합니다. 공지가 ESS 단위 수보다 모자라면 'ESS 공간 부족 — 옥상·별동 검토'를 표시하며, 대지면적을 모르는 건물은 판단하지 않습니다.</p>
+        <p>예: 250kW → 500kWh → 1단위, 팩 14개. 657kW → 1,314kWh가 아니라 1,000kWh 1단위, 팩 28개. 설치용량 {C.PV_MIN_KW.value}kW 미만은 ESS를 산정하지 않습니다. 충전율 상한은 옥외 {C.SOC_MAX.value * 100}%, 옥내 {C.SOC_MAX_INDOOR.value * 100}%입니다({C.SOC_MAX.source}). 피크 저감 효과는 공장 계약전력과 부하 자료가 있어야 계산할 수 있어 넣지 않았습니다. 시간대 차익은 요금표만으로 추정한 값(예: 500kWh → 약 744만 원/년)이라 태양광 절감과 따로 표시합니다. 공지가 ESS 단위 수보다 모자라면 'ESS 공간 부족 · 옥상·별동 검토'를 표시하며, 대지면적을 모르는 건물은 판단하지 않습니다.</p>
       </Section>
 
       <Section id="money" title="절감액·탄소">
@@ -127,7 +133,7 @@ export default function MethodPage() {
           ["구조", WEIGHTS.struct, "철근콘크리트·철골철근콘크리트·철골콘크리트·프리캐스트콘크리트 20 / 일반철골·경량철골·강파이프·기타강구조 12 / 조적·목조·기타 5 / 정보 없음 0"],
           ["사용 연수", WEIGHTS.age, "10년 미만 15 / 10~19년 12 / 20~29년 6 / 30년 이상·정보 없음 0"],
           ["전력수요 업종", WEIGHTS.industry, "다소비 업종 15 / 그 밖의 제조 8 / 등록공장 미연결 0"],
-          ["안전 이격(위험물)", WEIGHTS.hazmat, "미반영 — 위험물시설 위치 파일(소방청 15124189)이 공개 다운로드되지 않음"],
+          ["안전 이격(위험물)", WEIGHTS.hazmat, "미반영 · 위험물시설 위치 파일(소방청 15124189)이 공개 다운로드되지 않음"],
           ["배전 여유", WEIGHTS.grid, "주소의 리(里)에 걸친 모든 배전선로 여유 ≥ 설치용량 10 / 여유 있는 선로가 하나라도 있으면 5 / 없으면 0"],
         ]} />
         <Table head={["단계", "기준"]} rows={[
@@ -180,6 +186,39 @@ export default function MethodPage() {
         </Section>
       )}
 
+      <Section id="ml-check" title="ML 교차검증 (규칙 점수와 같은 조건 비교)">
+        <p>규칙으로 만든 점수가 '이미 설치한 건물'을 얼마나 가려내는지를 ML 모델과 같은 조건에서 비교했습니다({ml.generated} 계산). 대상은 판독 결과가 설치·미설치인 {n(ml.n)}동(설치 {n(ml.positives)} · 미설치 {n(ml.negatives)}, 불명 {n(ml.excluded_unknown)}동 제외)이고, 입력은 점수 구성요소 5개와 그 원값(설치용량·사용연수·구조·업종·배전 여유)입니다. 층화 5겹 교차검증을 시드를 바꿔 20회 반복했고(폴드 100개), 규칙 점수도 같은 테스트 폴드에서 AUC를 냈습니다.</p>
+        <Table head={["방법", "AUC 평균 ± 표준편차(폴드 100개)", "규칙 대비 차이", "규칙보다 높았던 폴드"]} rows={[
+          ["규칙 점수(학습 없음)", `${ml.rule.auc_folds.mean.toFixed(3)} ± ${ml.rule.auc_folds.std.toFixed(3)}`, "기준", "기준"],
+          ...(["logistic", "gradient_boosting"] as const).map((k) => [k === "logistic" ? "로지스틱 회귀" : "그래디언트 부스팅", `${ml.models[k].auc_folds.mean.toFixed(3)} ± ${ml.models[k].auc_folds.std.toFixed(3)}`, `+${ml.diff_ml_minus_rule[k].mean.toFixed(3)}`, pct(ml.diff_ml_minus_rule[k].share_folds_positive)]),
+        ]} />
+        <Table head={["항목", "규칙 가중치", "로지스틱 중요도", "부스팅 중요도"]} rows={Object.keys(ml.rule_weights).map((k) => [k, ml.rule_weights[k], `${ml.group_importance.logistic[k].mean.toFixed(3)} ± ${ml.group_importance.logistic[k].std.toFixed(3)}`, `${ml.group_importance.gradient_boosting[k].mean.toFixed(3)} ± ${ml.group_importance.gradient_boosting[k].std.toFixed(3)}`])} />
+        <p>중요도는 테스트 폴드에서 그 항목의 값을 섞었을 때 AUC가 줄어든 양(permutation importance)입니다. 규칙 가중치 순위와의 스피어만 순위상관은 로지스틱 {ml.rank_correlation.logistic.spearman_rho.toFixed(2)}(p = {ml.rank_correlation.logistic.p_value.toFixed(2)}), 부스팅 {ml.rank_correlation.gradient_boosting.spearman_rho.toFixed(2)}(p = {ml.rank_correlation.gradient_boosting.p_value.toFixed(2)})입니다. 두 모델 모두 규모가 가장 크고, 나머지 네 항목은 표준편차가 평균보다 커서 서로의 순서는 가리기 어렵습니다.</p>
+        <p>읽을 때 주의할 점입니다. ML의 AUC가 조금 높지만 그 차이는 폴드별 흔들림보다 작습니다. 설치 건물이 {n(ml.positives)}동뿐이라 ML은 이 라벨에 맞춰졌을(과적합) 수 있고, ML이 쓴 정보는 규칙과 같습니다. 라벨은 항공영상 AI 판독이며, '이미 설치했는가'는 적합도를 대신 보는 지표일 뿐입니다. 그래서 이 결과로 점수 규칙이나 가중치를 바꾸지 않았습니다.</p>
+      </Section>
+
+      <Section id="roof-usable" title="지붕 이용률 판독 (AI, 참고)">
+        <p>기본 계산은 모든 건물에 지붕 이용률 {C.UTIL.value}를 씁니다. 이 가정이 얼마나 맞는지 보려고 {uq.meta.targets} {n(uq.targets)}동의 지붕을 AI가 판독해, 패널을 놓을 수 없는 면적(옥상 설비·채광창·계단실·그림자·기존 패널·지붕이 아닌 부분)의 비율을 10% 단위로 추정했습니다. {uq.meta.source}. {uq.meta.rule}.</p>
+        <Table head={["항목", "값"]} rows={[
+          ["판독한 건물", `${n(uq.read)}동 / ${n(uq.targets)}동${uq.unreadable.length ? ` (영상이 흐려 판독하지 못한 건물 ${uq.unreadable.length}동)` : ""}`],
+          ["두 판독의 차이", `같음 ${n(uq.pass_agreement.same)}동 · 10%p 이내 ${n(uq.pass_agreement.within10)}동 · 최대 ${uq.pass_agreement.max_diff}%p (20%p를 넘는 건물은 재판독 대상)`],
+          ["평균 이용률", `${uq.usable.mean} (이미 설치된 건물을 빼면 ${uq.usable.mean_not_installed}) · 가정 ${uq.usable.assumed}`],
+          ["상한·하한에 걸린 건물", `상한 0.7에 ${n(uq.usable.at_cap)}동 · 하한 0.2에 ${n(uq.usable.at_floor)}동`],
+          [`설치용량 합계(이미 설치된 건물 제외 ${n(uq.capacity_kw.not_installed.n)}동)`, `가정 0.5일 때 ${n(uq.capacity_kw.not_installed.assumed)}kW → 판독 이용률일 때 ${n(uq.capacity_kw.not_installed.ai)}kW`],
+          ["점수 상위 20동 중 그대로 남는 건물", `${n(uq.top20_kept)}동`],
+          ["단계가 바뀌는 건물", Object.entries(uq.tier_moves).map(([k, v]) => `${k} ${v}동`).join(" · ") || "없음"],
+          ["예시 건물(정보창 기본 예시)", uq.example.usable === null ? "판독하지 못함" : `이용률 ${uq.example.usable} · ${n(uq.example.assumed.pv_kw, 1)}kW → ${n(uq.example.ai.pv_kw, 1)}kW`],
+        ]} />
+        <p>이 값은 건물 정보창에 "AI 판독 이용률(참고)"로만 보여 주고, 점수·합계·순위는 모두 이용률 {C.UTIL.value} 기준 그대로입니다. 하한에 걸린 건물은 대부분 이미 패널이 덮여 있거나 건물 도형이 지붕과 어긋난 경우입니다. 사람이 현장에서 잰 값이 아닙니다.</p>
+      </Section>
+
+      <Section id="battery" title="재사용 배터리 집계">
+        <p>'설치 우선'과 '검토' 단계 건물({n(bat.total.buildings)}동)에 건물당 1MWh 이하 1단위를 둔다고 가정한 집계입니다({bat.meta.generated} 계산). 팩 수는 A등급(잔존 80%) 비율에 따라 달라져 범위로 적습니다.</p>
+        <Table head={["단계", "동", "ESS 용량(MWh)", "분산 단위", "재사용 팩(기본 · A등급만~B등급만)", "ESS 시간대 차익(억 원/년)", "옥외 부지 여유 · 옥내 검토 · 대지면적 정보 없음"]} rows={[...Object.entries(bat.by_tier), ["합계", bat.total] as [string, BatTier]].map(([k, t]) => [k, n(t.buildings), n(t.ess_kwh / 1000, 1), n(t.ess_units), `${n(t.packs.base)} · ${n(t.packs.a_only)}~${n(t.packs.b_only)}`, n(t.ess_save_won / 1e8, 1), `${n(t.site["부지 여유"] ?? 0)} · ${n(t.site["옥내 검토(충전율 80%)"] ?? 0)} · ${n(t.site["대지면적 정보 없음"] ?? 0)}`])} />
+        <p>옥외 부지 확인은 필지 공지(대지면적 − 건축면적)가 단위 수 × {C.ESS_UNIT_AREA.value}㎡ 이상이면 '부지 여유', 모자라면 '옥내 검토(충전율 상한 80%)'입니다. 대지면적은 건축물대장에서 확인된 건물만 판정했고, 같은 필지의 여러 동이 공지를 나눠 쓰는 경우는 보지 않았습니다.</p>
+        <p><span className="mr-1 rounded bg-slate-200 px-1.5 py-0.5 text-[11px]">추정</span>충북 2030년 사용후 배터리 발생 전망 {n(bat.outlook.chungbuk_2030)}개는 공식 통계가 아니라 이 서비스가 계산한 값입니다. {bat.outlook.formula}. 출처: {bat.outlook.nationwide_source} · {bat.outlook.chungbuk_source}. 위 {n(bat.total.buildings)}동에 필요한 팩은 이 전망의 {bat.outlook.need_vs_outlook.total.base_pct}%({bat.outlook.need_vs_outlook.total.a_only_pct}~{bat.outlook.need_vs_outlook.total.b_only_pct}%)입니다. {bat.outlook.caveat}</p>
+      </Section>
+
       <Section id="industry" title="업종 분류">
         <p>등록공장은 주소 좌표가 떨어진 건물과 같은 필지의 다른 동에도 함께 연결합니다(동 구분 불가). 그래서 창고나 부속동도 같은 업종 점수를 받습니다.</p>
         <p>등록공장현황에는 업종코드가 없어 생산품 문구의 키워드로 분류합니다. 아래 키워드가 들어 있으면 다소비 업종(15점), 그 밖의 생산품은 제조(8점)입니다.</p>
@@ -190,7 +229,7 @@ export default function MethodPage() {
         <Table id="TBL-04" head={["항목", "값", "구분", "허용 범위", "출처", "기준일"]} rows={Object.values(C).map((c) => [c.label, `${c.value.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}${c.unit ? ` ${c.unit}` : ""}`, c.kind, "range" in c && c.range ? `${c.range[0]}~${c.range[1]}` : "–", c.source, c.asOf])} />
       </Section>
 
-      <Section id="tariff" title={`요금표 — ${TARIFF.name}`}>
+      <Section id="tariff" title={`요금표 · ${TARIFF.name}`}>
         <Table head={["계절", "경부하", "중간부하", "최대부하", "최대−경부하"]} rows={([["여름(6~8월)", TARIFF.energy.summer], ["봄·가을(3~5, 9~10월)", TARIFF.energy.springFall], ["겨울(11~2월)", TARIFF.energy.winter]] as const).map(([label, s]) => [label, ...s.rates.map((r) => `${r.toFixed(1)}원`), `${(s.rates[2] - s.rates[0]).toFixed(1)}원`])} />
         <p>기본요금 {n(TARIFF.basicWonPerKw)}원/kW · 최대부하 시간: 여름 {TARIFF.peakHours.summer}, 그 외 {TARIFF.peakHours.other} · 월수 가중 평균 단가차 {peakSpread().toFixed(1)}원/kWh · 출처 {TARIFF.source}, {TARIFF.asOf} 적용. 절감액 하한 150원의 근거 자료이며, ESS 시간대 차익은 아직 계산에 넣지 않았습니다.</p>
       </Section>

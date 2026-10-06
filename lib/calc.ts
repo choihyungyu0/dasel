@@ -165,15 +165,23 @@ export interface Summary {
   subsidy_tiered: number;
   /** 30kW 미만·제외 건물(합계에 넣지 않음) */
   others: number;
+  /** 이미 태양광이 설치된 건물(합계에서 뺌)의 동 수와, 이들을 포함했을 때의 MW */
+  installed: number;
+  mw_with_installed: number;
 }
 
-/** CAL-07: pv_kw ≥ 30인 대상 건물만 합산한다. */
-export function summarize(items: { target: boolean; calc: Calc }[]): Summary {
-  const s: Summary = { buildings: 0, mw: 0, gwh: 0, packs: 0, ess_units: 0, save_low: 0, save_base: 0, co2_t: 0, capex: 0, subsidy_flat: 0, subsidy_tiered: 0, others: 0 };
-  let kw = 0, kwh = 0, co2 = 0;
-  for (const { target, calc: c } of items) {
+/** CAL-07: pv_kw ≥ 30인 대상 건물만 합산한다. 이미 설치된 건물(installed)은 추가 설치 여지가 아니므로 합계에서 뺀다. */
+export function summarize(items: { target: boolean; calc: Calc; installed?: boolean }[]): Summary {
+  const s: Summary = { buildings: 0, mw: 0, gwh: 0, packs: 0, ess_units: 0, save_low: 0, save_base: 0, co2_t: 0, capex: 0, subsidy_flat: 0, subsidy_tiered: 0, others: 0, installed: 0, mw_with_installed: 0 };
+  let kw = 0, kwh = 0, co2 = 0, kwInstalled = 0;
+  for (const { target, calc: c, installed } of items) {
     if (!target || c.pv_kw === null || c.small) {
       s.others += 1;
+      continue;
+    }
+    if (installed) {
+      s.installed += 1;
+      kwInstalled += c.pv_kw;
       continue;
     }
     s.buildings += 1;
@@ -190,6 +198,7 @@ export function summarize(items: { target: boolean; calc: Calc }[]): Summary {
     s.subsidy_tiered += sub?.tiered ?? 0;
   }
   s.mw = round(kw / 1000, 2);
+  s.mw_with_installed = round((kw + kwInstalled) / 1000, 2);
   s.gwh = round(kwh / 1e6, 2);
   s.co2_t = round(co2, 1);
   return s;

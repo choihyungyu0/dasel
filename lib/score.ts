@@ -82,12 +82,12 @@ export function score(input: ScoreInput, baseYmd: string, av: Availability = P0_
   let conditional = false;
   if (!input.struct) {
     flags.push("STRUCT_NULL");
-    chips.push("구조 정보 없음 — 구조검토 필수");
+    chips.push("구조 정보 없음 · 구조검토 필수");
     conditional = true;
   }
   if (years !== null && years >= 30) {
     flags.push("OLD30");
-    chips.push(`사용승인 ${years}년 — 구조검토 필수`);
+    chips.push(`사용승인 ${years}년 · 구조검토 필수`);
     conditional = true;
   }
   if (input.struct && structPoints(input.struct) === 12) chips.push("경량 지붕 하중 확인 필요");
@@ -98,7 +98,7 @@ export function score(input: ScoreInput, baseYmd: string, av: Availability = P0_
       chips.push("위험물 거리 확인 필요");
       conditional = true;
     } else if (d < 50) {
-      chips.push(`위험물시설 ${Math.round(d)}m — ESS 별도 동·옥외 설치 검토`);
+      chips.push(`위험물시설 ${Math.round(d)}m · ESS 별도 동·옥외 설치 검토`);
       conditional = true;
     }
   } else {
@@ -142,6 +142,6 @@ export function summarySentence(input: ScoreInput, s: Score): string {
     input.struct,
     s.ageYears === null ? null : `사용승인 ${s.ageYears}년`,
   ].filter(Boolean);
-  const result = [`${n(c.pv_kw)}kW`, c.packs === null ? "소규모 — ESS 산정 안 함" : `재사용 팩 ${n(c.packs)}개`, s.tier];
+  const result = [`${n(c.pv_kw)}kW`, c.packs === null ? "소규모 · ESS 산정 안 함" : `재사용 팩 ${n(c.packs)}개`, s.tier];
   return `${basis.join("·")} → ${result.join(", ")}`;
 }

@@ -23,11 +23,11 @@ describe("5,000㎡ 예시 (CAL-01~04·06)", () => {
     expect(base.kwh_per_pack).toBe(36.96);
     expect(base.packs).toBe(14);
   });
-  it("투자비 3.5억, 회수 5.1(192원)~6.5년(150원) — CAL-08", () => {
+  it("투자비 3.5억, 회수 5.1(192원)~6.5년(150원) · CAL-08", () => {
     expect(base.capex).toBe(350_000_000);
     expect([base.payback_base, base.payback_low]).toEqual([5.1, 6.5]);
   });
-  it("ESS 시간대 차익 추정: 500kWh × 0.85 × 250일 × 70.0원 ≈ 744만 원 — CAL-05", () => {
+  it("ESS 시간대 차익 추정: 500kWh × 0.85 × 250일 × 70.0원 ≈ 744만 원 · CAL-05", () => {
     expect(base.ess_save).toBe(7_437_500);
     expect(toManwon(base.ess_save!)).toBe(744);
     expect(calc(500).ess_save).toBeNull();
@@ -152,5 +152,17 @@ describe("CAL-08 보조금 시나리오 (5,000㎡·250kW·투자비 3.5억)", ()
     expect(subsidy(1500)).toEqual({ flat: 414_000_000, tiered: 414_000_000 });
     expect(subsidy(29.9)).toBeNull();
     expect(subsidy(100)).toEqual({ flat: 41_400_000, tiered: 52_500_000 });
+  });
+});
+
+describe("CAL-07 이미 설치된 건물은 합계에서 뺀다", () => {
+  const s = summarize([
+    { target: true, calc: calc(5000) },
+    { target: true, calc: calc(5000), installed: true },
+    { target: true, calc: calc(200) },
+  ]);
+  it("합계 1동 0.25MW, 이미 설치 1동, 포함 시 0.5MW, 30kW 미만은 그 외", () => {
+    expect([s.buildings, s.mw, s.installed, s.mw_with_installed, s.others]).toEqual([1, 0.25, 1, 0.5, 1]);
+    expect(s.capex).toBe(350_000_000);
   });
 });

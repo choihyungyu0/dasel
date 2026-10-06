@@ -149,7 +149,7 @@ export default function SimPage() {
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold">산단별 결과</h2>
                 <span className="badge-review">{REVIEW_BADGE}</span>
-                <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산 · 투자비는 태양광만(참고값)</span>
+                <span className="text-[11px] text-slate-500">작은 숫자는 기본 조건 대비 증감 · 30kW 이상 대상 건물만 합산(이미 설치된 건물 제외) · 투자비는 태양광만(참고값)</span>
                 <label id="SUB-02" className="flex items-center gap-1.5 text-xs">
                   <input type="checkbox" checked={withSub} onChange={(e) => setWithSub(e.target.checked)} />
                   보조금 반영(2026 단가 기준)

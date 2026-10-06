@@ -1,0 +1,347 @@
+{
+  "meta": {
+    "generated": "2026-10-06",
+    "buildings_source": "국토교통부 GIS건물통합정보(15083092)",
+    "buildings_base_date": "20260909",
+    "buildings_built": "2026-10-04",
+    "score_base_ymd": "20261004",
+    "register_source": "국토교통부 건축HUB 건축물대장 표제부(15134735)",
+    "labels": {
+      "basis": "ai",
+      "generated": "2026-10-04"
+    },
+    "stage_note": "현장·구조검토 전 1차 추정값. 재사용 팩의 실제 등급·수량은 성능평가 뒤에 정해진다.",
+    "scope": "public/data/buildings.json 전체 건물 중 단계가 '설치 우선' 또는 '검토'이고 ESS 를 산정하는 건물(calc.ess_kwh !== null, 태양광 30kW 이상)",
+    "formulas": {
+      "tier": "lib/data.ts enrich() → lib/score.ts score(). labels.json 이 '설치'인 건물은 '이미 설치됨'으로 먼저 분류",
+      "ess_kwh": "lib/calc.ts calc(): min(태양광 kW × 저장 시간 2h, 분산 단위 상한 1000kWh × 시범 단위 수 1). 태양광 30kW 미만은 산정하지 않음",
+      "ess_units": "ceil(ess_kwh ÷ 1000kWh)",
+      "kwh_per_pack": "lib/calc.ts kwhPerPack(): 팩 정격 60kWh × (A비율×0.8 + B비율×0.7) × (충전율 상한 − 0.1)",
+      "packs": "건물별 ceil(ess_kwh ÷ 팩당 사용 가능 용량)의 합",
+      "ess_save": "ess_kwh × 왕복 효율 0.85 × 운영일 250일 × 최대부하−경부하 단가차 70원/kWh(산업용(을) 고압A 선택Ⅱ, 한전ON 전기요금표(PRM004D00), 2024-10-24). 기본요금 절감은 넣지 않음",
+      "site": "lib/chips.ts essSpace(): 필지 공지(대지면적 − 건물 바닥면적 합) ÷ 단위당 40㎡ 를 내림한 단위 수가 ess_units 이상이면 '부지 여유', 모자라면 '옥내 검토(충전율 80%)', 대지면적을 모르면 '대지면적 정보 없음'",
+      "indoor": "'옥내 검토' 건물은 enrich 가정 { indoor: 1 } 로 다시 계산(충전율 상한 0.8, 옥외는 0.9)",
+      "outlook": "app/sim/page.tsx CHT-02 와 같은 식: round(전국 2030 전망 × 충북 전기차 등록 비중)"
+    },
+    "kwh_per_pack": {
+      "outdoor": {
+        "base": 36.96,
+        "a_only": 38.4,
+        "b_only": 33.6
+      },
+      "indoor": {
+        "base": 32.34,
+        "a_only": 33.6,
+        "b_only": 29.4
+      }
+    },
+    "constants": {
+      "ESS_HOURS": {
+        "value": 2,
+        "unit": "h",
+        "label": "ESS 저장 시간",
+        "kind": "가정",
+        "source": "초기 가정값(시뮬레이터에서 범위 조정 가능)",
+        "asOf": "2026-10-03",
+        "range": [
+          1,
+          4
+        ]
+      },
+      "ESS_UNIT_MAX": {
+        "value": 1000,
+        "unit": "kWh",
+        "label": "분산 단위 상한",
+        "kind": "가정",
+        "source": "ESS 화재 사례(1~5MWh 다수) 기준 1MWh 이하 분산 조건",
+        "asOf": "2026-10-03"
+      },
+      "ESS_UNITS": {
+        "value": 1,
+        "unit": "단위",
+        "label": "재사용 ESS 시범 단위 수",
+        "kind": "가정",
+        "source": "1MWh 이하 1단위 시범을 기본으로 가정",
+        "asOf": "2026-10-04",
+        "range": [
+          1,
+          5
+        ]
+      },
+      "PV_MIN_KW": {
+        "value": 30,
+        "unit": "kW",
+        "label": "ESS 산정 최소 용량",
+        "kind": "가정",
+        "source": "초기 가정값(시뮬레이터에서 범위 조정 가능)",
+        "asOf": "2026-10-03"
+      },
+      "PACK_KWH": {
+        "value": 60,
+        "unit": "kWh",
+        "label": "재사용 팩 정격",
+        "kind": "가정",
+        "source": "초기 가정값(시뮬레이터에서 범위 조정 가능)",
+        "asOf": "2026-10-03",
+        "range": [
+          40,
+          80
+        ]
+      },
+      "SOH_A": {
+        "value": 0.8,
+        "unit": "",
+        "label": "A등급 잔존용량",
+        "kind": "가정",
+        "source": "초기 가정값(법정 성능등급 기준은 2027.5 시행 전 미정)",
+        "asOf": "2026-10-03"
+      },
+      "SOH_B": {
+        "value": 0.7,
+        "unit": "",
+        "label": "B등급 잔존용량",
+        "kind": "가정",
+        "source": "초기 가정값(법정 성능등급 기준은 2027.5 시행 전 미정)",
+        "asOf": "2026-10-03"
+      },
+      "A_RATIO": {
+        "value": 0.7,
+        "unit": "",
+        "label": "A등급 비율",
+        "kind": "가정",
+        "source": "초기 가정값(시뮬레이터에서 범위 조정 가능)",
+        "asOf": "2026-10-03",
+        "range": [
+          0,
+          1
+        ]
+      },
+      "SOC_MAX": {
+        "value": 0.9,
+        "unit": "",
+        "label": "충전율 상한(옥외 설치)",
+        "kind": "공식",
+        "source": "산업통상자원부 ESS 추가 안전대책(신규 설비 옥내 80%·옥외 90%)",
+        "asOf": "2020-02-06",
+        "range": [
+          0.8,
+          0.9
+        ]
+      },
+      "SOC_MAX_INDOOR": {
+        "value": 0.8,
+        "unit": "",
+        "label": "충전율 상한(옥내 설치)",
+        "kind": "공식",
+        "source": "산업통상자원부 ESS 추가 안전대책(신규 설비 옥내 80%·옥외 90%)",
+        "asOf": "2020-02-06"
+      },
+      "SOC_MIN": {
+        "value": 0.1,
+        "unit": "",
+        "label": "충전율 하한",
+        "kind": "가정",
+        "source": "초기 가정값(시뮬레이터에서 범위 조정 가능)",
+        "asOf": "2026-10-03"
+      },
+      "ESS_EFF": {
+        "value": 0.85,
+        "unit": "",
+        "label": "ESS 왕복 효율",
+        "kind": "가정",
+        "source": "초기 가정값",
+        "asOf": "2026-10-04"
+      },
+      "ESS_DAYS": {
+        "value": 250,
+        "unit": "일/년",
+        "label": "ESS 운영일",
+        "kind": "가정",
+        "source": "평일 운영을 가정한 초기 가정값",
+        "asOf": "2026-10-04"
+      },
+      "ESS_UNIT_AREA": {
+        "value": 40,
+        "unit": "㎡/단위",
+        "label": "ESS 단위당 필요 면적",
+        "kind": "가정",
+        "source": "1MWh 이하 컨테이너 1기와 이격 공간을 합친 초기 가정값",
+        "asOf": "2026-10-04"
+      }
+    }
+  },
+  "tiers_all": {
+    "제외": 2655,
+    "검토": 198,
+    "설치 우선": 20,
+    "보류": 510,
+    "이미 설치됨": 42
+  },
+  "by_tier": {
+    "설치 우선": {
+      "tier_buildings": 20,
+      "no_ess": 0,
+      "buildings": 20,
+      "ess_kwh": 14765.6,
+      "ess_units": 20,
+      "packs": {
+        "base": 412,
+        "a_only": 399,
+        "b_only": 448
+      },
+      "ess_save_won": 219638300,
+      "site": {
+        "부지 여유": 16,
+        "옥내 검토(충전율 80%)": 0,
+        "대지면적 정보 없음": 4
+      },
+      "site_share": {
+        "부지 여유": 0.8,
+        "옥내 검토(충전율 80%)": 0,
+        "대지면적 정보 없음": 0.2
+      },
+      "indoor_review": {
+        "buildings": 0,
+        "ess_kwh": 0,
+        "packs_outdoor": {
+          "base": 0,
+          "a_only": 0,
+          "b_only": 0
+        },
+        "packs_indoor": {
+          "base": 0,
+          "a_only": 0,
+          "b_only": 0
+        }
+      },
+      "packs_site_adjusted": {
+        "base": 412,
+        "a_only": 399,
+        "b_only": 448
+      }
+    },
+    "검토": {
+      "tier_buildings": 198,
+      "no_ess": 0,
+      "buildings": 198,
+      "ess_kwh": 40094.2,
+      "ess_units": 198,
+      "packs": {
+        "base": 1184,
+        "a_only": 1139,
+        "b_only": 1288
+      },
+      "ess_save_won": 596401225,
+      "site": {
+        "부지 여유": 113,
+        "옥내 검토(충전율 80%)": 3,
+        "대지면적 정보 없음": 82
+      },
+      "site_share": {
+        "부지 여유": 0.5707,
+        "옥내 검토(충전율 80%)": 0.0152,
+        "대지면적 정보 없음": 0.4141
+      },
+      "indoor_review": {
+        "buildings": 3,
+        "ess_kwh": 334.4,
+        "packs_outdoor": {
+          "base": 11,
+          "a_only": 10,
+          "b_only": 11
+        },
+        "packs_indoor": {
+          "base": 12,
+          "a_only": 11,
+          "b_only": 14
+        }
+      },
+      "packs_site_adjusted": {
+        "base": 1185,
+        "a_only": 1140,
+        "b_only": 1291
+      }
+    }
+  },
+  "total": {
+    "buildings": 218,
+    "ess_kwh": 54859.8,
+    "ess_units": 218,
+    "packs": {
+      "base": 1596,
+      "a_only": 1538,
+      "b_only": 1736
+    },
+    "ess_save_won": 816039525,
+    "site": {
+      "부지 여유": 129,
+      "옥내 검토(충전율 80%)": 3,
+      "대지면적 정보 없음": 86
+    },
+    "site_share": {
+      "부지 여유": 0.5917,
+      "옥내 검토(충전율 80%)": 0.0138,
+      "대지면적 정보 없음": 0.3945
+    },
+    "indoor_review": {
+      "buildings": 3,
+      "ess_kwh": 334.4,
+      "packs_outdoor": {
+        "base": 11,
+        "a_only": 10,
+        "b_only": 11
+      },
+      "packs_indoor": {
+        "base": 12,
+        "a_only": 11,
+        "b_only": 14
+      }
+    },
+    "packs_site_adjusted": {
+      "base": 1597,
+      "a_only": 1539,
+      "b_only": 1739
+    }
+  },
+  "parcel_note": {
+    "note": "참고(프로젝트 산식 밖의 단순 점검): essSpace 는 건물 단위라 같은 필지의 대상 건물이 공지를 나눠 쓰는 경우를 보지 않는다",
+    "parcels_with_multiple_targets": 26,
+    "buildings_on_those_parcels": 95,
+    "parcels_short_when_shared": 1
+  },
+  "outlook": {
+    "estimate": true,
+    "label": "추정",
+    "nationwide_2030": 107500,
+    "nationwide_source": "환경부 추정(뉴스핌 2026-05-20 보도 재인용)",
+    "ev_nationwide": 1160968,
+    "ev_chungbuk": 42176,
+    "chungbuk_share": 0.0363283053451947,
+    "chungbuk_source": "국토교통부 자동차등록현황보고 2026년 8월(연료별 등록현황): 전기차 전국 1,160,968대·충북 42,176대",
+    "chungbuk_2030": 3905,
+    "formula": "충북 전망 = round(전국 2030년 107500개 × 충북 전기차 등록 비중 42176/1160968)",
+    "caveat": "전국 전망은 보도 재인용이라 '추정'으로 표시한다. 발생한 배터리가 모두 재사용 등급을 받는 것은 아니다.",
+    "need_vs_outlook": {
+      "설치 우선": {
+        "base_pct": 10.6,
+        "a_only_pct": 10.2,
+        "b_only_pct": 11.5
+      },
+      "검토": {
+        "base_pct": 30.3,
+        "a_only_pct": 29.2,
+        "b_only_pct": 33
+      },
+      "total": {
+        "base_pct": 40.9,
+        "a_only_pct": 39.4,
+        "b_only_pct": 44.5
+      },
+      "total_site_adjusted": {
+        "base_pct": 40.9,
+        "a_only_pct": 39.4,
+        "b_only_pct": 44.5
+      }
+    }
+  }
+}

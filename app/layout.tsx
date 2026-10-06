@@ -8,7 +8,7 @@ const body = IBM_Plex_Sans_KR({ weight: ["400", "500", "600", "700"], subsets: [
 const readout = Barlow_Semi_Condensed({ weight: ["500", "600"], subsets: ["latin"], variable: "--font-readout", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "다셀 — 오창 공장 지붕 재사용 ESS 지도",
+  title: "다셀 | 오창 공장 지붕 재사용 ESS 지도",
   description: "오창 산단 공장 건물별 지붕 태양광과 재사용 배터리 ESS 설치 규모 1차 검토",
 };
 

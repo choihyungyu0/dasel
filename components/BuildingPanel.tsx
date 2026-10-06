@@ -178,16 +178,22 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
               <p className="num mt-2 rounded bg-slate-100 px-2 py-1 text-xs">
                 {n(c.roof_m2!, 1)}㎡ × {C.UTIL.value} ÷ {C.M2_PER_KW.value} = {n(c.pv_kw, 1)}kW · × {n(C.PVOUT.value)} = {n(c.pv_kwh!)}kWh
               </p>
+              {ds.roofUsable?.[String(b.bld_id)] && (
+                <p id="TXT-ROOF-AI" className="mt-1 text-[11px] text-slate-600" title={ds.roofUsable[String(b.bld_id)].note}>
+                  AI 판독 이용률 <span className="num font-semibold text-ink">{ds.roofUsable[String(b.bld_id)].usable.toFixed(2)}</span>(참고) · 기본 계산은 {C.UTIL.value} 그대로
+                  <span className="block text-[10px] text-slate-500">항공영상에서 옥상 설비·채광창·기존 패널이 차지한 비율을 뺀 값 · {ds.roofUsable[String(b.bld_id)].note}</span>
+                </p>
+              )}
               <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
                 {roof.source === "GEOM" && <span className="rounded bg-slate-100 px-1.5 py-0.5">GIS 도형 면적</span>}
-                {roof.flags.includes("AREA_MISMATCH") && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">면적 자료 불일치 — 작은 값 사용</span>}
+                {roof.flags.includes("AREA_MISMATCH") && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">면적 자료 불일치 · 작은 값 사용</span>}
                 {b.roof_type && <span className="rounded bg-slate-100 px-1.5 py-0.5">지붕 {b.roof_type}</span>}
               </div>
             </Card>
 
             <Card id="CRD-03" tour="card-ess" title="재사용 배터리 ESS (선택)" source={`${C.ESS_UNITS.source} · ${C.SOC_MAX.source} · 법정 성능등급 기준은 2027.5 시행 전 미정`}>
               {c.small ? (
-                <p className="text-[13px]">소규모 — ESS 산정 안 함 (30kW 미만)</p>
+                <p className="text-[13px]">소규모 · ESS 산정 안 함 (30kW 미만)</p>
               ) : (
                 <>
                   <p className="mb-2 text-xs text-slate-600">태양광과 따로 정하는 선택 설비입니다. 기본은 재사용 ESS 1단위 시범(1MWh 이하)입니다.</p>
@@ -295,7 +301,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
                     배전선로 여유({b.grid_level ?? "리"} 단위, 한전 {ds.grid!.meta.fetched.slice(0, 7).replace("-", ".")} 조회) <span className="rounded bg-slate-200 px-1 text-[10px] font-normal" title={ds.grid!.meta.unit_basis}>단위 kW · 한전ON 대조</span>
                   </p>
                   <p className="num text-slate-700">
-                    {lines[0].dl} {n(lines[0].margin_kw)} 등 {lines.length}개 선로 — 실제 접속 선로는 한전 접수 시 결정
+                    {lines[0].dl} {n(lines[0].margin_kw)} 등 {lines.length}개 선로 · 실제 접속 선로는 한전 접수 시 결정
                   </p>
                   <p className="num text-slate-700">
                     설치 용량 {n(c.pv_kw, 1)}kW 이상 여유가 있는 선로 {lines.filter((l) => l.margin_kw >= c.pv_kw!).length}개 / {lines.length}개 · 배전 여유 {s.parts.grid ?? 0}점

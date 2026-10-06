@@ -1,0 +1,375 @@
+{
+ "generated": "2026-10-06",
+ "source": "data/quality/features.json",
+ "source_meta": {
+  "generated": "2026-10-06",
+  "score_base_ymd": "20261004",
+  "buildings_base_date": "20260909",
+  "labels_basis": "ai",
+  "labels_generated": "2026-10-04",
+  "candidates": 336,
+  "label_counts": {
+   "미설치": 259,
+   "불명": 35,
+   "설치": 42
+  },
+  "note": "후보 = target && pv_kw !== null && !small. 점수는 설치 라벨을 쓰지 않고 계산함."
+ },
+ "n": 301,
+ "positives": 42,
+ "negatives": 259,
+ "excluded_unknown": 35,
+ "settings": {
+  "cv": "StratifiedKFold(shuffle=True)",
+  "n_splits": 5,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19
+  ],
+  "n_repeats": 20,
+  "n_folds_total": 100,
+  "std": "표본 표준편차(ddof=1)",
+  "logistic": "중앙값 대치 → 표준화 → LogisticRegression(class_weight='balanced')",
+  "gradient_boosting": {
+   "n_estimators": 100,
+   "max_depth": 2,
+   "learning_rate": 0.1,
+   "preprocess": "중앙값 대치",
+   "random_state": "반복 시드"
+  },
+  "permutation": {
+   "scoring": "roc_auc",
+   "n_repeats": 10,
+   "on": "테스트 폴드",
+   "unit": "특징 그룹(그룹의 열을 함께 섞음)"
+  },
+  "features": [
+   "pt_scale",
+   "log1p_pv_kw",
+   "pt_struct",
+   "struct=콘크리트계",
+   "struct=철골계",
+   "struct=기타",
+   "struct=정보없음",
+   "pt_age",
+   "age_years",
+   "age_missing",
+   "pt_industry",
+   "industry=HIGH",
+   "industry=MFG",
+   "industry=미매칭",
+   "pt_grid",
+   "grid_min_kw",
+   "grid_max_kw"
+  ],
+  "feature_groups": {
+   "규모": [
+    "pt_scale",
+    "log1p_pv_kw"
+   ],
+   "구조": [
+    "pt_struct",
+    "struct=콘크리트계",
+    "struct=철골계",
+    "struct=기타",
+    "struct=정보없음"
+   ],
+   "사용연수": [
+    "pt_age",
+    "age_years",
+    "age_missing"
+   ],
+   "업종": [
+    "pt_industry",
+    "industry=HIGH",
+    "industry=MFG",
+    "industry=미매칭"
+   ],
+   "배전": [
+    "pt_grid",
+    "grid_min_kw",
+    "grid_max_kw"
+   ]
+  },
+  "category_counts": {
+   "struct": {
+    "콘크리트계": 79,
+    "철골계": 203,
+    "기타": 0,
+    "정보없음": 19
+   },
+   "industry": {
+    "HIGH": 131,
+    "MFG": 103,
+    "미매칭": 67
+   }
+  }
+ },
+ "rule": {
+  "auc_all": 0.6088,
+  "auc_folds": {
+   "mean": 0.6111,
+   "std": 0.1024
+  },
+  "auc_repeats": {
+   "mean": 0.6111,
+   "std": 0.0042
+  },
+  "auc_by_repeat": [
+   0.604,
+   0.6052,
+   0.6125,
+   0.6068,
+   0.6129,
+   0.6125,
+   0.6076,
+   0.6118,
+   0.6115,
+   0.6052,
+   0.6062,
+   0.613,
+   0.6135,
+   0.6155,
+   0.6179,
+   0.6105,
+   0.6106,
+   0.6163,
+   0.6113,
+   0.6177
+  ],
+  "note": "규칙 점수는 학습하지 않는다. ML 과 같은 테스트 폴드에서 score 로 AUC 를 계산"
+ },
+ "models": {
+  "logistic": {
+   "auc_folds": {
+    "mean": 0.6715,
+    "std": 0.0819
+   },
+   "auc_repeats": {
+    "mean": 0.6715,
+    "std": 0.0206
+   },
+   "auc_by_repeat": [
+    0.6532,
+    0.6894,
+    0.6643,
+    0.6251,
+    0.6975,
+    0.6832,
+    0.6842,
+    0.6787,
+    0.6751,
+    0.6618,
+    0.6516,
+    0.6811,
+    0.6697,
+    0.651,
+    0.7004,
+    0.6494,
+    0.6796,
+    0.6534,
+    0.71,
+    0.6722
+   ]
+  },
+  "gradient_boosting": {
+   "auc_folds": {
+    "mean": 0.6472,
+    "std": 0.0885
+   },
+   "auc_repeats": {
+    "mean": 0.6472,
+    "std": 0.021
+   },
+   "auc_by_repeat": [
+    0.6388,
+    0.6737,
+    0.6276,
+    0.6386,
+    0.6645,
+    0.624,
+    0.6653,
+    0.6263,
+    0.636,
+    0.6354,
+    0.679,
+    0.6572,
+    0.6315,
+    0.6375,
+    0.6786,
+    0.6243,
+    0.616,
+    0.6826,
+    0.6523,
+    0.6545
+   ]
+  }
+ },
+ "diff_ml_minus_rule": {
+  "logistic": {
+   "mean": 0.0604,
+   "std_folds": 0.1077,
+   "std_repeats": 0.0199,
+   "min_repeat": 0.0183,
+   "max_repeat": 0.0987,
+   "share_repeats_positive": 1.0,
+   "share_folds_positive": 0.72,
+   "by_repeat": [
+    0.0492,
+    0.0842,
+    0.0518,
+    0.0183,
+    0.0846,
+    0.0707,
+    0.0766,
+    0.0669,
+    0.0636,
+    0.0566,
+    0.0454,
+    0.068,
+    0.0562,
+    0.0356,
+    0.0825,
+    0.0389,
+    0.069,
+    0.0371,
+    0.0987,
+    0.0545
+   ]
+  },
+  "gradient_boosting": {
+   "mean": 0.0361,
+   "std_folds": 0.1099,
+   "std_repeats": 0.021,
+   "min_repeat": 0.0054,
+   "max_repeat": 0.0728,
+   "share_repeats_positive": 1.0,
+   "share_folds_positive": 0.65,
+   "by_repeat": [
+    0.0348,
+    0.0686,
+    0.0152,
+    0.0319,
+    0.0516,
+    0.0115,
+    0.0577,
+    0.0145,
+    0.0245,
+    0.0302,
+    0.0728,
+    0.0442,
+    0.018,
+    0.0221,
+    0.0607,
+    0.0138,
+    0.0054,
+    0.0663,
+    0.041,
+    0.0369
+   ]
+  }
+ },
+ "group_importance": {
+  "logistic": {
+   "규모": {
+    "mean": 0.1464,
+    "std": 0.066
+   },
+   "구조": {
+    "mean": 0.0148,
+    "std": 0.0337
+   },
+   "사용연수": {
+    "mean": 0.0086,
+    "std": 0.048
+   },
+   "업종": {
+    "mean": 0.0051,
+    "std": 0.0262
+   },
+   "배전": {
+    "mean": 0.0131,
+    "std": 0.0468
+   }
+  },
+  "gradient_boosting": {
+   "규모": {
+    "mean": 0.1055,
+    "std": 0.081
+   },
+   "구조": {
+    "mean": 0.0314,
+    "std": 0.0369
+   },
+   "사용연수": {
+    "mean": 0.0258,
+    "std": 0.0568
+   },
+   "업종": {
+    "mean": 0.006,
+    "std": 0.0188
+   },
+   "배전": {
+    "mean": 0.0216,
+    "std": 0.0327
+   }
+  }
+ },
+ "rule_weights": {
+  "규모": 30,
+  "구조": 20,
+  "사용연수": 15,
+  "업종": 15,
+  "배전": 10
+ },
+ "rank_correlation": {
+  "logistic": {
+   "importance_order": [
+    "규모",
+    "구조",
+    "배전",
+    "사용연수",
+    "업종"
+   ],
+   "spearman_rho": 0.6669,
+   "p_value": 0.2189
+  },
+  "gradient_boosting": {
+   "importance_order": [
+    "규모",
+    "구조",
+    "사용연수",
+    "배전",
+    "업종"
+   ],
+   "spearman_rho": 0.8208,
+   "p_value": 0.0886
+  }
+ },
+ "rank_correlation_note": "그룹 5개의 permutation importance 평균과 규칙 가중치(30/20/15/15/10)의 스피어만 순위상관. 점이 5개뿐이라 p 값은 참고용",
+ "caveats": [
+  "양성(설치)이 42동뿐이다. 테스트 폴드마다 양성 8~9동이라 AUC 가 크게 흔들리고, ML 모델은 과적합 위험이 있다.",
+  "라벨은 항공영상 AI 판독이며 사람이 검수하지 않았다. 판독 오류가 그대로 섞여 있다.",
+  "설치 여부는 설치 적합도의 대리 지표일 뿐이다. 이미 설치한 건물을 잘 맞힌다고 해서 적합도를 잘 잰다는 뜻은 아니다.",
+  "ML 특징에는 규칙 점수의 구성요소 5개가 그대로 들어가 있어, ML 은 규칙이 쓰는 정보 위에 가중치만 다시 맞춘 것이다.",
+  "이 비교는 보고용이다. 결과와 무관하게 점수 규칙과 가중치는 바꾸지 않는다."
+ ]
+}

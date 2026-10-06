@@ -16,14 +16,17 @@ const labelsDoc = existsSync("public/data/labels.json")
   ? readJson<{ meta: Record<string, unknown>; labels: Record<string, string> }>("public/data/labels.json")
   : null;
 const baseYmd = doc.meta.built.replaceAll("-", "");
-const blds = doc.buildings.map((b) => enrich(b, baseYmd));
 const installed = (id: number) => labelsDoc?.labels[String(id)] === "설치";
+// 점수·단계는 화면과 같게: 라벨이 '설치'인 건물은 '이미 설치됨'
+const blds = doc.buildings.map((b) => enrich({ ...b, installed: installed(b.bld_id) || undefined }, baseYmd));
 type Status = "설치 우선" | "검토" | "보류" | "이미 설치됨";
 const STATUSES: Status[] = ["설치 우선", "검토", "보류", "이미 설치됨"];
 const statusOf = (b: (typeof blds)[number]): Status => (installed(b.bld_id) ? "이미 설치됨" : (b.score.tier as Status));
 
 // ① 용량 분포 ------------------------------------------------------------
-const cands = blds.filter((b) => b.target && b.calc.pv_kw !== null && !b.calc.small);
+// 누적 곡선은 추가로 설치할 수 있는 건물(이미 설치됨 제외) 기준
+const candsAll = blds.filter((b) => b.target && b.calc.pv_kw !== null && !b.calc.small);
+const cands = candsAll.filter((b) => !installed(b.bld_id));
 const sorted = [...cands].sort((a, b) => (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
 const totalKw = sorted.reduce((a, b) => a + (b.calc.pv_kw ?? 0), 0);
 let acc = 0;
@@ -45,6 +48,8 @@ const capacity = {
   total_kw: round(totalKw, 1),
   total_mw: round(totalKw / 1000, 2),
   summarize_mw: sum.mw, // lib/calc.ts summarize 와 같은 값인지 대조용
+  basis: "이미 설치됨 제외",
+  with_installed: { count: candsAll.length, mw: sum.mw_with_installed, installed: sum.installed },
   pv_kw: sorted.map((b) => b.calc.pv_kw),
   cum_share: cum,
   status: sorted.map(statusOf),
@@ -238,6 +243,10 @@ async function main() {
       },
     },
     capacity,
+    capacity_excl_installed: { count: sum.buildings, mw: sum.mw, gwh: sum.gwh, save_low: sum.save_low, save_base: sum.save_base, co2_t: sum.co2_t, unit_cost: [150, blds[0].calc.unit_cost], source: "lib/calc.ts summarize(30kW 이상 대상 건물, 항공영상 판독 '설치' 건물 제외) · 건물 기준일 " + doc.meta.base_date },
+    roof_usable: existsSync("data/quality/roof_usable.json") ? readJson("data/quality/roof_usable.json") : null,
+    battery: existsSync("data/quality/battery.json") ? readJson("data/quality/battery.json") : null,
+    ml_check: existsSync("data/quality/ml_check.json") ? readJson("data/quality/ml_check.json") : null,
     tiers_by_complex: { statuses: STATUSES, complexes: tiersByComplex, total: tierTotal, targets: targets.length },
     tariff: tar,
     validation,

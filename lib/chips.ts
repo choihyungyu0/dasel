@@ -15,7 +15,7 @@ export function complexRule(name: string): Rule {
   return r && typeof r === "object" ? r : { solar_biz_allowed: null, source: null, checked: null };
 }
 
-export const SOLAR_BIZ_CHECK = "판매·지붕 임대형은 입주업종 확인 필요 — 자가소비 기준으로 계산했습니다";
+export const SOLAR_BIZ_CHECK = "판매·지붕 임대형은 입주업종 확인 필요 · 자가소비 기준으로 계산했습니다";
 
 /** DAT-14: 판매·임대형 입주업종 확인 칩(건물 단위 판정 solar_biz 기준). 점수에는 넣지 않는다. */
 export function solarBizChip(b: Building): string | null {
@@ -33,10 +33,10 @@ const GMP = /의약|바이오|식품|식료|음료|건강기능/;
 
 export function extraChips(b: Building): string[] {
   const chips: string[] = [];
-  if (b.roof_type && LIGHT_ROOF.test(b.roof_type)) chips.push(`지붕 ${b.roof_type} — 하중·방수 확인 필요`);
-  if (b.companies.some((c) => GMP.test(`${c.group ?? ""} ${c.product ?? ""}`))) chips.push("의약·식품 업종 — 옥상 설비·청정구역 확인 필요");
+  if (b.roof_type && LIGHT_ROOF.test(b.roof_type)) chips.push(`지붕 ${b.roof_type} · 하중·방수 확인 필요`);
+  if (b.companies.some((c) => GMP.test(`${c.group ?? ""} ${c.product ?? ""}`))) chips.push("의약·식품 업종 · 옥상 설비·청정구역 확인 필요");
   const fit = essSpace(b);
-  if (fit && fit.units < (b.calc.ess_units ?? 0)) chips.push("ESS 공간 부족 — 옥상·별동 검토");
+  if (fit && fit.units < (b.calc.ess_units ?? 0)) chips.push("ESS 공간 부족 · 옥상·별동 검토");
   const biz = solarBizChip(b);
   if (biz) chips.push(biz);
   return chips;

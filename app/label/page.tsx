@@ -168,7 +168,7 @@ export default function LabelPage() {
             </p>
             {draft[b.bld_id] && (
               <p className="mt-1 rounded bg-white px-2 py-1 text-xs">
-                AI 판독: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">— 맞으면 Enter, 다르면 직접 고르세요</span>
+                AI 판독: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">· 맞으면 Enter, 다르면 직접 고르세요</span>
               </p>
             )}
           </div>
@@ -183,7 +183,7 @@ export default function LabelPage() {
           ))}
         </div>
         <ul className="space-y-0.5 text-[11px] text-slate-600">
-          {LABELS.map((l) => <li key={l}><strong>{l}</strong> — {HINT[l]}</li>)}
+          {LABELS.map((l) => <li key={l}><strong>{l}</strong> · {HINT[l]}</li>)}
         </ul>
 
         <div className="flex flex-wrap gap-2 text-sm">

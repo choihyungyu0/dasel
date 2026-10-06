@@ -1,0 +1,59 @@
+{
+ "meta": {
+  "generated": "2026-10-06",
+  "rule": "이용률 = 1 − 두 판독 장애 비율 평균, 0.2~0.7로 자름. 기본 계산은 이용률 0.5 그대로",
+  "source": "브이월드 항공영상(국토지리정보원 정사영상) 건물별 캡처를 Claude Opus 5.5 에이전트 둘이 서로의 결과를 보지 않고 판독(2026-10-06)",
+  "targets": "점수 상위 10%(34동)와 설치 우선 건물의 합집합"
+ },
+ "targets": 34,
+ "read": 33,
+ "unreadable": [
+  124672
+ ],
+ "needs_review": [],
+ "pass_agreement": {
+  "same": 25,
+  "within10": 32,
+  "max_diff": 20
+ },
+ "usable": {
+  "mean": 0.54,
+  "mean_not_installed": 0.63,
+  "at_floor": 8,
+  "at_cap": 18,
+  "assumed": 0.5
+ },
+ "capacity_kw": {
+  "all_read": {
+   "assumed": 14974.2,
+   "ai": 16753
+  },
+  "not_installed": {
+   "n": 21,
+   "assumed": 9920.2,
+   "ai": 12763.8
+  }
+ },
+ "top20_kept": 18,
+ "tier_moves": {
+  "설치 우선→검토": 1
+ },
+ "example": {
+  "bld_id": 121902,
+  "usable": 0.6,
+  "assumed": {
+   "pv_kw": 657,
+   "score": 76,
+   "tier": "설치 우선",
+   "packs": 28,
+   "save_base": 180007488
+  },
+  "ai": {
+   "pv_kw": 788.4,
+   "score": 76,
+   "tier": "설치 우선",
+   "packs": 28,
+   "save_base": 216009024
+  }
+ }
+}
