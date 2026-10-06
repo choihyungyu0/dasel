@@ -61,7 +61,19 @@ for (let i = pool.length - 1; i > 0; i--) {
 }
 const sampleNot = pool.slice(0, SAMPLE_NOT);
 const queue = [...aiInstalled, ...sampleNot];
-writeFileSync("public/data/label_queue.json", JSON.stringify({ meta: { seed: SEED, installed: aiInstalled.length, not_installed_sample: sampleNot.length, rule: "AI 판독 '설치' 전부 + '미설치' 중 무작위 50동" }, ids: queue }));
+// 사람 눈가림 표본(A2): AI '설치' 10동 + '미설치' 10동을 시드 고정으로 뽑아 섞는다. /label?blind=1 이 이 순서로 보여 준다
+const BLIND_SEED = 20261006;
+const rand2 = rng(BLIND_SEED);
+const pick = (arr: number[], k: number) => {
+  const a = [...arr].sort((x, y) => x - y);
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand2() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, k);
+};
+const blind20 = pick([...pick(aiInstalled, 10), ...pick(sampleNot, 10)], 20);
+writeFileSync("public/data/label_queue.json", JSON.stringify({ meta: { seed: SEED, installed: aiInstalled.length, not_installed_sample: sampleNot.length, rule: "AI 판독 '설치' 전부 + '미설치' 중 무작위 50동", blind_seed: BLIND_SEED, blind_rule: "AI 판독 '설치' 10동 + '미설치' 10동(시드 고정 무작위, 순서 섞음)" }, ids: queue, blind20 }));
 
 // ---- AI 판독 vs 사람 검수
 const both = queue.filter((id) => humanLabel.has(id));
@@ -81,7 +93,17 @@ const review = {
   missRate: notChecked.length ? round(notChecked.filter((id) => humanLabel.get(id) === "설치").length / notChecked.length) : null,
   missChecked: notChecked.length,
 };
-const basis: "human" | "ai" = review.done >= review.queue && review.queue > 0 ? "human" : "ai";
+// 사람 표본 20동(A2): 사람이 실제로 표시한 것만 센다. AI가 대신 채우지 않는다
+const s20 = blind20.filter((id) => humanLabel.has(id));
+const sample20 = {
+  total: blind20.length,
+  done: s20.length,
+  agree: s20.filter((id) => humanLabel.get(id) === aiLabel.get(id)).length,
+  kappa: s20.length ? kappaOf(s20.map((id) => [aiLabel.get(id) as string, humanLabel.get(id) as string])) : null,
+};
+// 허가대장 대조(A1) 결과가 있으면 basis에 붙인다
+const permit = existsSync("data/quality/permit.json") ? (JSON.parse(readFileSync("data/quality/permit.json", "utf8")) as Record<string, unknown>) : null;
+const basis: string = review.done >= review.queue && review.queue > 0 ? "human" : ["ai", permit ? "permit" : null, sample20.done >= sample20.total ? "human_sample20" : null].filter(Boolean).join("+");
 
 /** 코헨 카파: 두 판독이 우연히 맞을 확률을 뺀 일치도 */
 function kappaOf(pairs: [string, string][]): number | null {
@@ -116,7 +138,7 @@ for (const [id, l] of humanLabel) merged.set(id, l);
 const rows: LabelRow[] = [...merged].filter(([, l]) => l !== "불일치").map(([bld_id, l]) => ({ bld_id, label: l as Label, labeler: humanLabel.has(bld_id) ? "human" : "ai", image_year: "" }));
 const years = [...new Set([...human.rows, ...ai.rows].map((r) => r.image_year).filter(Boolean))].sort();
 
-const result = { basis, review, blind, files: [...human.files, ...ai.files], skipped: human.skipped + ai.skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked, [0.1, 0.2, 0.3]), imageYears: years, humanConflicts: [...humanLabel].filter(([, l]) => l === "불일치").map(([id]) => id) };
+const result = { basis, review, blind, sample20, files: [...human.files, ...ai.files], skipped: human.skipped + ai.skipped, generated: new Date().toLocaleDateString("sv-SE"), ...validate(rows, ranked, [0.1, 0.2, 0.3]), imageYears: years, humanConflicts: [...humanLabel].filter(([, l]) => l === "불일치").map(([id]) => id) };
 writeFileSync("data/quality/validation.json", JSON.stringify(result, null, 1));
 writeFileSync("public/data/labels.json", JSON.stringify({ meta: { basis, reviewed: review.done, image_year: years.join("·") || null, generated: result.generated }, labels: Object.fromEntries(rows.map((r) => [r.bld_id, r.label])) }));
 

@@ -43,6 +43,10 @@ export default function LabelPage() {
   // 사람 검수 표본: AI '설치' 전부 + '미설치' 무작위 50동
   const [queue, setQueue] = useState<Set<number> | null>(null);
   const [onlyQueue, setOnlyQueue] = useState(true);
+  // ?blind=1: AI 판독·점수를 숨기고 눈가림 표본 20동만 정해진 순서로 보여 준다
+  const [blind, setBlind] = useState(false);
+  const [blindIds, setBlindIds] = useState<number[] | null>(null);
+  useEffect(() => setBlind(new URLSearchParams(location.search).get("blind") === "1"), []);
   useEffect(() => {
     fetch("/data/label_draft.json")
       .then((r) => (r.ok ? r.json() : null))
@@ -50,7 +54,10 @@ export default function LabelPage() {
       .catch(() => {});
     fetch("/data/label_queue.json")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => Array.isArray(d?.ids) && setQueue(new Set<number>(d.ids)))
+      .then((d) => {
+        if (Array.isArray(d?.ids)) setQueue(new Set<number>(d.ids));
+        if (Array.isArray(d?.blind20)) setBlindIds(d.blind20);
+      })
       .catch(() => {});
   }, []);
 
@@ -68,13 +75,13 @@ export default function LabelPage() {
   }, [saved, ready]);
 
   // 대상: 30kW 이상 대상 건물, 점수 높은 순(동점이면 용량 큰 순)
-  const list = useMemo(
-    () =>
-      (ds?.buildings ?? [])
-        .filter((b) => b.score.tier !== "제외" && b.calc.pv_kw !== null && !b.calc.small && (!onlyQueue || !queue || queue.has(b.bld_id)))
-        .sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0)),
-    [ds, queue, onlyQueue],
-  );
+  const list = useMemo(() => {
+    const all = (ds?.buildings ?? []).filter((b) => b.score.tier !== "제외" && b.calc.pv_kw !== null && !b.calc.small);
+    if (blind) return (blindIds ?? []).map((id) => all.find((b) => b.bld_id === id)).filter((b): b is NonNullable<typeof b> => !!b);
+    return all
+      .filter((b) => !onlyQueue || !queue || queue.has(b.bld_id))
+      .sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
+  }, [ds, queue, onlyQueue, blind, blindIds]);
   const b = list[at] ?? null;
   const feature = useMemo(() => (b ? (ds?.geo.features.find((f) => Number(f.properties?.bld_id) === b.bld_id) ?? null) : null), [ds, b]);
   const done = list.filter((x) => saved.labels[x.bld_id]).length;
@@ -98,19 +105,19 @@ export default function LabelPage() {
       if (e.key === "1") mark("설치");
       else if (e.key === "2") mark("미설치");
       else if (e.key === "3") mark("불명");
-      else if (e.key === "Enter" && b && draft[b.bld_id]) mark(draft[b.bld_id]);
+      else if (e.key === "Enter" && !blind && b && draft[b.bld_id]) mark(draft[b.bld_id]);
       else if (e.key === "ArrowLeft") go(at - 1);
       else if (e.key === "ArrowRight") go(at + 1);
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [mark, go, at, b, draft]);
+  }, [mark, go, at, b, draft, blind]);
 
   const download = () => {
     const rows = list.filter((x) => saved.labels[x.bld_id]).map((x) => ({ bld_id: x.bld_id, label: saved.labels[x.bld_id], labeler: saved.labeler, image_year: saved.imageYear }));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([toLabelCsv(rows)], { type: "text/csv;charset=utf-8" }));
-    a.download = `existing_pv_${saved.labeler.trim() || "labeler"}.csv`;
+    a.download = blind ? "existing_pv.csv" : `existing_pv_${saved.labeler.trim() || "labeler"}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
     setNote(`${rows.length}동을 내려받았어요. data/labels 폴더에 넣어 주세요`);
@@ -138,8 +145,8 @@ export default function LabelPage() {
             <h1 className="text-[15px] font-semibold">기존 태양광 설치 라벨링</h1>
             <Link href="/" className="text-xs underline">지도로</Link>
           </div>
-          <p className="mt-1 text-xs text-slate-600">{onlyQueue && queue ? `검수 표본 ${list.length}동(AI 판독 '설치' 전부 + '미설치' 무작위 50동)` : `30kW 이상 대상 건물 ${list.length}동`}을 점수 순으로 봅니다. 노란 외곽선 안 지붕에 패널이 있는지 표시해 주세요.</p>
-          {queue && (
+          <p className="mt-1 text-xs text-slate-600">{blind ? `눈가림 표본 ${list.length}동(AI 판독과 점수를 숨김)` : onlyQueue && queue ? `검수 표본 ${list.length}동(AI 판독 '설치' 전부 + '미설치' 무작위 50동)` : `30kW 이상 대상 건물 ${list.length}동`}을 점수 순으로 봅니다. 노란 외곽선 안 지붕에 패널이 있는지 표시해 주세요.</p>
+          {queue && !blind && (
             <button type="button" onClick={() => { setOnlyQueue(!onlyQueue); setAt(0); }} className="mt-1 rounded border border-slate-300 px-2 py-0.5 text-[11px]">
               {onlyQueue ? "전체 건물 보기" : "검수 표본만 보기"}
             </button>
@@ -162,11 +169,11 @@ export default function LabelPage() {
             <p className="num text-xs text-slate-500">{at + 1} / {list.length} · 건물 {b.bld_id}</p>
             <p className="truncate text-sm font-semibold">{b.companies[0]?.company ?? b.name ?? "등록공장 정보 연결 안 됨"}</p>
             <p className="truncate text-xs text-slate-600">{b.addr ?? "주소 정보 없음"}</p>
-            <p className="num mt-1 text-xs text-slate-600">{b.calc.pv_kw?.toLocaleString("ko-KR")}kW · {b.score.tier} {b.score.score}/{b.score.max}</p>
+            {!blind && <p className="num mt-1 text-xs text-slate-600">{b.calc.pv_kw?.toLocaleString("ko-KR")}kW · {b.score.tier} {b.score.score}/{b.score.max}</p>}
             <p className="mt-1 text-xs">
               현재 표시: <strong>{saved.labels[b.bld_id] ?? "없음"}</strong>
             </p>
-            {draft[b.bld_id] && (
+            {!blind && draft[b.bld_id] && (
               <p className="mt-1 rounded bg-white px-2 py-1 text-xs">
                 AI 판독: <strong>{draft[b.bld_id]}</strong> <span className="text-slate-500">· 맞으면 Enter, 다르면 직접 고르세요</span>
               </p>
@@ -200,7 +207,7 @@ export default function LabelPage() {
             <input ref={file} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </div>
           {note && <p role="status" className="text-xs text-slate-700">{note}</p>}
-          <p className="text-[11px] text-slate-500">AI 판독은 참고용이며 사람이 누른 것만 기록됩니다. 표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
+          <p className="text-[11px] text-slate-500">{blind ? "AI 판독을 숨긴 상태입니다. " : "AI 판독은 참고용이며 "}사람이 누른 것만 기록됩니다. 표시는 이 브라우저에 자동 저장됩니다. 파일 형식: bld_id, label, labeler, image_year</p>
         </div>
       </section>
     </main>

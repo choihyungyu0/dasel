@@ -83,7 +83,7 @@ export interface Dataset {
   /** AI 지붕 이용률 판독(참고). 건물 ID → 이용률·근거. 기본 계산에는 쓰지 않는다 */
   roofUsable: Record<string, { usable: number; note: string }> | null;
   /** VAL-01 항공영상 라벨(합의된 것만). 건물 ID → 설치/미설치/불명 */
-  labels: { meta: { basis?: "human" | "ai"; reviewed?: number; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
+  labels: { meta: { basis?: string; reviewed?: number; image_year: string | null; generated: string }; labels: Record<string, string> } | null;
 }
 
 export interface GridLine {

@@ -3,8 +3,8 @@
   "generated": "2026-10-06",
   "score_base_ymd": "20261004",
   "buildings_base_date": "20260909",
-  "labels_basis": "ai",
-  "labels_generated": "2026-10-04",
+  "labels_basis": "ai+permit",
+  "labels_generated": "2026-10-06",
   "candidates": 336,
   "label_counts": {
    "미설치": 259,

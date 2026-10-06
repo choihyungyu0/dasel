@@ -1,0 +1,1393 @@
+{
+ "meta": {
+  "dataset": "충청북도_태양광발전소 전기사업허가현황",
+  "dataset_id": "15138440",
+  "provider": "충청북도 에너지과 (공공데이터포털 data.go.kr)",
+  "url": "https://www.data.go.kr/data/15138440/fileData.do",
+  "base_date": "2026-07-22",
+  "base_date_note": "파일명 날짜(20260722)이자 가장 늦은 허가일. 포털 수정일은 2026-09-09",
+  "fetched": "2026-10-06",
+  "columns": [
+   "순번",
+   "설치장소",
+   "원동력 종류",
+   "설비용량(kW)",
+   "상태",
+   "허가일자",
+   "사업개시일자"
+  ],
+  "rows_total": 17892,
+  "not_used": "전국태양광발전소전기사업허가정보표준데이터(15107742): 받은 50,000행에 청주시 제공분이 없어 쓰지 않음",
+  "label_basis": "ai",
+  "match_rule": [
+   "허가대장 설치장소가 지번형이면 (읍면, 리, 산 여부, 본번, 부번)이 건물 지번과 같을 때 같은 필지로 본다('번지'·'호'·공백·덧말 제거, 부번 없음은 0)",
+   "도로명 주소만 있으면 브이월드 지오코더(type=ROAD)로 좌표를 얻어, 좌표가 건물 도형 안이면 그 건물의 필지, 그리고 좌표를 지번으로 되돌린 필지를 같은 필지로 본다",
+   "한 필지에 건물이 여러 동이면 그 필지의 후보 건물 전부에 '같은 필지 허가 있음'을 붙인다. 어느 동 지붕인지는 대장으로 알 수 없다",
+   "대장 상태(인허가·공사계획·공사진행·사업개시)를 가리지 않고 센다. 사업개시만 센 수는 matched_buildings_started"
+  ],
+  "limit": "자가소비용 태양광은 발전사업 허가 대상이 아니어서 허가대장에 없다. 대장에 없다고 해서 AI 판독이 틀린 것은 아니다.",
+  "caveats": [
+   "허가만 받고 아직 짓지 않은 건(상태 '인허가')은 항공영상에 보이지 않는다",
+   "'14-6 ,8,9', '221번지 46' 같은 애매한 지번 표기는 가능한 필지를 모두 후보로 넣었다(loose_lot_parse)",
+   "발전소명·상호·대표자는 원자료에도 없고 이 파일에도 넣지 않는다"
+  ]
+ },
+ "region": {
+  "rule": "설치장소에 '오창읍' 또는 '옥산면 남촌리'가 들어간 행 + 옥산면 도로명 주소 가운데 지오코딩한 필지가 남촌리인 행",
+  "rows_by_text": 610,
+  "rows": 618,
+  "address_type": {
+   "도로명": 411,
+   "지번": 207
+  },
+  "capacity_kw": 113854.24,
+  "by_status": {
+   "인허가": 88,
+   "공사진행": 31,
+   "사업개시": 499
+  },
+  "by_permit_year": {
+   "2008": 1,
+   "2009": 3,
+   "2011": 4,
+   "2012": 2,
+   "2013": 5,
+   "2014": 10,
+   "2015": 8,
+   "2016": 7,
+   "2017": 23,
+   "2018": 48,
+   "2019": 37,
+   "2020": 35,
+   "2021": 63,
+   "2022": 44,
+   "2023": 59,
+   "2024": 96,
+   "2025": 92,
+   "2026": 81
+  },
+  "by_start_year": {
+   "2009": 4,
+   "2011": 1,
+   "2012": 3,
+   "2013": 3,
+   "2014": 8,
+   "2015": 10,
+   "2016": 2,
+   "2017": 7,
+   "2018": 29,
+   "2019": 49,
+   "2020": 39,
+   "2021": 63,
+   "2022": 34,
+   "2023": 48,
+   "2024": 64,
+   "2025": 111,
+   "2026": 24
+  }
+ },
+ "candidates": {
+  "buildings": 336,
+  "parcels": 160
+ },
+ "by_label": {
+  "설치": {
+   "buildings": 42,
+   "matched_buildings": 13,
+   "matched_buildings_started": 13,
+   "matched_buildings_point_inside": 3,
+   "matched_buildings_only_candidate_on_parcel": 2,
+   "matched_parcels": 7,
+   "parcels": 34,
+   "matched": [
+    {
+     "bld_id": 121093,
+     "permit_rows": 2,
+     "capacity_kw": 27.99,
+     "status": {
+      "사업개시": 2
+     },
+     "permit_years": [
+      "2008",
+      "2009"
+     ],
+     "start_years": [
+      "2009"
+     ],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": true,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 121405,
+     "permit_rows": 1,
+     "capacity_kw": 1381.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2023"
+     ],
+     "start_years": [
+      "2024"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 122524,
+     "permit_rows": 2,
+     "capacity_kw": 235.9,
+     "status": {
+      "사업개시": 2
+     },
+     "permit_years": [
+      "2019",
+      "2022"
+     ],
+     "start_years": [
+      "2020",
+      "2022"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 122601,
+     "permit_rows": 2,
+     "capacity_kw": 235.9,
+     "status": {
+      "사업개시": 2
+     },
+     "permit_years": [
+      "2019",
+      "2022"
+     ],
+     "start_years": [
+      "2020",
+      "2022"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 122602,
+     "permit_rows": 2,
+     "capacity_kw": 235.9,
+     "status": {
+      "사업개시": 2
+     },
+     "permit_years": [
+      "2019",
+      "2022"
+     ],
+     "start_years": [
+      "2020",
+      "2022"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 125252,
+     "permit_rows": 3,
+     "capacity_kw": 1457.28,
+     "status": {
+      "사업개시": 3
+     },
+     "permit_years": [
+      "2014",
+      "2016",
+      "2017"
+     ],
+     "start_years": [
+      "2015",
+      "2018"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 125297,
+     "permit_rows": 3,
+     "capacity_kw": 1457.28,
+     "status": {
+      "사업개시": 3
+     },
+     "permit_years": [
+      "2014",
+      "2016",
+      "2017"
+     ],
+     "start_years": [
+      "2015",
+      "2018"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": true,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 125336,
+     "permit_rows": 3,
+     "capacity_kw": 1457.28,
+     "status": {
+      "사업개시": 3
+     },
+     "permit_years": [
+      "2014",
+      "2016",
+      "2017"
+     ],
+     "start_years": [
+      "2015",
+      "2018"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236933,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236935,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236937,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 237240,
+     "permit_rows": 1,
+     "capacity_kw": 622.08,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2017"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 5,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 449426,
+     "permit_rows": 1,
+     "capacity_kw": 99.2,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2016"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": true,
+     "loose_lot_parse": false
+    }
+   ]
+  },
+  "미설치": {
+   "buildings": 259,
+   "matched_buildings": 34,
+   "matched_buildings_started": 27,
+   "matched_buildings_point_inside": 2,
+   "matched_buildings_only_candidate_on_parcel": 5,
+   "matched_parcels": 11,
+   "parcels": 134,
+   "matched": [
+    {
+     "bld_id": 120993,
+     "permit_rows": 1,
+     "capacity_kw": 971.52,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2025"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 2,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 121057,
+     "permit_rows": 1,
+     "capacity_kw": 971.52,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2025"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 2,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 121307,
+     "permit_rows": 1,
+     "capacity_kw": 434.56,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2026"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": true,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 121409,
+     "permit_rows": 1,
+     "capacity_kw": 1381.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2023"
+     ],
+     "start_years": [
+      "2024"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 142164,
+     "permit_rows": 1,
+     "capacity_kw": 385.28,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2025"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": true,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 143332,
+     "permit_rows": 1,
+     "capacity_kw": 100.0,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2012"
+     ],
+     "start_years": [
+      "2012"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 143334,
+     "permit_rows": 1,
+     "capacity_kw": 100.0,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2012"
+     ],
+     "start_years": [
+      "2012"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 143335,
+     "permit_rows": 1,
+     "capacity_kw": 100.0,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2012"
+     ],
+     "start_years": [
+      "2012"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 143336,
+     "permit_rows": 1,
+     "capacity_kw": 100.0,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2012"
+     ],
+     "start_years": [
+      "2012"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236879,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236882,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236883,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236884,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236886,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236890,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236892,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236925,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236928,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236932,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236934,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 236939,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 237246,
+     "permit_rows": 1,
+     "capacity_kw": 622.08,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2017"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 5,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 237248,
+     "permit_rows": 1,
+     "capacity_kw": 622.08,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2017"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 5,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 237250,
+     "permit_rows": 1,
+     "capacity_kw": 622.08,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2017"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 5,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 638333,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 638336,
+     "permit_rows": 1,
+     "capacity_kw": 1657.6,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2019"
+     ],
+     "start_years": [
+      "2019"
+     ],
+     "same_parcel_candidates": 10,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 643088,
+     "permit_rows": 1,
+     "capacity_kw": 121.6,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2026"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 645229,
+     "permit_rows": 1,
+     "capacity_kw": 622.08,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2017"
+     ],
+     "start_years": [
+      "2018"
+     ],
+     "same_parcel_candidates": 5,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 646006,
+     "permit_rows": 1,
+     "capacity_kw": 82.56,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2026"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 646293,
+     "permit_rows": 1,
+     "capacity_kw": 1381.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2023"
+     ],
+     "start_years": [
+      "2024"
+     ],
+     "same_parcel_candidates": 3,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 646295,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 646303,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 646304,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 653516,
+     "permit_rows": 1,
+     "capacity_kw": 2658.72,
+     "status": {
+      "인허가": 1
+     },
+     "permit_years": [
+      "2020"
+     ],
+     "start_years": [],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    }
+   ]
+  },
+  "불명": {
+   "buildings": 35,
+   "matched_buildings": 3,
+   "matched_buildings_started": 3,
+   "matched_buildings_point_inside": 0,
+   "matched_buildings_only_candidate_on_parcel": 1,
+   "matched_parcels": 3,
+   "parcels": 16,
+   "matched": [
+    {
+     "bld_id": 236893,
+     "permit_rows": 1,
+     "capacity_kw": 280.9,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2013"
+     ],
+     "start_years": [
+      "2013"
+     ],
+     "same_parcel_candidates": 11,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 372679,
+     "permit_rows": 3,
+     "capacity_kw": 1457.28,
+     "status": {
+      "사업개시": 3
+     },
+     "permit_years": [
+      "2014",
+      "2016",
+      "2017"
+     ],
+     "start_years": [
+      "2015",
+      "2018"
+     ],
+     "same_parcel_candidates": 4,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    },
+    {
+     "bld_id": 633551,
+     "permit_rows": 1,
+     "capacity_kw": 99.83,
+     "status": {
+      "사업개시": 1
+     },
+     "permit_years": [
+      "2024"
+     ],
+     "start_years": [
+      "2024"
+     ],
+     "same_parcel_candidates": 1,
+     "point_in_this_building": false,
+     "loose_lot_parse": false
+    }
+   ]
+  }
+ },
+ "ai_missed_candidates": [
+  120993,
+  121057,
+  121307,
+  121409,
+  142164,
+  143332,
+  143334,
+  143335,
+  143336,
+  236879,
+  236882,
+  236883,
+  236884,
+  236886,
+  236890,
+  236892,
+  236925,
+  236928,
+  236932,
+  236934,
+  236939,
+  237246,
+  237248,
+  237250,
+  638333,
+  638336,
+  643088,
+  645229,
+  646006,
+  646293,
+  646295,
+  646303,
+  646304,
+  653516
+ ],
+ "ai_missed_strong": {
+  "rule": "사업개시 허가가 있는 필지인데 그 필지의 후보 건물 가운데 AI '설치'가 한 동도 없는 경우의 '미설치' 동",
+  "parcels": 3,
+  "buildings": 14,
+  "bld_ids": [
+   143332,
+   143334,
+   143335,
+   143336,
+   236879,
+   236882,
+   236883,
+   236884,
+   236886,
+   236890,
+   236892,
+   646295,
+   646303,
+   646304
+  ]
+ },
+ "matched_parcels": [
+  {
+   "bld_ids": [
+    120993,
+    121057
+   ],
+   "labels": {
+    "미설치": 2
+   },
+   "permit_rows": 1,
+   "capacity_kw": 971.52,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2025"
+   ]
+  },
+  {
+   "bld_ids": [
+    121093
+   ],
+   "labels": {
+    "설치": 1
+   },
+   "permit_rows": 2,
+   "capacity_kw": 27.99,
+   "status": {
+    "사업개시": 2
+   },
+   "permit_years": [
+    "2008",
+    "2009"
+   ]
+  },
+  {
+   "bld_ids": [
+    121307
+   ],
+   "labels": {
+    "미설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 434.56,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2026"
+   ]
+  },
+  {
+   "bld_ids": [
+    121405,
+    121409,
+    646293
+   ],
+   "labels": {
+    "설치": 1,
+    "미설치": 2
+   },
+   "permit_rows": 1,
+   "capacity_kw": 1381.9,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2023"
+   ]
+  },
+  {
+   "bld_ids": [
+    122524,
+    122601,
+    122602
+   ],
+   "labels": {
+    "설치": 3
+   },
+   "permit_rows": 2,
+   "capacity_kw": 235.9,
+   "status": {
+    "사업개시": 2
+   },
+   "permit_years": [
+    "2019",
+    "2022"
+   ]
+  },
+  {
+   "bld_ids": [
+    125252,
+    125297,
+    125336,
+    372679
+   ],
+   "labels": {
+    "설치": 3,
+    "불명": 1
+   },
+   "permit_rows": 3,
+   "capacity_kw": 1457.28,
+   "status": {
+    "사업개시": 3
+   },
+   "permit_years": [
+    "2014",
+    "2016",
+    "2017"
+   ]
+  },
+  {
+   "bld_ids": [
+    142164
+   ],
+   "labels": {
+    "미설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 385.28,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2025"
+   ]
+  },
+  {
+   "bld_ids": [
+    143332,
+    143334,
+    143335,
+    143336
+   ],
+   "labels": {
+    "미설치": 4
+   },
+   "permit_rows": 1,
+   "capacity_kw": 100.0,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2012"
+   ]
+  },
+  {
+   "bld_ids": [
+    236879,
+    236882,
+    236883,
+    236884,
+    236886,
+    236890,
+    236892,
+    236893,
+    646295,
+    646303,
+    646304
+   ],
+   "labels": {
+    "미설치": 10,
+    "불명": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 280.9,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2013"
+   ]
+  },
+  {
+   "bld_ids": [
+    236925,
+    236928,
+    236932,
+    236933,
+    236934,
+    236935,
+    236937,
+    236939,
+    638333,
+    638336
+   ],
+   "labels": {
+    "미설치": 7,
+    "설치": 3
+   },
+   "permit_rows": 1,
+   "capacity_kw": 1657.6,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2019"
+   ]
+  },
+  {
+   "bld_ids": [
+    237240,
+    237246,
+    237248,
+    237250,
+    645229
+   ],
+   "labels": {
+    "설치": 1,
+    "미설치": 4
+   },
+   "permit_rows": 1,
+   "capacity_kw": 622.08,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2017"
+   ]
+  },
+  {
+   "bld_ids": [
+    449426
+   ],
+   "labels": {
+    "설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 99.2,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2016"
+   ]
+  },
+  {
+   "bld_ids": [
+    633551
+   ],
+   "labels": {
+    "불명": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 99.83,
+   "status": {
+    "사업개시": 1
+   },
+   "permit_years": [
+    "2024"
+   ]
+  },
+  {
+   "bld_ids": [
+    643088
+   ],
+   "labels": {
+    "미설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 121.6,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2026"
+   ]
+  },
+  {
+   "bld_ids": [
+    646006
+   ],
+   "labels": {
+    "미설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 82.56,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2026"
+   ]
+  },
+  {
+   "bld_ids": [
+    653516
+   ],
+   "labels": {
+    "미설치": 1
+   },
+   "permit_rows": 1,
+   "capacity_kw": 2658.72,
+   "status": {
+    "인허가": 1
+   },
+   "permit_years": [
+    "2020"
+   ]
+  }
+ ],
+ "matched": {
+  "rows": 20,
+  "capacity_kw": 10616.92,
+  "by_status": {
+   "인허가": 6,
+   "사업개시": 14
+  },
+  "by_permit_year": {
+   "2008": 1,
+   "2009": 1,
+   "2012": 1,
+   "2013": 1,
+   "2014": 1,
+   "2016": 2,
+   "2017": 2,
+   "2019": 2,
+   "2020": 1,
+   "2022": 1,
+   "2023": 1,
+   "2024": 1,
+   "2025": 2,
+   "2026": 3
+  },
+  "by_start_year": {
+   "2009": 2,
+   "2012": 1,
+   "2013": 1,
+   "2015": 1,
+   "2018": 4,
+   "2019": 1,
+   "2020": 1,
+   "2022": 1,
+   "2024": 2
+  },
+  "buildings": 50,
+  "parcels": 16,
+  "rows_by_method": {
+   "좌표가 건물 도형 안": 10,
+   "좌표의 필지 일치": 4,
+   "지번 일치": 6
+  }
+ },
+ "unmatched": {
+  "rows": 598,
+  "by_reason": {
+   "산단 밖 주소": 551,
+   "대상 건물 아님(같은 필지 건물이 검토 대상이 아님)": 34,
+   "대상 건물 아님(산단 안이지만 그 필지에 건물 도형 없음)": 11,
+   "대상 건물 아님(같은 필지에 검토 대상 건물은 있으나 판독 후보 336동이 아님)": 1,
+   "주소 해석 실패": 1
+  }
+ }
+}

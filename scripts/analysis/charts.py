@@ -138,7 +138,7 @@ def chart_tiers():
     axes[0].set_ylabel("건물 수(동) — 산단마다 세로축 눈금이 다름")
     tot = t["total"]
     basis = (META.get("labels") or {}).get("basis")
-    basis_txt = "항공영상 AI 판독 기준" if basis == "ai" else "항공영상 판독 기준"
+    basis_txt = "항공영상 AI 판독 기준" if str(basis or "").startswith("ai") else "항공영상 판독 기준"
     finish(
         fig, "02_tiers_by_complex", "산업단지별 검토 단계",
         f"출처: {META['sources']['tiers_by_complex']}\n"
@@ -200,7 +200,7 @@ def chart_validation():
     if not v:
         print("validation 없음 — 04 건너뜀")
         return
-    ai = v.get("basis") == "ai"
+    ai = str(v.get("basis") or "").startswith("ai")
     base = v["baseRate"]
     tk = [k for k in v["topK"] if round(k["k"], 2) in (0.1, 0.2)]
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(10.5, 5.6), gridspec_kw={"wspace": 0.3, "width_ratios": [1, 1.25]})

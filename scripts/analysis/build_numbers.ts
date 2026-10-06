@@ -246,6 +246,7 @@ async function main() {
     capacity_excl_installed: { count: sum.buildings, mw: sum.mw, gwh: sum.gwh, save_low: sum.save_low, save_base: sum.save_base, co2_t: sum.co2_t, unit_cost: [150, blds[0].calc.unit_cost], source: "lib/calc.ts summarize(30kW 이상 대상 건물, 항공영상 판독 '설치' 건물 제외) · 건물 기준일 " + doc.meta.base_date },
     roof_usable: existsSync("data/quality/roof_usable.json") ? readJson("data/quality/roof_usable.json") : null,
     battery: existsSync("data/quality/battery.json") ? readJson("data/quality/battery.json") : null,
+    permit: existsSync("data/quality/permit.json") ? (({ meta, region, by_label, ai_missed_strong, matched, unmatched }: Record<string, unknown>) => ({ meta, region, by_label: Object.fromEntries(Object.entries(by_label as Record<string, Record<string, unknown>>).map(([k, v]) => [k, { ...v, matched: undefined }])), ai_missed_strong, matched, unmatched }))(readJson("data/quality/permit.json")) : null,
     ml_check: existsSync("data/quality/ml_check.json") ? readJson("data/quality/ml_check.json") : null,
     tiers_by_complex: { statuses: STATUSES, complexes: tiersByComplex, total: tierTotal, targets: targets.length },
     tariff: tar,

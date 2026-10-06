@@ -222,11 +222,11 @@ export default function Page() {
                 <div id="LGD-01" className="mt-1.5 border-t border-ink/10 pt-1.5 text-[11px] md:mt-2 md:pt-2">
                   <ul className="no-scrollbar flex gap-x-3 gap-y-0.5 whitespace-nowrap max-md:overflow-x-auto md:flex-wrap">
                     {scale.stops.map((st) => (
-                      <li key={st.label} className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: st.color }} />{st.label}{st.label === "이미 설치됨" && <span className="text-ink/50">{ds.labels?.meta.basis === "ai" ? "(AI 판독) " : ""}<span className="num">{installedCount}</span></span>}</li>
+                      <li key={st.label} className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: st.color }} />{st.label}{st.label === "이미 설치됨" && <span className="text-ink/50">{ds.labels?.meta.basis?.startsWith("ai") ? "(AI 판독) " : ""}<span className="num">{installedCount}</span></span>}</li>
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
-                    {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#1456c8]" />이미 설치됨{ds.labels?.meta.basis === "ai" ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
+                    {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#1456c8]" />이미 설치됨{ds.labels?.meta.basis?.startsWith("ai") ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 roomy:block">
                     {ds.meta.source} {ds.meta.base_date} · {ds.complexes[0]?.source} · 위험물시설 거리는 반영하지 않아 90점 만점입니다

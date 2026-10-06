@@ -1,5 +1,5 @@
 {
- "basis": "ai",
+ "basis": "ai+permit",
  "review": {
   "queue": 92,
   "done": 0,
@@ -18,6 +18,12 @@
   "notTotal": 50,
   "changed": 2,
   "kappa": 0.957
+ },
+ "sample20": {
+  "total": 20,
+  "done": 0,
+  "agree": 0,
+  "kappa": null
  },
  "files": [
   "existing_pv.csv",

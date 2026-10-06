@@ -110,7 +110,7 @@ def main():
 
     diff = " · ".join(f"{MODEL_LABEL[m]} {D['diff_ml_minus_rule'][m]['mean']:+.3f}" for m in models)
     rho = " · ".join(f"{MODEL_LABEL[m]} {D['rank_correlation'][m]['spearman_rho']:.2f}" for m in models)
-    basis = "항공영상 AI 판독" if meta.get("labels_basis") == "ai" else "항공영상 판독"
+    basis = "항공영상 AI 판독" if str(meta.get("labels_basis") or "").startswith("ai") else "항공영상 판독"
     subtitle = (
         f"판독 {D['n']}동(설치 {D['positives']} · 미설치 {D['negatives']}, 불명 {D['excluded_unknown']}동 제외) · "
         f"층화 {st['n_splits']}겹 교차검증 {st['n_repeats']}회 반복(폴드 {st['n_folds_total']}개)\n"
