@@ -76,21 +76,19 @@ def main():
         a1.bar(x, p["base"], width=0.58, color=color)
         a1.errorbar(x, p["base"], yerr=[[p["base"] - p["a_only"]], [p["b_only"] - p["base"]]], color=BLACK, linewidth=1.4, capsize=7, capthick=1.4)
         pc = need["total" if name == "합계" else name]
-        a1.text(x, p["b_only"] + supply * 0.135, f"{n(p['base'])}개", ha="center", va="bottom", fontsize=13, fontweight="bold", color=BLACK)
-        a1.text(x, p["b_only"] + supply * 0.02, f"A만 {n(p['a_only'])} ~ B만 {n(p['b_only'])}\n전망의 {pc['base_pct']:.1f}%", ha="center", va="bottom", fontsize=8.8, color=BLACK, linespacing=1.35)
+        a1.annotate(f"{n(p['base'])}개", (x, p["b_only"]), xytext=(0, 34), textcoords="offset points", ha="center", va="bottom", fontsize=13, fontweight="bold", color=BLACK)
+        a1.annotate(f"A만 {n(p['a_only'])} ~ B만 {n(p['b_only'])}\n추정의 {pc['base_pct']:.1f}%", (x, p["b_only"]), xytext=(0, 5), textcoords="offset points", ha="center", va="bottom", fontsize=8.8, color=BLACK, linespacing=1.35)
     a1.axhline(supply, color=BLACK, linewidth=1.2, linestyle=(0, (4, 3)))
-    a1.text(-0.42, supply + supply * 0.015, f"충북 2030년 사용후 배터리 발생 전망 {n(supply)}개(추정)", ha="left", va="bottom", fontsize=9.5, color=BLACK)
+    a1.text(-0.42, supply + supply * 0.015, f"충북 2030년 사용후 배터리 발생 추정 {n(supply)}개", ha="left", va="bottom", fontsize=9.5, color=BLACK)
     a1.set_xticks(xs)
     a1.set_xticklabels([f"{name}\n({n(r['buildings'])}동)" for name, r, _ in rows], fontsize=10.5)
     a1.set_xlim(-0.5, len(rows) - 0.5)
-    a1.set_ylim(0, supply * 1.14)
+    a1.set_ylim(0, supply * 1.38)
     a1.set_ylabel("재사용 팩 수(개)")
     a1.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: n(v)))
-    a1.set_title("단계별 필요 팩 수", loc="left", fontsize=11.5)
+    a1.set_title("단계별 필요 팩 수 (세로 막대선 = A등급만 ~ B등급만 범위)", loc="left", fontsize=11.5)
     a1.grid(axis="y", color=GRID, linewidth=0.7)
     a1.set_axisbelow(True)
-    a1.legend(handles=[plt.Line2D([0], [0], color=BLACK, linewidth=1.4, marker="_", markersize=9, label="범위: A등급만 ~ B등급만")],
-              frameon=False, loc="upper left", bbox_to_anchor=(0.0, 0.86), fontsize=9)
 
     # 오른쪽: 부지 확인 ------------------------------------------------------
     ys = list(range(len(rows)))[::-1]
@@ -120,10 +118,11 @@ def main():
     c = meta["constants"]
     title = f"설치 우선·검토 {n(tot['buildings'])}동에 필요한 재사용 팩은 약 {n(tot['packs']['base'])}개 (1차 추정)"
     sub = (f"ESS 용량 합계 {tot['ess_kwh'] / 1000:.1f}MWh · 분산 단위 {n(tot['ess_units'])}개(단위당 {n(c['ESS_UNIT_MAX']['value'])}kWh 이하) · "
-           f"필요 팩은 충북 2030년 전망의 {need['total']['a_only_pct']:.1f}~{need['total']['b_only_pct']:.1f}%(기본 {need['total']['base_pct']:.1f}%)")
+           f"필요 팩은 충북 2030년 추정의 {need['total']['a_only_pct']:.1f}~{need['total']['b_only_pct']:.1f}%(기본 {need['total']['base_pct']:.1f}%)")
     footer = (
-        f"출처: {meta['buildings_source']}(기준일 {ymd(meta['buildings_base_date'])}) · {meta['register_source']} · 충북 전망 = 전국 2030년 {n(ol['nationwide_2030'])}개 × 충북 전기차 등록 비중 {ol['chungbuk_share'] * 100:.2f}%\n"
-        f"{ol['nationwide_source']} · {ol['chungbuk_source']}\n"
+        f"출처: {meta['buildings_source']}(기준일 {ymd(meta['buildings_base_date'])}) · {meta['register_source']}\n"
+        f"충북 추정 = 전국 2030년 {n(ol['nationwide_2030'])}개 × 충북 전기차 등록 비중 {ol['chungbuk_share'] * 100:.2f}% · 전국: {ol['nationwide_source']}\n"
+        f"충북 비중: {ol['chungbuk_source']}\n"
         f"기본 = A등급 {c['A_RATIO']['value'] * 100:.0f}%(잔존용량 A {c['SOH_A']['value']}, B {c['SOH_B']['value']}), 팩 정격 {c['PACK_KWH']['value']}kWh, 충전율 {c['SOC_MIN']['value'] * 100:.0f}~{c['SOC_MAX']['value'] * 100:.0f}%(옥외) · "
         f"부지 여유 = 필지 공지 ÷ 단위당 {c['ESS_UNIT_AREA']['value']}㎡ 가 필요 단위 수 이상 · 계산일 {meta['generated']}\n"
         "발생한 배터리가 모두 재사용 등급을 받는 것은 아님 · 현장·구조검토 전 1차 추정값"

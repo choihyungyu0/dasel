@@ -22,7 +22,7 @@ await page.waitForSelector("#TBL-01");
 out.sim_total = await txt("#TBL-01 tbody tr:last-child");
 await page.goto(`${BASE}/method`);
 const body = await page.locator("body").innerText();
-out.method = ["ML 교차검증", "지붕 이용률 판독", "재사용 배터리 집계", "3,905"].map((k) => [k, body.includes(k)]);
+out.method = ["ML 교차검증", "지붕 이용률 판독", "재사용 배터리 집계", "2,180"].map((k) => [k, body.includes(k)]);
 out.dash = (body.match(/—/g) ?? []).length;
 out.errs = errs;
 await browser.close();

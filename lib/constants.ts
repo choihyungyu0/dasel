@@ -79,10 +79,10 @@ export function unsourcedConstants(): string[] {
 export const REVIEW_BADGE = "1차 검토(현장·구조검토 전)";
 export const HAZMAT_CHIP_P0 = "위험물시설 거리 미반영 · 설치 전 관할 소방서 확인";
 
-/** SIM-03: 사용후 배터리 발생 전망. 전국 전망은 보도 재인용이라 화면에 '추정'으로 표시한다. */
+/** SIM-03: 사용후 배터리 발생 추정. 전국 값은 정부 추산을 보도에서 옮긴 것이라 화면에 '추정'으로 표시한다. */
 export const BATTERY_OUTLOOK = {
-  nationwide2030: 107500,
-  nationwideSource: "환경부 추정(뉴스핌 2026-05-20 보도 재인용)",
+  nationwide2030: 60000,
+  nationwideSource: "기후에너지환경부 추산 2030년 6만여 개(2025년 3,001개 → 2028년 3.7만여 개 → 2030년 6만여 개), 서울신문 2026-06-25 보도. 6만으로 계산",
   // 전기차 등록: 승용·승합·화물·특수 합계
   evNationwide: 1160968,
   evChungbuk: 42176,

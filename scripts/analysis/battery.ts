@@ -88,7 +88,7 @@ for (const b of targets) {
 }
 const shared = [...byPnu.values()].filter((e) => e.n > 1);
 
-// 충북 2030 발생 전망: app/sim/page.tsx CHT-02 와 같은 식
+// 충북 2030 발생 추정: app/sim/page.tsx CHT-02 와 같은 식
 const supply = Math.round(BATTERY_OUTLOOK.nationwide2030 * BATTERY_OUTLOOK.chungbukShare);
 const pct = (v: number) => round((v / supply) * 100, 1);
 const ratio = (p: { base: number; a_only: number; b_only: number }) => ({ base_pct: pct(p.base), a_only_pct: pct(p.a_only), b_only_pct: pct(p.b_only) });
@@ -113,7 +113,7 @@ const out = {
       ess_save: `ess_kwh × 왕복 효율 ${C.ESS_EFF.value} × 운영일 ${C.ESS_DAYS.value}일 × 최대부하−경부하 단가차 ${peakSpread()}원/kWh(${TARIFF.name}, ${TARIFF.source}, ${TARIFF.asOf}). 기본요금 절감은 넣지 않음`,
       site: `lib/chips.ts essSpace(): 필지 공지(대지면적 − 건물 바닥면적 합) ÷ 단위당 ${C.ESS_UNIT_AREA.value}㎡ 를 내림한 단위 수가 ess_units 이상이면 '부지 여유', 모자라면 '옥내 검토(충전율 80%)', 대지면적을 모르면 '대지면적 정보 없음'`,
       indoor: `'옥내 검토' 건물은 enrich 가정 { indoor: 1 } 로 다시 계산(충전율 상한 ${C.SOC_MAX_INDOOR.value}, 옥외는 ${C.SOC_MAX.value})`,
-      outlook: "app/sim/page.tsx CHT-02 와 같은 식: round(전국 2030 전망 × 충북 전기차 등록 비중)",
+      outlook: "app/sim/page.tsx CHT-02 와 같은 식: round(전국 2030 추산 × 충북 전기차 등록 비중)",
     },
     kwh_per_pack: {
       outdoor: { base: kwhPerPack(normalize()), a_only: kwhPerPack(normalize({ aRatio: 1 })), b_only: kwhPerPack(normalize({ aRatio: 0 })) },
@@ -142,8 +142,8 @@ const out = {
     chungbuk_share: BATTERY_OUTLOOK.chungbukShare,
     chungbuk_source: BATTERY_OUTLOOK.chungbukSource,
     chungbuk_2030: supply,
-    formula: `충북 전망 = round(전국 2030년 ${BATTERY_OUTLOOK.nationwide2030}개 × 충북 전기차 등록 비중 ${BATTERY_OUTLOOK.evChungbuk}/${BATTERY_OUTLOOK.evNationwide})`,
-    caveat: "전국 전망은 보도 재인용이라 '추정'으로 표시한다. 발생한 배터리가 모두 재사용 등급을 받는 것은 아니다.",
+    formula: `충북 추정 = round(전국 2030년 ${BATTERY_OUTLOOK.nationwide2030}개 × 충북 전기차 등록 비중 ${BATTERY_OUTLOOK.evChungbuk}/${BATTERY_OUTLOOK.evNationwide})`,
+    caveat: "전국 값은 정부 추산을 보도에서 옮긴 것이고 충북 값은 등록 비중으로 나눈 것이라 '추정'으로 표시한다. 발생한 배터리가 모두 재사용 등급을 받는 것은 아니다.",
     need_vs_outlook: {
       ...Object.fromEntries(TIERS.map((t) => [t, ratio(byTier[t].packs)])),
       total: ratio(total.packs),

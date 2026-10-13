@@ -205,7 +205,7 @@ export default function SimPage() {
             </div>
 
             <div id="CHT-02" className="surface bg-white p-4">
-              <h2 className="mb-2 text-sm font-semibold">재사용 팩 수요와 충북 사용후 배터리 발생 전망 <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] font-normal">추정</span></h2>
+              <h2 className="mb-2 text-sm font-semibold">재사용 팩 수요와 충북 사용후 배터리 발생 추정 <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] font-normal">추정</span></h2>
               {(() => {
                 const need = rows[rows.length - 1].sum.packs;
                 const supply = Math.round(BATTERY_OUTLOOK.nationwide2030 * BATTERY_OUTLOOK.chungbukShare);
@@ -214,10 +214,10 @@ export default function SimPage() {
                   <>
                     <ul className="space-y-2 text-xs">
                       <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>오창 산단 필요 팩</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-[#3d83cc]" style={{ width: `${(need / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(need)}개</span></span></li>
-                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 전망</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-400" style={{ width: `${(supply / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(supply)}개</span></span></li>
+                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 추정</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-400" style={{ width: `${(supply / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(supply)}개</span></span></li>
                     </ul>
                     <p className="mt-3 text-[11px] text-slate-500">
-                      충북 전망 = 전국 2030년 {n(BATTERY_OUTLOOK.nationwide2030)}개 × 충북 전기차 등록 비중 {(BATTERY_OUTLOOK.chungbukShare * 100).toFixed(2)}%. {BATTERY_OUTLOOK.nationwideSource} · {BATTERY_OUTLOOK.chungbukSource}. 발생한 배터리가 모두 재사용 등급을 받는 것은 아닙니다.
+                      충북 추정 = 전국 2030년 {n(BATTERY_OUTLOOK.nationwide2030)}개 × 충북 전기차 등록 비중 {(BATTERY_OUTLOOK.chungbukShare * 100).toFixed(2)}%. {BATTERY_OUTLOOK.nationwideSource} · {BATTERY_OUTLOOK.chungbukSource}. 발생한 배터리가 모두 재사용 등급을 받는 것은 아닙니다.
                     </p>
                   </>
                 );
