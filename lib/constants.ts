@@ -95,3 +95,9 @@ export const SUBSIDY_BADGE = "공식 공고 단가 · 2026년 접수 마감(4.24
 
 /** 지붕 임대 사례 문구(언론 보도). 단가가 아니라 사례이며 계산에는 쓰지 않는다. */
 export const RENT_CASE: string | null = "사례: 화성 공장 지붕 100kW 임대, 16년치 임대료 4,800만 원을 33kW 자가용 설비로 한 번에 받음(오마이뉴스 2024.2.23)";
+
+/** SIM-03 비교용: 정부 예산 설명자료의 2030년 발생 전망(1차 출처). 기본 계산은 BATTERY_OUTLOOK(6만여 개)을 쓴다 */
+export const BATTERY_OUTLOOK_BUDGET = {
+  nationwide2030: 107500,
+  nationwideSource: "기후에너지환경부 2027 예산 사업설명자료 2권 p.812(사용후 배터리 발생 전망 '30년 107.5천 개)",
+} as const;

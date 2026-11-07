@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import { useStore } from "@/components/Store";
 import { summarize, toManwon, type Summary } from "@/lib/calc";
-import { BATTERY_OUTLOOK, CONSTANTS as C, REVIEW_BADGE, SUBSIDY_BADGE } from "@/lib/constants";
+import { BATTERY_OUTLOOK, BATTERY_OUTLOOK_BUDGET, CONSTANTS as C, REVIEW_BADGE, SUBSIDY_BADGE } from "@/lib/constants";
 import { enrich, type Dataset } from "@/lib/data";
 import { startMiniTour } from "@/lib/tour";
 import { decodeScenario, defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
@@ -209,15 +209,17 @@ export default function SimPage() {
               {(() => {
                 const need = rows[rows.length - 1].sum.packs;
                 const supply = Math.round(BATTERY_OUTLOOK.nationwide2030 * BATTERY_OUTLOOK.chungbukShare);
-                const max = Math.max(need, supply, 1);
+                const supplyBudget = Math.round(BATTERY_OUTLOOK_BUDGET.nationwide2030 * BATTERY_OUTLOOK.chungbukShare);
+                const max = Math.max(need, supply, supplyBudget, 1);
                 return (
                   <>
                     <ul className="space-y-2 text-xs">
                       <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>오창 산단 필요 팩</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-[#3d83cc]" style={{ width: `${(need / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(need)}개</span></span></li>
-                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 추정</span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-400" style={{ width: `${(supply / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(supply)}개</span></span></li>
+                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 추정<span className="block text-[10px] text-slate-500">6만여 개 기준(기후부 추산)</span></span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-400" style={{ width: `${(supply / max) * 80}%`, minWidth: 2 }} /><span className="num">{n(supply)}개</span></span></li>
+                      <li className="grid grid-cols-[150px_1fr] items-center gap-2"><span>충북 2030년 발생 추정<span className="block text-[10px] text-slate-500">107,500개 기준(기후부 2027 예산 설명자료)</span></span><span className="flex items-center gap-2"><i className="block h-3 rounded-sm bg-slate-300" style={{ width: `${(supplyBudget / max) * 80}%`, minWidth: 2 }} /><span className="num">약 {n(supplyBudget)}개</span></span></li>
                     </ul>
                     <p className="mt-3 text-[11px] text-slate-500">
-                      충북 추정 = 전국 2030년 {n(BATTERY_OUTLOOK.nationwide2030)}개 × 충북 전기차 등록 비중 {(BATTERY_OUTLOOK.chungbukShare * 100).toFixed(2)}%. {BATTERY_OUTLOOK.nationwideSource} · {BATTERY_OUTLOOK.chungbukSource}. 발생한 배터리가 모두 재사용 등급을 받는 것은 아닙니다.
+                      충북 추정 = 전국 2030년 값 × 충북 전기차 등록 비중 {(BATTERY_OUTLOOK.chungbukShare * 100).toFixed(2)}%. 6만여 개: {BATTERY_OUTLOOK.nationwideSource} · 107,500개: {BATTERY_OUTLOOK_BUDGET.nationwideSource} · {BATTERY_OUTLOOK.chungbukSource}. 발생한 배터리가 모두 재사용 등급을 받는 것은 아닙니다.
                     </p>
                   </>
                 );

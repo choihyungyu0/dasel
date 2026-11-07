@@ -73,10 +73,19 @@ const PITCH = 50, PITCH_SELECTED = 60, BEARING = -20;
 
 const HANDLERS = ["dragPan", "scrollZoom", "boxZoom", "dragRotate", "keyboard", "doubleClickZoom", "touchZoomRotate"] as const;
 
-/** 3D 색: 2D와 같은 단계 색. 선택 건물은 밝게, 필터 밖은 어둡게 */
+/** 3D 색: 2D와 같은 단계 색. 필터 밖은 어둡게 */
 function extrudeColor(by: ColorBy): ExpressionSpecification {
-  return ["case", ["boolean", ["feature-state", "selected"], false], "#fff3b0", ["boolean", ["feature-state", "hover"], false], "#f8fafc", ["boolean", ["feature-state", "dim"], false], "#3f4652", fillColor(by)] as unknown as ExpressionSpecification;
+  return ["case", ["boolean", ["feature-state", "dim"], false], "#3f4652", fillColor(by)] as unknown as ExpressionSpecification;
 }
+
+/** 선택 건물: 단계 색은 그대로 두고 밝기만 올린다 */
+const LIGHT_TIER: Record<string, string> = { "설치 우선": "#2fb36b", 검토: "#ffb547", 보류: "#aeb6c4", "이미 설치됨": "#5b93f2", 제외: "#eef0f3" };
+function selectedColor(by: ColorBy): ExpressionSpecification {
+  if (by !== "tier") return fillColor(by);
+  return ["match", ["get", "tier"], ...Object.entries(LIGHT_TIER).flat(), "#eef0f3"] as unknown as ExpressionSpecification;
+}
+
+const LAYERS_3D = ["LYR-3D", "LYR-3D-INST", "LYR-3D-SEL"];
 
 export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick, touring = false }: Props) {
   const el = useRef<HTMLDivElement>(null);
@@ -154,15 +163,16 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
         },
       });
       // P0-5 3D: 건물 돌출. 기본은 숨김, 3D 버튼으로 켠다. 일반 건물은 낮은 회색
-      m.addLayer({
-        id: "LYR-3D", type: "fill-extrusion", source: "bld", layout: { visibility: "none" },
-        paint: {
-          "fill-extrusion-color": extrudeColor("tier"),
-          "fill-extrusion-height": ["coalesce", ["get", "h_render"], 6],
-          "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.92,
-        },
-      });
+      // 박스가 지붕 사진을 가리지 않도록 반투명. fill-extrusion은 건물별 투명도가 안 되어 레이어를 나눈다
+      const extrude = (id: string, opacity: number, color: ExpressionSpecification) =>
+        m.addLayer({
+          id, type: "fill-extrusion", source: "bld", layout: { visibility: "none" },
+          paint: { "fill-extrusion-color": color, "fill-extrusion-height": ["coalesce", ["get", "h_render"], 6], "fill-extrusion-base": 0, "fill-extrusion-opacity": opacity },
+        });
+      extrude("LYR-3D", 0.8, extrudeColor("tier"));
+      extrude("LYR-3D-INST", 0.6, extrudeColor("tier"));
+      extrude("LYR-3D-SEL", 0.8, selectedColor("tier"));
+      m.addLayer({ id: "sel-outline", type: "line", source: "bld", filter: ["==", ["get", "bld_id"], -1], layout: { visibility: "none" }, paint: { "line-color": "#ffffff", "line-width": 3 } });
       // LYR-06: 항공영상 라벨에서 이미 태양광이 확인된 건물
       m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#1456c8", "line-width": 2.5, "line-dasharray": [2, 1] } });
       if (ds.stationGeo) {
@@ -184,12 +194,12 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
         m.getCanvas().style.cursor = "";
         setTip(null);
       };
-      for (const layer of ["LYR-02", "LYR-3D"]) {
+      for (const layer of LAYERS_3D.concat("LYR-02")) {
         m.on("mousemove", layer, onMove);
         m.on("mouseleave", layer, onLeave);
       }
       m.on("click", (e: MapMouseEvent) => {
-        const f = m.queryRenderedFeatures(e.point, { layers: ["LYR-02", "LYR-3D"] })[0];
+        const f = m.queryRenderedFeatures(e.point, { layers: LAYERS_3D.concat("LYR-02").filter((l) => m.getLayoutProperty(l, "visibility") !== "none") })[0];
         cb.current.onSelect(f ? Number(f.id) : null);
       });
       setReady(true);
@@ -204,6 +214,8 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (!ready) return;
     map.current!.setPaintProperty("LYR-02", "fill-color", fillColor(colorBy));
     map.current!.setPaintProperty("LYR-3D", "fill-extrusion-color", extrudeColor(colorBy));
+    map.current!.setPaintProperty("LYR-3D-INST", "fill-extrusion-color", extrudeColor(colorBy));
+    map.current!.setPaintProperty("LYR-3D-SEL", "fill-extrusion-color", selectedColor(colorBy));
   }, [ready, colorBy]);
 
   useEffect(() => {
@@ -214,7 +226,8 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     const show: ExpressionSpecification = ["any", ["all", layers.target, ["!=", ["get", "tier"], "제외"]], ["all", layers.general, ["==", ["get", "tier"], "제외"]]];
     m.setFilter("LYR-02", show);
     m.setFilter("bld-outline", show);
-    m.setFilter("LYR-3D", show);
+    showRef.current = show;
+    apply3dFilters(m);
     if (m.getLayer("LYR-04")) m.setLayoutProperty("LYR-04", "visibility", vis(layers.station));
     m.setLayoutProperty("LYR-06", "visibility", vis(layers.installed));
   }, [ready, layers]);
@@ -225,7 +238,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (!ready || !m) return;
     m.setLayoutProperty("LYR-02", "visibility", is3d ? "none" : "visible");
     m.setLayoutProperty("bld-outline", "visibility", is3d ? "none" : "visible");
-    m.setLayoutProperty("LYR-3D", "visibility", is3d ? "visible" : "none");
+    for (const l of [...LAYERS_3D, "sel-outline"]) m.setLayoutProperty(l, "visibility", is3d ? "visible" : "none");
     m.easeTo(is3d ? { pitch: selectedRef.current === null ? PITCH : PITCH_SELECTED, bearing: m.getBearing() === 0 ? BEARING : m.getBearing(), duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
   }, [ready, is3d]);
 
@@ -250,6 +263,17 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   const selectedRef = useRef<number | null>(selectedId);
   const complexCdRef = useRef(complexCd);
   complexCdRef.current = complexCd;
+  const showRef = useRef<ExpressionSpecification>(["boolean", true]);
+  /** 3D 레이어 나누기: 선택 건물 / 이미 설치됨 / 나머지 */
+  const apply3dFilters = (m: MlMap) => {
+    const sel = selectedRef.current ?? -1;
+    const id: ExpressionSpecification = ["get", "bld_id"];
+    const inst: ExpressionSpecification = ["==", ["get", "installed"], true];
+    m.setFilter("LYR-3D", ["all", showRef.current, ["!", inst], ["!=", id, sel]]);
+    m.setFilter("LYR-3D-INST", ["all", showRef.current, inst, ["!=", id, sel]]);
+    m.setFilter("LYR-3D-SEL", ["==", id, sel]);
+    m.setFilter("sel-outline", ["==", id, sel]);
+  };
   /** 산단 전체 보기(3D면 기울임). 패널이 가리는 만큼 비운다 */
   const overview = (m: MlMap, cd: string | null) => {
     const feats = ds.complexGeo.features.filter((f) => !cd || f.properties?.complex_cd === cd);
@@ -259,20 +283,27 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
+    selectedRef.current = selectedId;
     if (prev.current !== null) m.setFeatureState({ source: "bld", id: prev.current }, { selected: false });
     if (selectedId !== null) {
       m.setFeatureState({ source: "bld", id: selectedId }, { selected: true });
       const f = ds.geo.features.find((x) => Number(x.properties?.bld_id) === selectedId);
+      apply3dFilters(m);
+      // 이동 중에는 박스로 보이고, 도착하면 선택 건물만 지붕 사진이 비치게 투명하게
+      m.setPaintProperty("LYR-3D-SEL", "fill-extrusion-opacity", 0.8);
       if (f) {
+        m.once("moveend", () => {
+          if (selectedRef.current === selectedId) m.setPaintProperty("LYR-3D-SEL", "fill-extrusion-opacity", 0.25);
+        });
         // P0-5: 검색·목록·1순위 버튼·지도 클릭 모두 이 이동 하나를 쓴다
         const c = bounds((f.geometry as { coordinates: unknown }).coordinates).getCenter();
         m.flyTo({ center: c, zoom: 17.5, pitch: is3dRef.current ? PITCH_SELECTED : 0, bearing: m.getBearing(), padding: { top: padding.top, left: 0, right: padding.right, bottom: padding.bottom }, duration: 1200 });
       }
     } else if (prev.current !== null) {
+      apply3dFilters(m);
       overview(m, complexCdRef.current);
     }
     prev.current = selectedId;
-    selectedRef.current = selectedId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, ds, selectedId]);
 

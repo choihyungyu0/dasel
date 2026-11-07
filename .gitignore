@@ -17,3 +17,5 @@ screenshots/poster/*.png
 screenshots/poster/*.pdf
 screenshots/check/
 screenshots/label_tiles/
+# 사람 판독 전 빈 목록(템플릿). 판독 결과는 data/labels/human_sample20.csv
+사람판독_표본20동.csv
