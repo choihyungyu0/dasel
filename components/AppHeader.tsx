@@ -25,7 +25,7 @@ export default function AppHeader({ children, complexSelect = true }: { children
     else router.push("/?tour=1");
   };
   return (
-    <header className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 surface px-2.5 py-1.5 max-[374px]:gap-x-1.5 md:gap-y-1.5 md:px-3 md:py-2">
+    <header className="pointer-events-auto relative z-30 flex flex-wrap items-center gap-x-3 gap-y-1 surface px-2.5 py-1.5 max-[374px]:gap-x-1.5 md:gap-y-1.5 md:px-3 md:py-2">
       <h1 className="flex items-center gap-1.5 text-[17px] font-bold tracking-tight max-[374px]:text-[15px]"><i aria-hidden className="cell-mark" />다셀</h1>
       <nav id="NAV-01" className="flex gap-1 whitespace-nowrap text-sm max-[374px]:gap-0 max-[374px]:text-[13px]">
         {TABS.map((t) => (
