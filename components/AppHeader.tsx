@@ -10,6 +10,7 @@ const TABS: { href: string; label: string; tour?: string }[] = [
   { href: "/", label: "지도" },
   { href: "/sim", label: "시뮬레이터", tour: "nav-sim" },
   { href: "/list", label: "후보 목록" },
+  { href: "/ask", label: "질의응답" },
 ];
 
 export default function AppHeader({ children, complexSelect = true }: { children?: React.ReactNode; complexSelect?: boolean }) {
