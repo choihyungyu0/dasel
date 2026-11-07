@@ -19,6 +19,10 @@ export const COLOR_SCALES: Record<ColorBy, { label: string; prop: string; stops:
   gate: { label: "안전 게이트", prop: "gate", stops: [{ label: "통과", color: "#0b5d34", value: "통과" }, { label: "조건부", color: "#f08c00", value: "조건부" }] },
 };
 
+function litFill(by: ColorBy): ExpressionSpecification {
+  return ["case", ["boolean", ["feature-state", "lit"], false], "#22c55e", fillColor(by)] as unknown as ExpressionSpecification;
+}
+
 function fillColor(by: ColorBy): ExpressionSpecification {
   const s = COLOR_SCALES[by];
   const general: ExpressionSpecification = ["==", ["get", "tier"], "제외"];
@@ -67,6 +71,8 @@ interface Props {
   onAnchorClick?: () => void;
   /** 둘러보기 중이면 3D 버튼을 끈다 */
   touring?: boolean;
+  /** 용량 큰 30동 시나리오: 이 순서로 0.08초 간격 강조(나머지는 흐리게) */
+  lit?: { ids: number[]; n: number } | null;
 }
 
 const VIEW_KEY = "dasel_view";
@@ -76,8 +82,11 @@ const HANDLERS = ["dragPan", "scrollZoom", "boxZoom", "dragRotate", "keyboard", 
 
 /** 3D 색: 2D와 같은 단계 색. 필터 밖은 어둡게 */
 function extrudeColor(by: ColorBy): ExpressionSpecification {
-  return ["case", ["boolean", ["feature-state", "dim"], false], "#3f4652", fillColor(by)] as unknown as ExpressionSpecification;
+  return ["case", ["boolean", ["feature-state", "lit"], false], LIT_COLOR, ["boolean", ["feature-state", "dim"], false], "#3f4652", fillColor(by)] as unknown as ExpressionSpecification;
 }
+/** 용량 큰 30동 시나리오: 켜진 건물 색과 높이(살짝 올라옴) */
+const LIT_COLOR = "#22c55e";
+const HEIGHT: ExpressionSpecification = ["*", ["coalesce", ["get", "h_render"], 6], ["case", ["boolean", ["feature-state", "lit"], false], 1.6, 1]];
 
 /** 선택 건물: 단계 색은 그대로 두고 밝기만 올린다 */
 const LIGHT_TIER: Record<string, string> = { "설치 우선": "#2fb36b", 검토: "#ffb547", 보류: "#aeb6c4", "이미 설치됨": "#5b93f2", 제외: "#eef0f3" };
@@ -88,7 +97,7 @@ function selectedColor(by: ColorBy): ExpressionSpecification {
 
 const LAYERS_3D = ["LYR-3D", "LYR-3D-INST", "LYR-3D-SEL"];
 
-export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick, touring = false }: Props) {
+export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick, touring = false, lit = null }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -152,7 +161,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       m.addLayer({
         id: "LYR-02", type: "fill", source: "bld",
         paint: {
-          "fill-color": fillColor("tier"),
+          "fill-color": litFill("tier"),
           "fill-opacity": ["case", ["boolean", ["feature-state", "dim"], false], 0.12, ["==", ["get", "tier"], "제외"], 0.35, 0.85],
         },
       });
@@ -168,7 +177,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       const extrude = (id: string, opacity: number, color: ExpressionSpecification) =>
         m.addLayer({
           id, type: "fill-extrusion", source: "bld", layout: { visibility: "none" },
-          paint: { "fill-extrusion-color": color, "fill-extrusion-height": ["coalesce", ["get", "h_render"], 6], "fill-extrusion-base": 0, "fill-extrusion-opacity": opacity },
+          paint: { "fill-extrusion-color": color, "fill-extrusion-height": HEIGHT, "fill-extrusion-base": 0, "fill-extrusion-opacity": opacity },
         });
       extrude("LYR-3D", 0.8, extrudeColor("tier"));
       extrude("LYR-3D-INST", 0.6, extrudeColor("tier"));
@@ -217,7 +226,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
 
   useEffect(() => {
     if (!ready) return;
-    map.current!.setPaintProperty("LYR-02", "fill-color", fillColor(colorBy));
+    map.current!.setPaintProperty("LYR-02", "fill-color", litFill(colorBy));
     map.current!.setPaintProperty("LYR-3D", "fill-extrusion-color", extrudeColor(colorBy));
     map.current!.setPaintProperty("LYR-3D-INST", "fill-extrusion-color", extrudeColor(colorBy));
     map.current!.setPaintProperty("LYR-3D-SEL", "fill-extrusion-color", selectedColor(colorBy));
@@ -248,15 +257,21 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     m.easeTo(is3d ? { pitch: selectedRef.current === null ? PITCH : PITCH_SELECTED, bearing: m.getBearing() === 0 ? BEARING : m.getBearing(), duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
   }, [ready, is3d]);
 
-  // 필터 밖 대상 건물은 흐리게
+  // 필터 밖 대상 건물은 흐리게. 시나리오 중에는 30동만 남기고 흐리게 한 뒤 차례로 켠다
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
+    const on = lit ? new Set(lit.ids) : null;
     for (const b of ds.buildings) {
       if (b.score.tier === "제외") continue;
-      m.setFeatureState({ source: "bld", id: b.bld_id }, { dim: passIds !== null && !passIds.has(b.bld_id) });
+      m.setFeatureState({ source: "bld", id: b.bld_id }, { lit: false, dim: on ? !on.has(b.bld_id) : passIds !== null && !passIds.has(b.bld_id) });
     }
-  }, [ready, ds, passIds]);
+    if (!lit) return;
+    overview(m, null);
+    const timers = lit.ids.map((id, i) => setTimeout(() => m.setFeatureState({ source: "bld", id }, { lit: true }), 900 + i * 80));
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, ds, passIds, lit]);
 
   useEffect(() => {
     const m = map.current;

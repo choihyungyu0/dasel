@@ -17,10 +17,15 @@ interface Props {
   /** 설치 우선·검토 단계만의 동 수·팩 수(툴팁용) */
   priority?: { buildings: number; packs: number };
   onTop: () => void;
+  /** 용량 큰 30동 시나리오 시작 */
+  onScenario?: () => void;
+  scenarioOn?: boolean;
+  /** 안내 줄 바꾸기(시나리오) */
+  noteText?: string;
 }
 
 /** 화면 아래에 깔리는 계량 띠. 지도를 가리지 않도록 한 줄로 읽힌다. 좁은 화면에서는 핵심 셋만 보이고 누르면 펼쳐진다. */
-export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop, priority }: Props) {
+export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop, priority, onScenario, scenarioOn = false, noteText }: Props) {
   const items: { label: string; value: string; unit: string; source: string; title?: string; always?: boolean }[] = [
     { label: "대상 공장", value: n(s.buildings), unit: "동", source: `GIS건물통합정보 ${baseDate} · 30kW 이상 대상` },
     { label: "추가 설치 가능", value: n(s.mw, 1), unit: "MW", source: `이용률 ${CONSTANTS.UTIL.value * 100}% · ${CONSTANTS.M2_PER_KW.value}㎡/kW 가정` },
@@ -30,7 +35,7 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
     { label: "감축", value: n(s.co2_t), unit: "tCO2", source: `${CONSTANTS.EMISSION.source}` },
   ];
   const [open, setOpen] = useState(false);
-  const note = `${s.installed > 0 ? `이미 설치된 ${n(s.installed)}동은 뺐습니다(포함 시 ${n(s.mw_with_installed, 1)}MW). ` : ""}그 외 ${n(s.others)}동(30kW 미만·대상 아님)도 합계에 넣지 않았습니다`;
+  const note = noteText ?? `${s.installed > 0 ? `이미 설치된 ${n(s.installed)}동은 뺐습니다(포함 시 ${n(s.mw_with_installed, 1)}MW). ` : ""}그 외 ${n(s.others)}동(30kW 미만·대상 아님)도 합계에 넣지 않았습니다`;
   return (
     <section id="CRD-00" data-tour="summary" className="surface @container overflow-hidden">
       {/* 좁은 화면: 한 줄 요약 */}
@@ -67,6 +72,11 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
             </div>
           ))}
         </dl>
+        {onScenario && (
+          <button id="BTN-TOP30" data-tour="top30" type="button" onClick={onScenario} disabled={scenarioOn} className="m-2 hidden shrink-0 rounded-md border-2 border-tier-go bg-white px-3 py-2 text-sm font-semibold text-tier-go hover:bg-tier-go/5 disabled:opacity-50 roomy:block @4xl:my-2 @4xl:mr-0">
+            용량 큰 30동 시나리오
+          </button>
+        )}
         {hasTop && (
           <button id="BTN-01" data-tour="top1" type="button" onClick={onTop} className="m-2 hidden shrink-0 rounded-md bg-tier-go px-4 py-2 text-sm font-semibold text-white hover:brightness-110 roomy:block @4xl:my-2 @4xl:mr-3">
             적합도 1순위 건물 보기

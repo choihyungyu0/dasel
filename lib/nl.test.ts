@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_FILTERS, type Filters } from "./filters";
 import { callOpenAI, chipsOf, NL_SCHEMA } from "./nl";
 
-const empty = { complex: [], tier: [], gate: [], industry: [], struct: [], kw_min: null, kw_max: null, ess_min: null, seismic: null, land_owner: [], multi_tenant: null, recent_permit: null, sort: null, ignored: [] };
+const empty = { top_n: null, top_basis: null, complex: [], tier: [], gate: [], industry: [], struct: [], kw_min: null, kw_max: null, ess_min: null, seismic: null, land_owner: [], multi_tenant: null, recent_permit: null, sort: null, ignored: [] };
 
 const CASES: { text: string; model: Record<string, unknown>; complex: string[]; filters: Partial<Filters>; ignored?: string[] }[] = [
   { text: "오창과학 200kW 이상 내진설계 적용 공장", model: { complex: ["오창과학"], kw_min: 200, seismic: "적용" }, complex: ["오창과학"], filters: { minKw: 200, seismic: "적용" } },
@@ -14,6 +14,7 @@ const CASES: { text: string; model: Record<string, unknown>; complex: string[]; 
   { text: "최근 증축한 적 없는 다소비 업종", model: { recent_permit: false, industry: ["다소비 업종"] }, complex: [], filters: { recentPermit: false, industries: ["다소비 업종"] } },
   { text: "100kW 이상 300kW 이하 국공유지", model: { kw_min: 100, kw_max: 300, land_owner: ["국유지", "시 도유지", "군유지"] }, complex: [], filters: { minKw: 100, maxKw: 300, landOwners: ["국유지", "시 도유지", "군유지"] } },
   { text: "ESS 500kWh 이상 내진 미적용", model: { ess_min: 500, seismic: "미적용" }, complex: [], filters: { minEss: 500, seismic: "미적용" } },
+  { text: "용량 큰 상위 30동", model: { top_n: 30, top_basis: "용량", sort: "설치용량" }, complex: [], filters: { topKw: 30 } },
   // 허용 값 밖(오창5, 최우선, 음수 용량)은 버린다
   { text: "오창5 최우선 -50kW", model: { complex: ["오창5"], tier: ["최우선"], kw_min: -50, ignored: ["오창5", "최우선"] }, complex: [], filters: {}, ignored: ["오창5", "최우선"] },
   // 조건이 아닌 표현은 ignored로

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { loadDataset, reprice, type Building, type Dataset } from "@/lib/data";
 import { DEFAULT_FILTERS, passes, type Filters } from "@/lib/filters";
+import { topByKw } from "@/lib/top";
 import { FALLBACK_PRICE, type Price } from "@/lib/price";
 
 type Status = "loading" | "error" | "ready";
@@ -98,12 +99,13 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
   useEffect(refreshPrice, [refreshPrice]);
 
   const ds = useMemo(() => (base ? reprice(base, price.unitCost) : null), [base, price.unitCost]);
+  const topSet = useMemo(() => (ds && filters.topKw ? new Set(topByKw(ds.buildings, filters.topKw).map((b) => b.bld_id)) : null), [ds, filters.topKw]);
   const filtered = useMemo(
     () =>
       (ds?.buildings ?? [])
-        .filter((b) => passes(b, filters, complexCd))
+        .filter((b) => passes(b, filters, complexCd) && (!topSet || topSet.has(b.bld_id)))
         .sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0)),
-    [ds, filters, complexCd],
+    [ds, filters, complexCd, topSet],
   );
 
   const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour, compare, toggleCompare };

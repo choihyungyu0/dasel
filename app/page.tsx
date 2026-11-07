@@ -12,7 +12,9 @@ import SearchBox from "@/components/SearchBox";
 import { useStore } from "@/components/Store";
 import SummaryBanner from "@/components/SummaryBanner";
 import { summarize } from "@/lib/calc";
-import { DEFAULT_FILTERS, isDefault } from "@/lib/filters";
+import { DEFAULT_FILTERS, isDefault, passes } from "@/lib/filters";
+import { topByKw, TOP_N } from "@/lib/top";
+import { useRouter } from "next/navigation";
 import { startTour, tourDone, type TourHandle } from "@/lib/tour";
 import { decodeScenario, type Scenario } from "@/lib/url";
 
@@ -38,6 +40,9 @@ export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [wide, setWide] = useState(true);
   const [chrome, setChrome] = useState({ header: 60, strip: 0 });
+  const router = useRouter();
+  // 용량 큰 30동 시나리오: p = 합계 카운트업 진행(0~1), done = 안내 상자
+  const [scn, setScn] = useState<{ p: number; done: boolean; n: number } | null>(null);
 
   useEffect(() => {
     const mq = matchMedia("(min-width: 768px)");
@@ -87,7 +92,37 @@ export default function Page() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const summary = useMemo(() => summarize(filtered), [filtered]);
+  const top30 = useMemo(() => (ds ? topByKw(ds.buildings) : []), [ds]);
+  const scnTotal = useMemo(() => {
+    if (!ds) return null;
+    const all = summarize(ds.buildings.filter((b) => passes(b, DEFAULT_FILTERS, null)));
+    const t = summarize(top30);
+    return { t, pct: all.mw ? (t.mw / all.mw) * 100 : 0 };
+  }, [ds, top30]);
+  const lit = useMemo(() => (scn ? { ids: top30.map((b) => b.bld_id), n: scn.n } : null), [scn?.n, top30]); // eslint-disable-line react-hooks/exhaustive-deps
+  const startScenario = () => {
+    setSelectedId(null);
+    setChip(false);
+    const n = Date.now();
+    setScn({ p: 0, done: false, n });
+    const lightsEnd = 900 + TOP_N * 80;
+    const t0 = performance.now() + lightsEnd;
+    const tick = () => {
+      const k = Math.max(0, Math.min(1, (performance.now() - t0) / 1500));
+      setScn((s) => (s && s.n === n ? { ...s, p: k, done: k >= 1 } : s));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  useEffect(() => {
+    if (selectedId !== null) setScn(null);
+  }, [selectedId]);
+  const summary0 = useMemo(() => summarize(filtered), [filtered]);
+  const summary = useMemo(() => {
+    if (!scn || !scnTotal) return summary0;
+    const t = scnTotal.t, k = scn.p;
+    return { ...t, buildings: Math.round(t.buildings * k), mw: t.mw * k, gwh: t.gwh * k, packs: Math.round(t.packs * k), save_low: t.save_low * k, save_base: t.save_base * k, co2_t: t.co2_t * k, installed: 0, others: 0 };
+  }, [scn, scnTotal, summary0]);
   // 재사용 팩 툴팁: 설치 우선·검토 단계만의 합계(화면 합계와 같은 summarize로 계산)
   const priority = useMemo(() => {
     const p = summarize(filtered.filter((b) => b.score.tier === "설치 우선" || b.score.tier === "검토"));
@@ -143,7 +178,7 @@ export default function Page() {
   }, [tourNonce, runTour]);
   useEffect(() => () => tour.current?.stop(), []);
   const passIds = useMemo(() => (isDefault(filters) && !complexCd ? null : new Set(filtered.map((b) => b.bld_id))), [filters, complexCd, filtered]);
-  const scope = `${ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체"}${isDefault(filters) ? "" : " · 필터 적용"}`;
+  const scope = scn ? "용량 큰 30동 시나리오" : `${ds?.complexes.find((c) => c.complex_cd === complexCd)?.complex_nm ?? "오창 산단 전체"}${isDefault(filters) ? "" : " · 필터 적용"}`;
   const selected = ds && selectedId !== null ? (ds.byId.get(selectedId) ?? null) : null;
   const scale = COLOR_SCALES[colorBy];
   const installedCount = ds?.labels ? Object.values(ds.labels.labels).filter((l) => l === "설치").length : 0;
@@ -160,7 +195,7 @@ export default function Page() {
             bottom: selected && !wide ? Math.round((typeof innerHeight === "undefined" ? 800 : innerHeight) * (sheetTall ? 0.75 : 0.62)) : chrome.strip,
           }}
           onFallback={() => setFallbackImagery(true)}
-          anchorId={anchorId} locked={locked} touring={locked || anchorId !== null}
+          anchorId={anchorId} locked={locked} touring={locked || anchorId !== null} lit={lit}
           onAnchorClick={() => {
             setSelectedId(anchorId);
             tour.current?.buildingClicked();
@@ -252,7 +287,7 @@ export default function Page() {
                 <SummaryBanner
                   summary={summary} scope={scope} baseDate={ds.meta.base_date} unitCost={price.unitCost}
                   priceLabel={price.fallback ? `기준값(${price.month})` : `한전 ${price.month}`}
-                  hasTop={top !== null} onTop={() => top && setSelectedId(top.bld_id)} priority={priority}
+                  hasTop={top !== null} onTop={() => { setScn(null); if (top) setSelectedId(top.bld_id); }} priority={priority} onScenario={startScenario} scenarioOn={!!scn && !scn.done} noteText={scn ? "이미 설치됨 제외 · 설치용량 큰 순 30동 · 점수 순위와 별개" : undefined}
                 />
               </div>
             )}
@@ -271,6 +306,16 @@ export default function Page() {
         <Link id="TRY-01" href="/compare" className={`absolute right-3 z-20 rounded-full bg-cell px-3 py-1.5 text-sm font-medium text-white shadow-lg ${selected ? "bottom-3 max-md:hidden md:right-[404px]" : "bottom-40 md:bottom-36"}`}>
           비교 {compare.length}동 보기
         </Link>
+      )}
+      {scn?.done && scnTotal && (
+        <div id="BOX-TOP30" role="dialog" aria-label="용량 큰 30동 시나리오 결과" className="absolute left-1/2 top-24 z-30 w-[min(92vw,420px)] -translate-x-1/2 rounded-xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/10">
+          <p className="text-[15px] font-bold">용량 큰 30동 = 추가 용량의 <span className="num text-tier-go">{scnTotal.pct.toFixed(1)}%</span></p>
+          <p className="mt-1 text-xs text-slate-600"><span className="num">{scnTotal.t.mw.toFixed(1)}</span>MW · 점수 순위와 별개, 용량 기준(이미 설치됨 제외, 설치용량 큰 순)</p>
+          <div className="mt-3 flex gap-2">
+            <button id="BTN-TOP30-LIST" type="button" onClick={() => { setFilters({ ...DEFAULT_FILTERS, topKw: TOP_N }); setScn(null); router.push("/list?sort=kw"); }} className="rounded-md bg-ink px-3 py-1.5 text-sm text-white">목록으로 보기</button>
+            <button id="BTN-TOP30-RESET" type="button" onClick={() => setScn(null)} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100">원래대로</button>
+          </div>
+        </div>
       )}
       {chip && !tour.current && (
         <button id="CHP-T1" type="button" onClick={runTour} className="absolute bottom-24 right-3 z-20 rounded-full bg-ink px-3 py-1.5 text-sm text-white shadow-lg">처음이세요? 둘러보기</button>

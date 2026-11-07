@@ -35,6 +35,10 @@ export default function ListPage() {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // ?sort=kw: '용량 큰 30동' 목록으로 보기
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("sort") === "kw") setSort({ key: "kw", desc: true });
+  }, []);
   useEffect(() => {
     if (status !== "ready") return;
     const t = setTimeout(() => void startMiniTour("list"), 600);

@@ -19,12 +19,14 @@ export interface Filters {
   landOwners: LandOwner[];
   multi: boolean | null;
   recentPermit: boolean | null;
+  /** 용량 큰 N동만(0 = 조건 없음). Store에서 적용 */
+  topKw: number;
 }
 
 export type LandOwner = "법인" | "개인" | "국유지" | "시 도유지" | "군유지";
 export const LAND_OPTIONS: LandOwner[] = ["법인", "개인", "국유지", "시 도유지", "군유지"];
 
-export const DEFAULT_FILTERS: Filters = { tiers: [], gates: [], minKw: 0, minEss: 0, industries: [], structs: [], maxKw: 0, seismic: null, landOwners: [], multi: null, recentPermit: null };
+export const DEFAULT_FILTERS: Filters = { tiers: [], gates: [], minKw: 0, minEss: 0, industries: [], structs: [], maxKw: 0, seismic: null, landOwners: [], multi: null, recentPermit: null, topKw: 0 };
 export const TIER_OPTIONS: Tier[] = ["설치 우선", "검토", "보류", "이미 설치됨"];
 export const GATE_OPTIONS: Gate[] = ["통과", "조건부"];
 export const KW_OPTIONS = [0, 30, 100, 200, 500];

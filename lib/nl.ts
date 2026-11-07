@@ -19,8 +19,10 @@ export const NL_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["complex", "tier", "gate", "industry", "struct", "kw_min", "kw_max", "ess_min", "seismic", "land_owner", "multi_tenant", "recent_permit", "sort", "ignored"],
+    required: ["top_n", "top_basis", "complex", "tier", "gate", "industry", "struct", "kw_min", "kw_max", "ess_min", "seismic", "land_owner", "multi_tenant", "recent_permit", "sort", "ignored"],
     properties: {
+      top_n: { type: ["integer", "null"] },
+      top_basis: { type: ["string", "null"], enum: ["점수", "용량", null] },
       complex: arr(COMPLEX_NAMES),
       tier: arr(TIER_OPTIONS),
       gate: arr(GATE_OPTIONS),
@@ -54,6 +56,7 @@ export const NL_SYSTEM = `오창 산업단지 공장 지붕 태양광 후보 목
 - recent_permit: 최근 5년 증축·대수선 허가 있음 true, 없음 false
 - sort: ${SORT_OPTIONS.join(", ")}
 말하지 않은 조건은 빈 배열 또는 null. 공장·건물·후보 같은 일반 명사는 조건이 아니다.
+- top_n·top_basis: "상위 N동"은 top_n = N. 점수순인지 용량순인지 구분한다. "용량 큰·큰 순·kW 큰"이면 top_basis 용량, 그냥 "상위·순위"면 top_basis 점수. ignored에 넣지 않는다.
 허용 값으로 바꿀 수 없는 표현(회사명, 지역명, 날씨, 업체 연락처 등)은 문장 조각 그대로 ignored에 넣는다. 추측해서 조건을 만들지 않는다. 회사명·상호에서 업종·단계·구조를 추론하지 않는다(예: "유한양행 근처 맛집"은 모든 조건이 비고 ignored에 문장 전체).`;
 
 export interface NlResult {
@@ -85,9 +88,13 @@ export function toFilters(raw: unknown): NlResult {
     recentPermit: bool(o.recent_permit),
   };
   if (f.maxKw && f.minKw > f.maxKw) f.maxKw = 0;
+  const topN = typeof o.top_n === "number" && Number.isInteger(o.top_n) && o.top_n > 0 && o.top_n <= 300 ? o.top_n : 0;
+  const notes: string[] = [];
+  if (topN && o.top_basis === "용량") f.topKw = topN;
+  else if (topN) notes.push(`점수순 상위 ${topN}동(후보 목록 순위에서 확인)`);
   const sort = SORT_OPTIONS.includes(o.sort as never) ? (o.sort as NlResult["sort"]) : null;
   const ignored = Array.isArray(o.ignored) ? o.ignored.filter((x): x is string => typeof x === "string" && x.trim() !== "").map((x) => x.slice(0, 40)).slice(0, 5) : [];
-  return { complex: pick(o.complex, COMPLEX_NAMES), filters: f, sort, ignored };
+  return { complex: pick(o.complex, COMPLEX_NAMES), filters: f, sort, ignored: [...notes, ...ignored] };
 }
 
 export interface NlChip {
@@ -115,6 +122,7 @@ export function chipsOf(f: Filters): NlChip[] {
   if (f.seismic) out.push({ key: "seismic", label: `내진설계 ${f.seismic}`, clear: (g) => ({ ...g, seismic: null }) });
   list("landOwners", (v) => `토지 ${v}`);
   if (f.multi !== null) out.push({ key: "multi", label: f.multi ? "복수 입주" : "단독 입주", clear: (g) => ({ ...g, multi: null }) });
+  if (f.topKw) out.push({ key: "topKw", label: `용량 큰 ${f.topKw}동`, clear: (g) => ({ ...g, topKw: 0 }) });
   if (f.recentPermit !== null) out.push({ key: "recentPermit", label: f.recentPermit ? "최근 증축 허가 있음" : "최근 증축 허가 없음", clear: (g) => ({ ...g, recentPermit: null }) });
   return out;
 }

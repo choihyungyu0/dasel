@@ -4,6 +4,7 @@ import { enrich, type Building, type RawBuilding } from "./data";
 import { DEFAULT_FILTERS, passes } from "./filters";
 import { FORBIDDEN, numbersIn } from "./opinion";
 import { rankMap } from "./rank";
+import { topByKw } from "./top";
 
 const PART: Record<string, string> = { scale: "규모", struct: "구조", age: "사용 연수", industry: "전력수요 업종", hazmat: "안전 이격", grid: "배전 여유" };
 
@@ -25,7 +26,8 @@ export const ASK_SYSTEM = `너는 오창 산업단지 공장 지붕 태양광·�
 "안전 보장", "확정", "위험 없음", "AI가 판단", "설치 가능" 같은 단정 표현을 쓰지 않는다. 결과는 1차 검토이며 최종 판단은 현장·구조검토다.
 건물을 말할 때는 회사명과 산단을 함께 쓴다.
 단계(설치 우선·검토·보류)나 산단을 지정한 질문은 건물표에서 그 단계·산단 열이 일치하는 건물만 고른다. 목록을 달라고 하면 건물표 순위 순서로 고른다.
-한 회사에 건물이 여러 동이면 순위가 가장 높은 1동을 기준으로 답하고 "같은 회사 건물 N동" 식으로 동 수만 덧붙인다. 다른 동의 숫자를 섞지 않는다.`;
+한 회사에 건물이 여러 동이면 순위가 가장 높은 1동을 기준으로 답하고 "같은 회사 건물 N동" 식으로 동 수만 덧붙인다. 다른 동의 숫자를 섞지 않는다.
+"상위 N동"을 물으면 점수순(건물표 순위)인지 용량순(설치용량 큰 순)인지 먼저 밝힌다. 구분이 없으면 점수순으로 답하고 용량순은 '용량 큰 30동' 합계 줄을 함께 알려 준다. 두 기준을 섞지 않는다. 비율을 물으면 그 줄의 "전체 추가 용량 대비 N%"를 그대로 쓴다.`;
 
 export interface AskData {
   meta: { source: string; base_date: string; built: string; factory_source?: string; register_source?: string };
@@ -75,6 +77,7 @@ export function buildContext(data: AskData, labels: Record<string, string>, extr
     `[자료] 기준: ${data.meta.source} ${data.meta.base_date} · 전기요금 단가 ${unitCost}원/kWh(하한 150원) · 이용률 50% · 10㎡/kW 가정 · 단계 기준 점수 63점 이상 설치 우선, 45점 이상 검토`,
     totals("오창 산단 전체", list),
     ...complexes.map((c) => totals(c, list.filter((b) => b.complex_nm === c))),
+    ...["점수순", "용량순"].map((k) => `${totals(k === "점수순" ? "점수순 상위 30동(건물표 순위 1~30)" : "용량 큰 30동(이미 설치됨 제외, 설치용량 내림차순, 점수 순위와 별개)", k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list))} · 전체 추가 용량 대비 ${n((summarize(k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list)).mw / summarize(list).mw) * 100, 1)}%`),
     `단계별 동 수: ${["설치 우선", "검토", "보류", "이미 설치됨"].map((t) => `${t} ${shown.filter((b) => b.score.tier === t).length}동`).join(" · ")}`,
     "건물표(순위 | 회사 | 산단 | 설치용량 | 단계 | 점수 | 연 절감 | 재사용 팩 | ESS | 게이트 | 구조 | 사용승인 | 내진설계 | 토지 소유 | 참고):",
     ...shown.map((b) => line(b, rank.get(b.bld_id))),
