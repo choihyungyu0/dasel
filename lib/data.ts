@@ -4,6 +4,14 @@ import { calc, roofArea, summarize, type Assumptions, type Calc, type Roof, type
 import { score, type Industry, type Score } from "./score";
 import { rankStability, type StabilityResult } from "./stability";
 
+/** 참고 표시 항목. null = 정보 없음 */
+export interface Extra {
+  multi: boolean;
+  seismic: "적용" | "미적용" | null;
+  land: string | null;
+  permit_years: string[] | null;
+}
+
 export interface RawBuilding {
   bld_id: number;
   pnu: string | null;
@@ -24,6 +32,8 @@ export interface RawBuilding {
   zone?: string;
   /** VAL-01: 항공영상 라벨이 '설치'인 건물(loadDataset에서 붙임) */
   installed?: boolean;
+  /** 참고 표시(점수 미반영): scripts/11_extra.py → extra.json(loadDataset에서 붙임) */
+  extra?: Extra;
   tot_area: number | null;
   apr_ymd: string | null;
   fl_up: number | null;
@@ -154,7 +164,7 @@ export function renderHeight(b: { target: boolean; h: number | null; fl_up?: num
 }
 
 export async function loadDataset(unitCost?: number): Promise<Dataset> {
-  const [attrs, geo, complexGeo, stationGeo, fac, grid, labels, roof] = await Promise.all([
+  const [attrs, geo, complexGeo, stationGeo, fac, grid, labels, roof, extra] = await Promise.all([
     fetchJson<{ meta: Dataset["meta"]; buildings: RawBuilding[] }>("/data/buildings.json"),
     fetchGzipJson<FeatureCollection>("/data/buildings.geojson.gz"),
     fetchJson<FeatureCollection>("/data/complex.geojson"),
@@ -163,9 +173,14 @@ export async function loadDataset(unitCost?: number): Promise<Dataset> {
     fetchJson<Grid>("/data/grid.json").catch(() => null),
     fetchJson<Dataset["labels"]>("/data/labels.json").catch(() => null),
     fetchJson<{ usable: Dataset["roofUsable"] }>("/data/roof_usable.json").catch(() => null),
+    fetchJson<{ extra: Record<string, Extra> }>("/data/extra.json").catch(() => null),
   ]);
   const baseYmd = attrs.meta.built.replaceAll("-", "");
-  for (const b of attrs.buildings) if (labels?.labels[String(b.bld_id)] === "설치") b.installed = true;
+  for (const b of attrs.buildings) {
+    if (labels?.labels[String(b.bld_id)] === "설치") b.installed = true;
+    const x = extra?.extra[String(b.bld_id)];
+    if (x) b.extra = x;
+  }
   const buildings = attrs.buildings.map((b) => enrich(b, baseYmd, unitCost));
   const byId = new Map(buildings.map((b) => [b.bld_id, b]));
   const stability = withStability(buildings);

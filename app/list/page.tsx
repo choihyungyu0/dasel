@@ -9,6 +9,7 @@ import { useStore } from "@/components/Store";
 import { toManwon } from "@/lib/calc";
 import { REVIEW_BADGE } from "@/lib/constants";
 import { toCsv } from "@/lib/csv";
+import { MULTI_CHIP } from "@/lib/chips";
 import { INSTALLED_RANK, rankMap, rankOrder } from "@/lib/rank";
 import type { Building } from "@/lib/data";
 import { DEFAULT_FILTERS } from "@/lib/filters";
@@ -106,6 +107,7 @@ export default function ListPage() {
                   <td className="num px-2 py-1.5 text-right text-slate-500">{rank.get(b.bld_id) ?? (b.score.tier === "이미 설치됨" ? INSTALLED_RANK : "")}</td>
                   <td className="max-w-[240px] px-2 py-1.5">
                     <span className="block truncate font-medium">{b.companies[0]?.company ?? <span className="font-normal text-slate-400">등록공장 정보 연결 안 됨</span>}{b.companies.length > 1 && <span className="font-normal text-slate-500"> 외 {b.companies.length - 1}</span>}</span>
+                    {b.extra?.multi && <span className="mt-0.5 inline-block rounded bg-amber-50 px-1 text-[11px] text-amber-800">{MULTI_CHIP}</span>}
                     <span className="block truncate text-xs text-slate-500">{b.addr ?? "주소 정보 없음"}</span>
                   </td>
                   <td className="px-2 py-1.5">{b.complex_nm}</td>

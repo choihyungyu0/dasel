@@ -50,9 +50,9 @@ describe("MAP-05 검색", () => {
 describe("OUT-01 CSV", () => {
   const rows = all.filter((b) => b.score.tier === "설치 우선");
   const csv = toCsv(rows, FALLBACK_PRICE, "출처");
-  it("UTF-8 BOM, 열 18개, 행 수 = 목록 수", () => {
+  it("UTF-8 BOM, 열 23개, 행 수 = 목록 수", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
-    expect(CSV_HEADER.length).toBe(19);
+    expect(CSV_HEADER.length).toBe(23);
     expect(csv.split("\r\n").length).toBe(rows.length + 1);
   });
   it("개인정보 열 없음", () => expect(CSV_HEADER.join()).not.toMatch(/대표|전화|연락처/));

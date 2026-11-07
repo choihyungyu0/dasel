@@ -1,0 +1,39 @@
+{
+ "meta": {
+  "generated": "2026-11-08",
+  "since": "20211108",
+  "sources": {
+   "multi": "한국산업단지공단 전국등록공장현황(15105482, 2025-12-31)",
+   "seismic": "국토교통부 건축HUB 건축물대장 표제부(15134735) 내진설계 적용 여부(rserthqkDsgnApplyYn)",
+   "land": "브이월드 토지소유정보 속성조회(getPossessionAttr) 소유 구분(posesnSeCodeNm)",
+   "permit": "국토교통부 건축HUB 건축인허가 기본개요(getApBasisOulnInfo) 건축구분 증축·대수선, 허가일 기준(필지 단위)"
+  }
+ },
+ "targets": 770,
+ "lots": 181,
+ "api_fail_lots": {
+  "title": 0,
+  "permit": 0,
+  "land": 2
+ },
+ "multi": 154,
+ "seismic": {
+  "적용": 168,
+  "미적용": 461,
+  "정보 없음": 141
+ },
+ "land": {
+  "법인": 551,
+  "시 도유지": 94,
+  "국유지·시 도유지": 81,
+  "개인": 23,
+  "국유지": 6,
+  "정보 없음": 10,
+  "군유지": 5
+ },
+ "permit": {
+  "recent": 354,
+  "none": 416,
+  "unknown": 0
+ }
+}

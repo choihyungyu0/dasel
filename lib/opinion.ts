@@ -6,6 +6,9 @@ import type { Price } from "./price";
 
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
 
+/** 추가 확인에 붙이는 초기 비용 안내(점수·계산 미반영) */
+export const FINANCE_LINE = "- 설치비 융자 · 한국에너지공단 산업단지 태양광 금융지원(설치비 최대 90%, 변동금리 1.75%, 5년 거치 10년 분할) · 출처 한국에너지공단 2026년 재생에너지 금융지원사업 공고(2026-06-24), 금리는 분기별 변동";
+
 export const HEADINGS = ["결론", "근거", "설치 조건", "추가 확인", "출처"] as const;
 export const FORBIDDEN = /안전\s*보장|확정|위험\s*없|AI가\s*판단|설치\s*가능|가능성이\s*확인|문제\s*없/;
 export const MAX_CHARS = 600;
@@ -81,6 +84,7 @@ export interface Check {
 
 export function verify(text: string, facts: Facts): Check {
   const reasons: string[] = [];
+  text = text.replace(FINANCE_LINE, ""); // 고정 안내 문구는 검사에서 뺀다
   const allowed = new Set(numbersIn(JSON.stringify(facts)));
   const stray = [...new Set(numbersIn(text))].filter((x) => !allowed.has(x));
   if (stray.length) reasons.push(`입력에 없는 숫자: ${stray.join(", ")}`);
@@ -108,7 +112,7 @@ export function templateOpinion(f: Facts): string {
     `■ 결론\n${f.건물} 건물은 지붕 태양광 ${f.설치용량} 규모이며 '${f.단계}' 단계입니다. ${f.검토수준} 결과입니다.`,
     `■ 근거\n- ${basis}\n- 연 발전 ${f.연발전량}, 연 절감 ${f.연절감}, 감축 ${f.감축}, 투자비 ${f.태양광투자비}·회수 ${f.단순회수기간}\n- 적합도 ${f.점수}, 설치 조건 ${f.설치조건}`,
     `■ 설치 조건\n- ${ess}\n${[...f.고정조건, ...f.사유].map((x) => `- ${x}`).join("\n")}`,
-    `■ 추가 확인\n- 지붕 하중·방수와 기존 설비에 대한 현장 구조검토\n- 한전 계통 연계와 소방 협의`,
+    `■ 추가 확인\n- 지붕 하중·방수와 기존 설비에 대한 현장 구조검토\n- 한전 계통 연계와 소방 협의\n${FINANCE_LINE}`,
     `■ 출처\n${f.출처.join(" · ")}`,
   ].join("\n\n");
 }
@@ -125,4 +129,4 @@ export const SYSTEM_PROMPT = `너는 공장 지붕 태양광·재사용 배터�
 전체 450자 이내로 짧게 쓴다. "안전 보장", "확정", "위험 없음", "AI가 판단" 같은 표현은 쓰지 않는다. 결과는 1차 검토이며 최종 판단은 현장 구조검토라는 점을 유지한다.`;
 
 /** LLM이 쓴 본문 뒤에 출처를 붙인다(출처는 생성하지 않는다). */
-export const withSources = (body: string, f: Facts) => `${body.split("■ 출처")[0].trim()}\n\n■ 출처\n${f.출처.join(" · ")}`;
+export const withSources = (body: string, f: Facts) => `${body.split("■ 출처")[0].trim()}\n${FINANCE_LINE}\n\n■ 출처\n${f.출처.join(" · ")}`;

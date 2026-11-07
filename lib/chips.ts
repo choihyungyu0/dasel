@@ -31,8 +31,18 @@ export function solarBizNote(b: Building): string | null {
 const LIGHT_ROOF = /경량|샌드위치|패널|판넬|슬레이트|기타지붕/;
 const GMP = /의약|바이오|식품|식료|음료|건강기능/;
 
+/** 참고 표시(점수 미반영): 복수 입주, 최근 증축·대수선 허가 */
+export const MULTI_CHIP = "복수 입주 · 건물주 승낙 확인 필요";
+export function referenceChips(b: Building): string[] {
+  const out: string[] = [];
+  if (b.extra?.multi) out.push(MULTI_CHIP);
+  const y = b.extra?.permit_years;
+  if (y?.length) out.push(`최근 증축 허가(${y.join("·")})`);
+  return out;
+}
+
 export function extraChips(b: Building): string[] {
-  const chips: string[] = [];
+  const chips: string[] = [...referenceChips(b)];
   if (b.roof_type && LIGHT_ROOF.test(b.roof_type)) chips.push(`지붕 ${b.roof_type} · 하중·방수 확인 필요`);
   if (b.companies.some((c) => GMP.test(`${c.group ?? ""} ${c.product ?? ""}`))) chips.push("의약·식품 업종 · 옥상 설비·청정구역 확인 필요");
   const fit = essSpace(b);

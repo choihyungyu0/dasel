@@ -46,7 +46,7 @@ def fetch(pnu, key):
         if len(rows) >= int(body.get("totalCount") or 0) or not items:
             break
         page += 1
-    keep = ("bldNm", "dongNm", "mainAtchGbCdNm", "mainPurpsCdNm", "strctCdNm", "roofCdNm", "archArea", "totArea", "useAprDay", "grndFlrCnt", "heit", "platArea")
+    keep = ("bldNm", "dongNm", "mainAtchGbCdNm", "mainPurpsCdNm", "strctCdNm", "roofCdNm", "archArea", "totArea", "useAprDay", "grndFlrCnt", "heit", "platArea", "rserthqkDsgnApplyYn", "rserthqkAblty")
     rows = [{k: r.get(k) for k in keep} for r in rows]
     CACHE.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")

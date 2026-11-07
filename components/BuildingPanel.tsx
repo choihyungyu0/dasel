@@ -160,6 +160,8 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
             <Row k="연면적">{b.tot_area ? `${n(b.tot_area, 1)}㎡` : NA}</Row>
             <Row k="지상층수 · 높이">{b.fl_up ? `${n(b.fl_up)}층` : NA} · {b.h ? `${n(b.h, 1)}m` : NA}</Row>
             <Row k="사용승인">{b.apr_ymd ? `${b.apr_ymd.slice(0, 4)}.${b.apr_ymd.slice(4, 6)} (${s.ageYears}년)` : NA}</Row>
+            {b.target && <Row k="내진설계">{b.extra?.seismic ?? NA}</Row>}
+            {b.target && <Row k="토지 소유 구분">{b.extra?.land ?? NA}</Row>}
             <Row k="가까운 119안전센터">{b.dist_119_m != null ? `${n(b.dist_119_m / 1000, 1)}km (직선)` : NA}</Row>
           </dl>
         </Card>

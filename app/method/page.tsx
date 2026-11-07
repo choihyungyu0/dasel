@@ -10,6 +10,7 @@ import j_quality_register from "@/data/quality/register.json";
 import j_quality_validation from "@/data/quality/validation.json";
 import j_quality_solar_biz from "@/data/quality/solar_biz.json";
 import j_quality_roof_usable from "@/data/quality/roof_usable.json";
+import j_quality_extra from "@/data/quality/extra.json";
 import j_quality_battery from "@/data/quality/battery.json";
 import j_quality_ml_check from "@/data/quality/ml_check.json";
 import j_quality_permit from "@/data/quality/permit.json";
@@ -80,6 +81,7 @@ export default function MethodPage() {
   const ai = (vq.basis ?? "").startsWith("ai");
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
   const sq = (j_quality_solar_biz as unknown as { zoning_source: string; zoning_fetched: string; d35_zone_buildings: number; by_complex: Record<string, Record<string, number>>; total: Record<string, number> });
+  const xq = j_quality_extra as unknown as { meta: { generated: string; since: string; sources: Record<"multi" | "seismic" | "land" | "permit", string> }; targets: number; lots: number; multi: number; seismic: Record<string, number>; land: Record<string, number>; permit: { recent: number; none: number } };
   const uq = (j_quality_roof_usable as unknown as { meta: { rule: string; source: string; targets: string }; targets: number; read: number; unreadable: number[]; pass_agreement: { same: number; within10: number; max_diff: number }; usable: { mean: number; mean_not_installed: number; at_floor: number; at_cap: number; assumed: number }; capacity_kw: { not_installed: { n: number; assumed: number; ai: number } }; top20_kept: number; tier_moves: Record<string, number>; example: { usable: number | null; assumed: { pv_kw: number }; ai: { pv_kw: number } } });
   type Packs = { base: number; a_only: number; b_only: number };
   type BatTier = { buildings: number; ess_kwh: number; ess_units: number; packs: Packs; ess_save_won: number; site: Record<string, number> };
@@ -222,6 +224,16 @@ export default function MethodPage() {
         <p>읽을 때 주의할 점입니다. ML의 AUC가 조금 높지만 그 차이는 폴드별 흔들림보다 작습니다. 설치 건물이 {n(ml.positives)}동뿐이라 ML은 이 라벨에 맞춰졌을(과적합) 수 있고, ML이 쓴 정보는 규칙과 같습니다. 라벨은 항공영상 AI 판독이며, '이미 설치했는가'는 적합도를 대신 보는 지표일 뿐입니다. 그래서 이 결과로 점수 규칙이나 가중치를 바꾸지 않았습니다.</p>
       </Section>
 
+      <Section id="reference" title="참고 표시 항목(점수 미반영)">
+        <p>설치 걸림돌 확인용 참고 표시 · 점수·단계·계산에 넣지 않음 · 대상 {xq.targets}동({xq.lots}필지) · 조회일 {xq.meta.generated}</p>
+        <Table head={["항목", "기준", "대상 분포", "출처"]} rows={[
+          ["복수 입주", "같은 건물에 등록공장 2곳 이상", `${xq.multi}동`, xq.meta.sources.multi],
+          ["내진설계", "건축물대장 표제부 내진설계 적용 여부", Object.entries(xq.seismic).map(([k, v]) => `${k} ${v}`).join(" · "), xq.meta.sources.seismic],
+          ["토지 소유 구분", "필지 소유 구분만 사용(소유자 정보 저장 안 함)", Object.entries(xq.land).map(([k, v]) => `${k} ${v}`).join(" · "), xq.meta.sources.land],
+          ["최근 증축·대수선 허가", `허가일 ${xq.meta.since.slice(0, 4)}.${xq.meta.since.slice(4, 6)} 이후`, `있음 ${xq.permit.recent} · 없음 ${xq.permit.none}`, xq.meta.sources.permit],
+        ]} />
+        <p className="text-xs text-slate-500">한계 · 복수 입주는 임차 가능성 추정(실제 임대 여부 아님) · 증축 허가는 필지 단위라 같은 필지 모든 동에 표시 · 내진설계 미적용은 사용승인 당시 의무 대상이 아니었던 경우 포함 · 토지 소유는 건물 소유와 다를 수 있음</p>
+      </Section>
       <Section id="roof-usable" title="지붕 이용률 판독 (AI, 참고)">
         <p>기본 계산은 모든 건물에 지붕 이용률 {C.UTIL.value}를 씁니다. 이 가정이 얼마나 맞는지 보려고 {uq.meta.targets} {n(uq.targets)}동의 지붕을 AI가 판독해, 패널을 놓을 수 없는 면적(옥상 설비·채광창·계단실·그림자·기존 패널·지붕이 아닌 부분)의 비율을 10% 단위로 추정했습니다. {uq.meta.source}. {uq.meta.rule}.</p>
         <Table head={["항목", "값"]} rows={[
