@@ -69,7 +69,7 @@ export default function ComparePage() {
                     <tr key={r.label} className="border-t border-slate-100">
                       <th scope="row" className="px-2 py-1.5 text-left text-xs font-medium text-slate-500">{r.label}</th>
                       {items.map((b) => (
-                        <td key={b.bld_id} className={`num px-2 py-1.5 ${top !== null && r.best?.(b) === top ? "font-bold" : ""}`}>{r.text(b)}</td>
+                        <td key={b.bld_id} className={`num px-2 py-1.5 ${top !== null && new Set(items.map((x) => r.text(x))).size > 1 && r.best?.(b) === top ? "font-bold" : ""}`}>{r.text(b)}</td>
                       ))}
                     </tr>
                   );

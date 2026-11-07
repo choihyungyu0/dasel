@@ -256,10 +256,11 @@ export const MINI_TOURS: Record<"sim" | "list", { key: string; steps: MiniStep[]
   },
 };
 
-export async function startMiniTour(name: keyof typeof MINI_TOURS): Promise<void> {
+/** force = '?' 메뉴에서 연 경우. 자동 시작은 메인 둘러보기를 끝냈거나 건너뛰었으면(TOUR_KEY) 하지 않는다 */
+export async function startMiniTour(name: keyof typeof MINI_TOURS, force = false): Promise<void> {
   const { key, steps } = MINI_TOURS[name];
   try {
-    if (localStorage.getItem(key) === DONE) return;
+    if (!force && (localStorage.getItem(key) === DONE || tourDone())) return;
   } catch {
     return; // 저장소를 못 쓰면 매번 뜨지 않게 아예 시작하지 않는다
   }

@@ -4,13 +4,27 @@ import AppHeader from "@/components/AppHeader";
 import { CONSTANTS, HAZMAT_CHIP_P0, SUBSIDY_BADGE, peakSpread, REVIEW_BADGE, TARIFF } from "@/lib/constants";
 import { enrich, withStability, type RawBuilding } from "@/lib/data";
 import rules from "@/config/complex_rules.json";
+import j_quality_buildings from "@/data/quality/buildings.json";
+import j_quality_factory from "@/data/quality/factory.json";
+import j_quality_register from "@/data/quality/register.json";
+import j_quality_validation from "@/data/quality/validation.json";
+import j_quality_solar_biz from "@/data/quality/solar_biz.json";
+import j_quality_roof_usable from "@/data/quality/roof_usable.json";
+import j_quality_battery from "@/data/quality/battery.json";
+import j_quality_ml_check from "@/data/quality/ml_check.json";
+import j_quality_permit from "@/data/quality/permit.json";
+import j_quality_grid from "@/data/quality/grid.json";
+import j_data_buildings from "@/public/data/buildings.json";
+
 import { maxAvailable, WEIGHTS } from "@/lib/score";
 import { STABILITY } from "@/lib/stability";
 import type { Validation } from "@/lib/validate";
 
+// 산정 기준은 빌드 때 한 번 만든다. JSON은 import로 번들하고, 키워드 CSV도 빌드 때만 읽어 배포본은 파일을 읽지 않는다
+export const dynamic = "force-static";
+
 export const metadata = { title: "산정 기준 | 다셀" };
 
-const read = <T,>(file: string): T => JSON.parse(readFileSync(path.join(process.cwd(), file), "utf8"));
 const n = (v: number, d = 0) => v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
 
 interface BuildingQ { meta: { base_date: string }; source_total: number; clipped: number; target_use: string[]; by_complex: { complex_nm: string; buildings: number }[] }
@@ -57,25 +71,25 @@ function Table({ id, head, rows }: { id?: string; head: string[]; rows: (string 
 const F = ({ children }: { children: React.ReactNode }) => <p className="num rounded bg-slate-100 px-2 py-1 font-mono text-xs">{children}</p>;
 
 export default function MethodPage() {
-  const bq = read<BuildingQ>("data/quality/buildings.json");
-  const fq = read<FactoryQ>("data/quality/factory.json");
-  const rq = read<RegisterQ>("data/quality/register.json");
+  const bq = (j_quality_buildings as unknown as BuildingQ);
+  const fq = (j_quality_factory as unknown as FactoryQ);
+  const rq = (j_quality_register as unknown as RegisterQ);
   const C = CONSTANTS;
-  const vq = read<Validation & { generated: string; basis?: string; sample20?: { total: number; done: number; agree: number; kappa: number | null }; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number }; blind?: { checked: number; agreement: number; installedKept: number; installedTotal: number; notFlipped: number; notTotal: number; changed: number; kappa?: number | null } | null }>("data/quality/validation.json");
+  const vq = (j_quality_validation as unknown as Validation & { generated: string; basis?: string; sample20?: { total: number; done: number; judged?: number; agree: number; kappa: number | null; unknown?: number; conflicts?: number[] }; review?: { queue: number; done: number; agreement: number | null; precision: number | null; recall: number | null; missRate: number | null; missChecked: number }; blind?: { checked: number; agreement: number; installedKept: number; installedTotal: number; notFlipped: number; notTotal: number; changed: number; kappa?: number | null } | null });
   const rv = vq.review;
   const ai = (vq.basis ?? "").startsWith("ai");
   const pct = (v: number | null) => (v === null ? "–" : `${(v * 100).toFixed(1)}%`);
-  const sq = read<{ zoning_source: string; zoning_fetched: string; d35_zone_buildings: number; by_complex: Record<string, Record<string, number>>; total: Record<string, number> }>("data/quality/solar_biz.json");
-  const uq = read<{ meta: { rule: string; source: string; targets: string }; targets: number; read: number; unreadable: number[]; pass_agreement: { same: number; within10: number; max_diff: number }; usable: { mean: number; mean_not_installed: number; at_floor: number; at_cap: number; assumed: number }; capacity_kw: { not_installed: { n: number; assumed: number; ai: number } }; top20_kept: number; tier_moves: Record<string, number>; example: { usable: number | null; assumed: { pv_kw: number }; ai: { pv_kw: number } } }>("data/quality/roof_usable.json");
+  const sq = (j_quality_solar_biz as unknown as { zoning_source: string; zoning_fetched: string; d35_zone_buildings: number; by_complex: Record<string, Record<string, number>>; total: Record<string, number> });
+  const uq = (j_quality_roof_usable as unknown as { meta: { rule: string; source: string; targets: string }; targets: number; read: number; unreadable: number[]; pass_agreement: { same: number; within10: number; max_diff: number }; usable: { mean: number; mean_not_installed: number; at_floor: number; at_cap: number; assumed: number }; capacity_kw: { not_installed: { n: number; assumed: number; ai: number } }; top20_kept: number; tier_moves: Record<string, number>; example: { usable: number | null; assumed: { pv_kw: number }; ai: { pv_kw: number } } });
   type Packs = { base: number; a_only: number; b_only: number };
   type BatTier = { buildings: number; ess_kwh: number; ess_units: number; packs: Packs; ess_save_won: number; site: Record<string, number> };
-  const bat = read<{ meta: { generated: string }; by_tier: Record<string, BatTier>; total: BatTier; outlook: { chungbuk_2030: number; formula: string; nationwide_source: string; chungbuk_source: string; caveat: string; need_vs_outlook: { total: { base_pct: number; a_only_pct: number; b_only_pct: number } } } }>("data/quality/battery.json");
+  const bat = (j_quality_battery as unknown as { meta: { generated: string }; by_tier: Record<string, BatTier>; total: BatTier; outlook: { chungbuk_2030: number; formula: string; nationwide_source: string; chungbuk_source: string; caveat: string; need_vs_outlook: { total: { base_pct: number; a_only_pct: number; b_only_pct: number } } } });
   type MS = { mean: number; std: number };
-  const ml = read<{ generated: string; n: number; positives: number; negatives: number; excluded_unknown: number; rule: { auc_folds: MS }; models: Record<"logistic" | "gradient_boosting", { auc_folds: MS }>; diff_ml_minus_rule: Record<"logistic" | "gradient_boosting", { mean: number; share_folds_positive: number }>; group_importance: Record<"logistic" | "gradient_boosting", Record<string, MS>>; rule_weights: Record<string, number>; rank_correlation: Record<"logistic" | "gradient_boosting", { spearman_rho: number; p_value: number }> }>("data/quality/ml_check.json");
+  const ml = (j_quality_ml_check as unknown as { generated: string; n: number; positives: number; negatives: number; excluded_unknown: number; rule: { auc_folds: MS }; models: Record<"logistic" | "gradient_boosting", { auc_folds: MS }>; diff_ml_minus_rule: Record<"logistic" | "gradient_boosting", { mean: number; share_folds_positive: number }>; group_importance: Record<"logistic" | "gradient_boosting", Record<string, MS>>; rule_weights: Record<string, number>; rank_correlation: Record<"logistic" | "gradient_boosting", { spearman_rho: number; p_value: number }> });
   type PL = { buildings: number; matched_buildings: number; matched_buildings_started: number; parcels: number; matched_parcels: number };
-  const pm = read<{ meta: { dataset: string; dataset_id: string; provider: string; base_date: string; fetched: string }; region: { rows: number; capacity_kw: number; by_status: Record<string, number> }; by_label: Record<string, PL>; ai_missed_strong: { buildings: number }; matched: { rows: number; buildings: number; parcels: number }; unmatched: { rows: number; by_reason: Record<string, number> } }>("data/quality/permit.json");
-  const gq = read<{ meta: { fetched: string; source: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> }>("data/quality/grid.json");
-  const raw = read<{ meta: { built: string }; buildings: RawBuilding[] }>("public/data/buildings.json");
+  const pm = (j_quality_permit as unknown as { meta: { dataset: string; dataset_id: string; provider: string; base_date: string; fetched: string }; region: { rows: number; capacity_kw: number; by_status: Record<string, number> }; by_label: Record<string, PL>; ai_missed_strong: { buildings: number }; matched: { rows: number; buildings: number; parcels: number }; unmatched: { rows: number; by_reason: Record<string, number> } });
+  const gq = (j_quality_grid as unknown as { meta: { fetched: string; source: string }; areas_ok: number; summary: Record<string, { lines: number; min_kw: number; max_kw: number }> });
+  const raw = (j_data_buildings as unknown as { meta: { built: string }; buildings: RawBuilding[] });
   const st = withStability(raw.buildings.map((b) => enrich(b, raw.meta.built.replaceAll("-", ""))));
   const baseDate = bq.meta.base_date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 
@@ -188,7 +202,11 @@ export default function MethodPage() {
           <p>AI 판독을 AI가 아닌 자료와 맞춰 보려고 {pm.meta.dataset}({pm.meta.dataset_id}, {pm.meta.provider}, 기준일 {pm.meta.base_date}, {pm.meta.fetched} 받음)의 설치장소 주소를 건물 필지와 대조했습니다. 오창읍과 옥산면 남촌리의 허가 {n(pm.region.rows)}건(사업개시 {n(pm.region.by_status["사업개시"] ?? 0)}건) 가운데 판독 후보 건물과 같은 필지인 것은 {n(pm.matched.rows)}건({n(pm.matched.parcels)}필지 {n(pm.matched.buildings)}동)이고, 나머지 {n(pm.unmatched.rows)}건은 대부분 산단 밖 주소({n(pm.unmatched.by_reason["산단 밖 주소"] ?? 0)}건)입니다.</p>
           <Table head={["AI 판독", "건물", "허가대장과 같은 필지", "그중 사업개시", "필지 기준"]} rows={["설치", "미설치", "불명"].filter((k) => pm.by_label[k]).map((k) => [k, n(pm.by_label[k].buildings), `${n(pm.by_label[k].matched_buildings)}동`, `${n(pm.by_label[k].matched_buildings_started)}동`, `${n(pm.by_label[k].matched_parcels)} / ${n(pm.by_label[k].parcels)}필지`])} />
           <p>읽는 법입니다. 자가소비용 태양광은 발전사업 허가 대상이 아니어서 허가대장에 없습니다. 그래서 AI '설치' {n(pm.by_label["설치"].buildings)}동 중 {n(pm.by_label["설치"].matched_buildings)}동만 대장에 있다고 해서 나머지가 틀린 것은 아닙니다. 반대로 대장은 필지 단위라 어느 동 지붕인지 알 수 없어, '미설치' 쪽 숫자는 같은 필지의 다른 동이나 주차장·부속 시설의 허가가 섞여 부풀려져 있습니다. 사업개시 허가가 있는데 그 필지에 AI '설치'가 한 동도 없는 경우는 {n(pm.ai_missed_strong.buildings)}동이며, 이 건물들의 항공영상을 다시 봤을 때 외곽선 안 지붕에서는 패널이 보이지 않았습니다(허가 설비가 판독 대상이 아닌 건물이나 지상에 있거나, 영상이 설치보다 앞선 것일 수 있음). 항공영상 촬영연도를 알 수 없어 허가 시점과의 앞뒤는 가리지 못했습니다.</p>
-          {vq.sample20 && <p>사람 눈가림 표본: AI 판독을 숨긴 화면(/label?blind=1)에서 AI '설치' 10동과 '미설치' 10동(시드 고정 무작위)을 사람이 표시하도록 준비했습니다. 현재 {n(vq.sample20.done)} / {n(vq.sample20.total)}동 표시{vq.sample20.done > 0 ? `, AI 판독과 일치 ${n(vq.sample20.agree)}동${vq.sample20.kappa !== null ? `(카파 ${vq.sample20.kappa})` : ""}` : ". 사람 표시가 없는 동안에는 일치율을 계산하지 않습니다"}.</p>}
+          {vq.sample20 && (vq.sample20.done >= vq.sample20.total && vq.sample20.judged !== undefined ? (
+            <p>사람 표본 {n(vq.sample20.total)}동: 일치 {n(vq.sample20.agree)}/{n(vq.sample20.judged)}(κ {vq.sample20.kappa}), 사람 판단 불가 {n(vq.sample20.unknown ?? 0)}동, 불일치 {n(vq.sample20.conflicts?.length ?? 0)}동 재검토 전. AI 판독을 숨긴 화면(/label?blind=1)에서 AI '설치' 10동과 '미설치' 10동(시드 고정 무작위)을 판독자 1명이 표시한 결과이며, 지도·합계의 라벨은 바꾸지 않았습니다.</p>
+          ) : (
+            <p>사람 눈가림 표본: AI 판독을 숨긴 화면(/label?blind=1)에서 AI '설치' 10동과 '미설치' 10동을 표시하도록 준비. 현재 {n(vq.sample20.done)} / {n(vq.sample20.total)}동 표시.</p>
+          ))}
           <p>'불명'은 계산에서 뺐습니다. 판독에 쓴 모델·지시문·영상 출처는 저장소의 <code>data/labels/README.md</code>에 적었습니다. '설치'로 표시된 건물은 지도와 목록에서 '이미 설치됨'으로 따로 구분하고 '설치 우선' 순위에서 뺍니다. 다시 계산하려면 <code>npx tsx scripts/06_validate.ts</code>를 실행합니다({vq.generated} 계산).</p>
         </Section>
       )}

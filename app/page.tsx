@@ -87,6 +87,11 @@ export default function Page() {
   }, [toast]);
 
   const summary = useMemo(() => summarize(filtered), [filtered]);
+  // 재사용 팩 툴팁: 설치 우선·검토 단계만의 합계(화면 합계와 같은 summarize로 계산)
+  const priority = useMemo(() => {
+    const p = summarize(filtered.filter((b) => b.score.tier === "설치 우선" || b.score.tier === "검토"));
+    return { buildings: p.buildings, packs: p.packs };
+  }, [filtered]);
   const top = filtered.find((b) => b.score.tier === "설치 우선") ?? null;
   topRef.current = top?.bld_id ?? filtered[0]?.bld_id ?? null;
 
@@ -154,7 +159,7 @@ export default function Page() {
             bottom: selected && !wide ? Math.round((typeof innerHeight === "undefined" ? 800 : innerHeight) * (sheetTall ? 0.75 : 0.62)) : chrome.strip,
           }}
           onFallback={() => setFallbackImagery(true)}
-          anchorId={anchorId} locked={locked}
+          anchorId={anchorId} locked={locked} touring={locked || anchorId !== null}
           onAnchorClick={() => {
             setSelectedId(anchorId);
             tour.current?.buildingClicked();
@@ -245,7 +250,7 @@ export default function Page() {
                 <SummaryBanner
                   summary={summary} scope={scope} baseDate={ds.meta.base_date} unitCost={price.unitCost}
                   priceLabel={price.fallback ? `기준값(${price.month})` : `한전 ${price.month}`}
-                  hasTop={top !== null} onTop={() => top && setSelectedId(top.bld_id)}
+                  hasTop={top !== null} onTop={() => top && setSelectedId(top.bld_id)} priority={priority}
                 />
               </div>
             )}

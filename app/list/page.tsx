@@ -9,6 +9,7 @@ import { useStore } from "@/components/Store";
 import { toManwon } from "@/lib/calc";
 import { REVIEW_BADGE } from "@/lib/constants";
 import { toCsv } from "@/lib/csv";
+import { INSTALLED_RANK, rankMap, rankOrder } from "@/lib/rank";
 import type { Building } from "@/lib/data";
 import { DEFAULT_FILTERS } from "@/lib/filters";
 import { startMiniTour } from "@/lib/tour";
@@ -38,9 +39,10 @@ export default function ListPage() {
     return () => clearTimeout(t);
   }, [status]);
 
-  const rank = useMemo(() => new Map(filtered.map((b, i) => [b.bld_id, i + 1])), [filtered]);
+  const ordered = useMemo(() => rankOrder(filtered), [filtered]);
+  const rank = useMemo(() => rankMap(ordered), [ordered]);
   const rows = useMemo(() => {
-    if (!sort) return filtered;
+    if (!sort) return ordered;
     const v = VALUE[sort.key];
     return [...filtered].sort((a, b) => {
       const [x, y] = [v(a), v(b)];
@@ -51,7 +53,7 @@ export default function ListPage() {
 
   const download = () => {
     if (!ds) return;
-    const blob = new Blob([toCsv(filtered, price, `${ds.meta.source} ${ds.meta.base_date}`)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([toCsv(ordered, price, `${ds.meta.source} ${ds.meta.base_date}`)], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `다셀_설치후보_${ds.meta.built}.csv`;
@@ -101,7 +103,7 @@ export default function ListPage() {
             <tbody>
               {rows.map((b) => (
                 <tr key={b.bld_id} tabIndex={0} onClick={() => { setSelectedId(b.bld_id); router.push(`/?b=${b.bld_id}`); }} onKeyDown={(e) => { if (e.key === "Enter") { setSelectedId(b.bld_id); router.push(`/?b=${b.bld_id}`); } }} className="cursor-pointer border-t border-slate-100 hover:bg-slate-50 focus:bg-slate-100 focus:outline-none">
-                  <td className="num px-2 py-1.5 text-right text-slate-500">{rank.get(b.bld_id)}</td>
+                  <td className="num px-2 py-1.5 text-right text-slate-500">{rank.get(b.bld_id) ?? (b.score.tier === "이미 설치됨" ? INSTALLED_RANK : "")}</td>
                   <td className="max-w-[240px] px-2 py-1.5">
                     <span className="block truncate font-medium">{b.companies[0]?.company ?? <span className="font-normal text-slate-400">등록공장 정보 연결 안 됨</span>}{b.companies.length > 1 && <span className="font-normal text-slate-500"> 외 {b.companies.length - 1}</span>}</span>
                     <span className="block truncate text-xs text-slate-500">{b.addr ?? "주소 정보 없음"}</span>

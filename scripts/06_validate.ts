@@ -12,8 +12,10 @@ import { consensus, validate } from "../lib/validate";
 const SEED = 20261004;
 const SAMPLE_NOT = 50;
 
+// 사람 표본 20동(human_sample20.csv)은 검증 기록에만 쓰고 지도 라벨을 덮어쓰지 않는다
+const SAMPLE20_FILE = "human_sample20.csv";
 function load(dir: string) {
-  const files = readdirSync(dir).filter((f) => f.endsWith(".csv"));
+  const files = readdirSync(dir).filter((f) => f.endsWith(".csv") && f !== SAMPLE20_FILE);
   const rows: LabelRow[] = [];
   let skipped = 0;
   for (const f of files) {
@@ -94,12 +96,20 @@ const review = {
   missChecked: notChecked.length,
 };
 // 사람 표본 20동(A2): 사람이 실제로 표시한 것만 센다. AI가 대신 채우지 않는다
-const s20 = blind20.filter((id) => humanLabel.has(id));
+const s20file = `data/labels/${SAMPLE20_FILE}`;
+const s20Label = new Map<number, string>(existsSync(s20file) ? parseLabelCsv(readFileSync(s20file, "utf8")).rows.map((r) => [r.bld_id, r.label]) : []);
+const s20 = blind20.filter((id) => s20Label.has(id));
+const s20judged = s20.filter((id) => s20Label.get(id) !== "불명" && aiLabel.get(id) !== "불명");
 const sample20 = {
   total: blind20.length,
   done: s20.length,
-  agree: s20.filter((id) => humanLabel.get(id) === aiLabel.get(id)).length,
-  kappa: s20.length ? kappaOf(s20.map((id) => [aiLabel.get(id) as string, humanLabel.get(id) as string])) : null,
+  judged: s20judged.length,
+  agree: s20judged.filter((id) => s20Label.get(id) === aiLabel.get(id)).length,
+  kappa: s20judged.length ? kappaOf(s20judged.map((id) => [aiLabel.get(id) as string, s20Label.get(id) as string])) : null,
+  unknown: s20.filter((id) => s20Label.get(id) === "불명").length,
+  unknown_ids: s20.filter((id) => s20Label.get(id) === "불명"),
+  conflicts: s20judged.filter((id) => s20Label.get(id) !== aiLabel.get(id)),
+  not_in_blind20: [...s20Label.keys()].filter((id) => !blind20.includes(id)),
 };
 // 허가대장 대조(A1) 결과가 있으면 basis에 붙인다
 const permit = existsSync("data/quality/permit.json") ? (JSON.parse(readFileSync("data/quality/permit.json", "utf8")) as Record<string, unknown>) : null;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { startMiniTour } from "@/lib/tour";
 import { useStore } from "./Store";
 
 const TABS: { href: string; label: string; tour?: string }[] = [
@@ -19,6 +20,8 @@ export default function AppHeader({ children, complexSelect = true }: { children
   const replay = () => {
     setMenu(false);
     if (path === "/") requestTour();
+    else if (path === "/list") void startMiniTour("list", true);
+    else if (path === "/sim") void startMiniTour("sim", true);
     else router.push("/?tour=1");
   };
   return (

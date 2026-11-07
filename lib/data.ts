@@ -145,6 +145,14 @@ export function enrich(raw: RawBuilding, baseYmd: string, unitCost?: number, ass
   return { ...raw, roof, calc: c, score: s, industry, companies: raw.companies ?? [], stability: null };
 }
 
+/** P0-5 3D 표시 높이(m): 대상 건물은 건축물 높이 → 지상층수×4m → 6m, 일반 건물은 낮게 3m */
+export function renderHeight(b: { target: boolean; h: number | null; fl_up?: number | null }): number {
+  if (!b.target) return 3;
+  if (b.h && b.h > 0) return b.h;
+  if (b.fl_up && b.fl_up > 0) return b.fl_up * 4;
+  return 6;
+}
+
 export async function loadDataset(unitCost?: number): Promise<Dataset> {
   const [attrs, geo, complexGeo, stationGeo, fac, grid, labels, roof] = await Promise.all([
     fetchJson<{ meta: Dataset["meta"]; buildings: RawBuilding[] }>("/data/buildings.json"),
@@ -163,7 +171,7 @@ export async function loadDataset(unitCost?: number): Promise<Dataset> {
   const stability = withStability(buildings);
   for (const f of geo.features) {
     const b = byId.get(Number(f.properties?.bld_id));
-    if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1, installed: labels?.labels[String(b.bld_id)] === "설치" };
+    if (b) f.properties = { ...f.properties, tier: b.score.tier, gate: b.score.gate, pv_kw: b.calc.pv_kw ?? -1, packs: b.calc.packs ?? -1, age: b.score.ageYears ?? -1, h_render: renderHeight(b), installed: labels?.labels[String(b.bld_id)] === "설치" };
   }
   return { meta: attrs.meta, buildings, byId, geo, complexes: complexGeo.features.map((f) => f.properties as Complex), complexGeo, stationGeo, factories: fac.factories, stability, grid, labels, roofUsable: roof?.usable ?? null };
 }

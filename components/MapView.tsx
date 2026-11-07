@@ -64,14 +64,49 @@ interface Props {
   /** 둘러보기 중 지도 이동·확대 잠금 */
   locked?: boolean;
   onAnchorClick?: () => void;
+  /** 둘러보기 중이면 3D 버튼을 끈다 */
+  touring?: boolean;
 }
+
+const VIEW_KEY = "dasel_view";
+const PITCH = 50, PITCH_SELECTED = 60, BEARING = -20;
 
 const HANDLERS = ["dragPan", "scrollZoom", "boxZoom", "dragRotate", "keyboard", "doubleClickZoom", "touchZoomRotate"] as const;
 
-export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick }: Props) {
+/** 3D 색: 2D와 같은 단계 색. 선택 건물은 밝게, 필터 밖은 어둡게 */
+function extrudeColor(by: ColorBy): ExpressionSpecification {
+  return ["case", ["boolean", ["feature-state", "selected"], false], "#fff3b0", ["boolean", ["feature-state", "hover"], false], "#f8fafc", ["boolean", ["feature-state", "dim"], false], "#3f4652", fillColor(by)] as unknown as ExpressionSpecification;
+}
+
+export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, layers, passIds, flyTo, padding, onFallback, anchorId = null, locked = false, onAnchorClick, touring = false }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
+  // P0-5: 사용자가 고른 보기. 기억값(dasel_view)이 없으면 PC는 3D, 모바일은 2D로 시작
+  const [view3d, setView3d] = useState<boolean | null>(null);
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(VIEW_KEY);
+    } catch {
+      // 저장소를 못 쓰면 기본값
+    }
+    setView3d(saved ? saved === "3d" : matchMedia("(min-width: 768px)").matches);
+  }, []);
+  const toggleView = () =>
+    setView3d((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem(VIEW_KEY, next ? "3d" : "2d");
+      } catch {
+        // 무시
+      }
+      return next;
+    });
+  // 둘러보기 중에는 앵커 위치가 맞도록 평면으로 본다
+  const is3d = !!view3d && !touring;
+  const is3dRef = useRef(is3d);
+  is3dRef.current = is3d;
   const [tip, setTip] = useState<{ x: number; y: number; id: number } | null>(null);
   const [anchorBox, setAnchorBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const cb = useRef({ onSelect, onFallback });
@@ -118,6 +153,16 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
           "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3, ["boolean", ["feature-state", "hover"], false], 2, 0.5],
         },
       });
+      // P0-5 3D: 건물 돌출. 기본은 숨김, 3D 버튼으로 켠다. 일반 건물은 낮은 회색
+      m.addLayer({
+        id: "LYR-3D", type: "fill-extrusion", source: "bld", layout: { visibility: "none" },
+        paint: {
+          "fill-extrusion-color": extrudeColor("tier"),
+          "fill-extrusion-height": ["coalesce", ["get", "h_render"], 6],
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 0.92,
+        },
+      });
       // LYR-06: 항공영상 라벨에서 이미 태양광이 확인된 건물
       m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#1456c8", "line-width": 2.5, "line-dasharray": [2, 1] } });
       if (ds.stationGeo) {
@@ -125,22 +170,26 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
         m.addLayer({ id: "LYR-04", type: "circle", source: "station", layout: { visibility: "none" }, paint: { "circle-radius": 7, "circle-color": "#d7263d", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
       }
       let hovered: number | null = null;
-      m.on("mousemove", "LYR-02", (e: MapLayerMouseEvent) => {
+      const onMove = (e: MapLayerMouseEvent) => {
         const id = e.features?.[0]?.id as number | undefined;
         if (hovered !== null && hovered !== id) m.setFeatureState({ source: "bld", id: hovered }, { hover: false });
         if (id !== undefined) m.setFeatureState({ source: "bld", id }, { hover: true });
         hovered = id ?? null;
         m.getCanvas().style.cursor = id === undefined ? "" : "pointer";
         setTip(id === undefined ? null : { x: e.point.x, y: e.point.y, id });
-      });
-      m.on("mouseleave", "LYR-02", () => {
+      };
+      const onLeave = () => {
         if (hovered !== null) m.setFeatureState({ source: "bld", id: hovered }, { hover: false });
         hovered = null;
         m.getCanvas().style.cursor = "";
         setTip(null);
-      });
+      };
+      for (const layer of ["LYR-02", "LYR-3D"]) {
+        m.on("mousemove", layer, onMove);
+        m.on("mouseleave", layer, onLeave);
+      }
       m.on("click", (e: MapMouseEvent) => {
-        const f = m.queryRenderedFeatures(e.point, { layers: ["LYR-02"] })[0];
+        const f = m.queryRenderedFeatures(e.point, { layers: ["LYR-02", "LYR-3D"] })[0];
         cb.current.onSelect(f ? Number(f.id) : null);
       });
       setReady(true);
@@ -152,7 +201,9 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   }, [ds]);
 
   useEffect(() => {
-    if (ready) map.current!.setPaintProperty("LYR-02", "fill-color", fillColor(colorBy));
+    if (!ready) return;
+    map.current!.setPaintProperty("LYR-02", "fill-color", fillColor(colorBy));
+    map.current!.setPaintProperty("LYR-3D", "fill-extrusion-color", extrudeColor(colorBy));
   }, [ready, colorBy]);
 
   useEffect(() => {
@@ -163,9 +214,20 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     const show: ExpressionSpecification = ["any", ["all", layers.target, ["!=", ["get", "tier"], "제외"]], ["all", layers.general, ["==", ["get", "tier"], "제외"]]];
     m.setFilter("LYR-02", show);
     m.setFilter("bld-outline", show);
+    m.setFilter("LYR-3D", show);
     if (m.getLayer("LYR-04")) m.setLayoutProperty("LYR-04", "visibility", vis(layers.station));
     m.setLayoutProperty("LYR-06", "visibility", vis(layers.installed));
   }, [ready, layers]);
+
+  // P0-5: 3D 켜기·끄기. 둘러보기가 시작되면 2D로 되돌린다
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    m.setLayoutProperty("LYR-02", "visibility", is3d ? "none" : "visible");
+    m.setLayoutProperty("bld-outline", "visibility", is3d ? "none" : "visible");
+    m.setLayoutProperty("LYR-3D", "visibility", is3d ? "visible" : "none");
+    m.easeTo(is3d ? { pitch: selectedRef.current === null ? PITCH : PITCH_SELECTED, bearing: m.getBearing() === 0 ? BEARING : m.getBearing(), duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
+  }, [ready, is3d]);
 
   // 필터 밖 대상 건물은 흐리게
   useEffect(() => {
@@ -180,11 +242,20 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
-    const feats = ds.complexGeo.features.filter((f) => !complexCd || f.properties?.complex_cd === complexCd);
-    m.fitBounds(bounds(feats.map((f) => (f.geometry as { coordinates: unknown }).coordinates)), { padding: 40, duration: 800 });
+    overview(m, complexCd);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, ds, complexCd]);
 
   const prev = useRef<number | null>(null);
+  const selectedRef = useRef<number | null>(selectedId);
+  const complexCdRef = useRef(complexCd);
+  complexCdRef.current = complexCd;
+  /** 산단 전체 보기(3D면 기울임). 패널이 가리는 만큼 비운다 */
+  const overview = (m: MlMap, cd: string | null) => {
+    const feats = ds.complexGeo.features.filter((f) => !cd || f.properties?.complex_cd === cd);
+    const cam = m.cameraForBounds(bounds(feats.map((f) => (f.geometry as { coordinates: unknown }).coordinates)), { padding: 40, bearing: is3dRef.current ? BEARING : 0 });
+    if (cam) m.easeTo({ ...cam, pitch: is3dRef.current ? PITCH : 0, bearing: is3dRef.current ? BEARING : 0, duration: 900 });
+  };
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
@@ -192,9 +263,16 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (selectedId !== null) {
       m.setFeatureState({ source: "bld", id: selectedId }, { selected: true });
       const f = ds.geo.features.find((x) => Number(x.properties?.bld_id) === selectedId);
-      if (f) m.fitBounds(bounds((f.geometry as { coordinates: unknown }).coordinates), { padding: { top: 60 + padding.top, left: 60, right: 60 + padding.right, bottom: 60 + padding.bottom }, maxZoom: 17.5, duration: 1200 });
+      if (f) {
+        // P0-5: 검색·목록·1순위 버튼·지도 클릭 모두 이 이동 하나를 쓴다
+        const c = bounds((f.geometry as { coordinates: unknown }).coordinates).getCenter();
+        m.flyTo({ center: c, zoom: 17.5, pitch: is3dRef.current ? PITCH_SELECTED : 0, bearing: m.getBearing(), padding: { top: padding.top, left: 0, right: padding.right, bottom: padding.bottom }, duration: 1200 });
+      }
+    } else if (prev.current !== null) {
+      overview(m, complexCdRef.current);
     }
     prev.current = selectedId;
+    selectedRef.current = selectedId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, ds, selectedId]);
 
@@ -243,6 +321,16 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
           <p className="truncate font-medium">{tipB.companies[0]?.company ?? tipB.name ?? tipB.addr ?? "건물"}</p>
           <p className="num text-slate-300">{tipB.score.tier === "제외" ? "일반 건물" : `${tipB.score.tier} · ${tipB.calc.pv_kw === null ? "면적 정보 없음" : `${tipB.calc.pv_kw.toLocaleString("ko-KR")}kW`}`}</p>
         </div>
+      )}
+      {ready && (
+        <button
+          id="BTN-3D" type="button" aria-pressed={is3d} disabled={touring} onClick={toggleView}
+          title={touring ? "둘러보기 중에는 쓸 수 없음" : is3d ? "평면으로 보기" : "입체로 보기"}
+          aria-label={is3d ? "평면으로 보기" : "입체로 보기"}
+          className={`absolute right-[calc(var(--map-right)+10px)] bottom-[calc(var(--map-bottom)+44px)] z-[2] grid h-[29px] min-w-[29px] place-items-center rounded px-1.5 text-[12px] font-bold shadow-[0_0_0_2px_rgba(0,0,0,0.1)] disabled:opacity-40 md:bottom-[calc(var(--map-bottom)+104px)] ${is3d ? "bg-ink text-white" : "bg-white text-ink"}`}
+        >
+          {is3d ? "2D" : "3D"}
+        </button>
       )}
       {anchorBox && (
         <button type="button" id="TUR-ANCHOR" data-tour="map-building" aria-label="적합도 1순위 건물" onClick={onAnchorClick} className="absolute cursor-pointer bg-transparent" style={anchorBox} />

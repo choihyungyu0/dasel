@@ -14,16 +14,18 @@ interface Props {
   unitCost: number;
   priceLabel: string;
   hasTop: boolean;
+  /** 설치 우선·검토 단계만의 동 수·팩 수(툴팁용) */
+  priority?: { buildings: number; packs: number };
   onTop: () => void;
 }
 
 /** 화면 아래에 깔리는 계량 띠. 지도를 가리지 않도록 한 줄로 읽힌다. 좁은 화면에서는 핵심 셋만 보이고 누르면 펼쳐진다. */
-export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop }: Props) {
-  const items: { label: string; value: string; unit: string; source: string }[] = [
+export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop, priority }: Props) {
+  const items: { label: string; value: string; unit: string; source: string; title?: string; always?: boolean }[] = [
     { label: "대상 공장", value: n(s.buildings), unit: "동", source: `GIS건물통합정보 ${baseDate} · 30kW 이상 대상` },
     { label: "추가 설치 가능", value: n(s.mw, 1), unit: "MW", source: `이용률 ${CONSTANTS.UTIL.value * 100}% · ${CONSTANTS.M2_PER_KW.value}㎡/kW 가정` },
     { label: "연 발전", value: n(s.gwh, 1), unit: "GWh", source: `${CONSTANTS.PVOUT.source} ${n(CONSTANTS.PVOUT.value)}kWh/kWp` },
-    { label: "재사용 팩", value: n(s.packs), unit: "개", source: `정격 ${CONSTANTS.PACK_KWH.value}kWh · 충전율 10~90% 가정` },
+    { label: "재사용 팩", value: n(s.packs), unit: "개", source: `${n(s.buildings)}동 전체 · 건물당 1단위`, title: `${n(s.buildings)}동 전체 · 건물당 1단위${priority ? ` · 설치 우선·검토 ${n(priority.buildings)}동만 ${n(priority.packs)}개` : ""} · 정격 ${CONSTANTS.PACK_KWH.value}kWh · 충전율 10~90% 가정`, always: true },
     { label: "연 절감", value: `${eok(s.save_low)}~${eok(s.save_base)}`, unit: "억 원", source: `하한 ${CONSTANTS.PRICE_LOW.value}원 ~ ${priceLabel} ${unitCost}원/kWh` },
     { label: "감축", value: n(s.co2_t), unit: "tCO2", source: `${CONSTANTS.EMISSION.source}` },
   ];
@@ -55,13 +57,13 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
       <div id="CRD-00-body" className={`flex-col @4xl:flex-row @4xl:items-stretch roomy:flex ${open ? "flex border-t border-ink/10" : "hidden"}`}>
         <dl className="grid flex-1 grid-cols-2 @md:grid-cols-3 @4xl:grid-cols-6 @4xl:divide-x @4xl:divide-ink/10">
           {items.map((it) => (
-            <div key={it.label} title={it.source} className="min-w-0 px-3 py-1.5 @4xl:py-2">
+            <div key={it.label} title={it.title ?? it.source} className="min-w-0 px-3 py-1.5 @4xl:py-2">
               <dt className="text-[11px] text-ink/55">{it.label}</dt>
               <dd className="readout whitespace-nowrap">
                 {it.value}
                 <span className="unit">{it.unit}</span>
               </dd>
-              <p className="hidden truncate text-[10px] text-ink/40 @5xl:block">{it.source}</p>
+              <p className={`truncate text-[10px] text-ink/40 ${it.always ? "block" : "hidden @5xl:block"}`}>{it.source}</p>
             </div>
           ))}
         </dl>

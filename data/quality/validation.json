@@ -1,5 +1,5 @@
 {
- "basis": "ai+permit",
+ "basis": "ai+permit+human_sample20",
  "review": {
   "queue": 92,
   "done": 0,
@@ -21,9 +21,22 @@
  },
  "sample20": {
   "total": 20,
-  "done": 0,
-  "agree": 0,
-  "kappa": null
+  "done": 20,
+  "judged": 16,
+  "agree": 14,
+  "kappa": 0.75,
+  "unknown": 4,
+  "unknown_ids": [
+   646283,
+   646034,
+   236890,
+   143281
+  ],
+  "conflicts": [
+   125243,
+   125173
+  ],
+  "not_in_blind20": []
  },
  "files": [
   "existing_pv.csv",
@@ -31,7 +44,7 @@
   "roof_usable.csv"
  ],
  "skipped": 34,
- "generated": "2026-10-06",
+ "generated": "2026-11-08",
  "labelers": [
   {
    "name": "ai",

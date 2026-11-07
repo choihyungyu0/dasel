@@ -52,7 +52,7 @@ describe("OUT-01 CSV", () => {
   const csv = toCsv(rows, FALLBACK_PRICE, "출처");
   it("UTF-8 BOM, 열 18개, 행 수 = 목록 수", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
-    expect(CSV_HEADER.length).toBe(18);
+    expect(CSV_HEADER.length).toBe(19);
     expect(csv.split("\r\n").length).toBe(rows.length + 1);
   });
   it("개인정보 열 없음", () => expect(CSV_HEADER.join()).not.toMatch(/대표|전화|연락처/));
