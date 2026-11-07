@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import BuildingPanel from "@/components/BuildingPanel";
 import Filters from "@/components/Filters";
 import { COLOR_SCALES, TIER_COLOR, type ColorBy, type Layers } from "@/components/MapView";
+import NlSearch from "@/components/NlSearch";
 import SearchBox from "@/components/SearchBox";
 import { useStore } from "@/components/Store";
 import SummaryBanner from "@/components/SummaryBanner";
@@ -192,6 +193,7 @@ export default function Page() {
               }}
             />
           )}
+          {ds && <NlSearch compact />}
         </AppHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row md:items-stretch">

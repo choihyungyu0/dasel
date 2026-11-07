@@ -8,6 +8,8 @@ import { CONSTANTS as C, RENT_CASE, REVIEW_BADGE, SUBSIDY_BADGE } from "@/lib/co
 import { enrich, gridOf, type Building, type Dataset } from "@/lib/data";
 import { defaultScenario, encodeScenario, PRICE_RANGE, type Scenario } from "@/lib/url";
 import { useStore } from "./Store";
+import EvidenceTab from "./EvidenceTab";
+import { layoutPanels } from "@/lib/panels";
 import type { Price } from "@/lib/price";
 import { summarySentence, WEIGHTS, type PartKey } from "@/lib/score";
 import { TIER_COLOR } from "./MapView";
@@ -73,6 +75,13 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
   const [copied, setCopied] = useState<string | null>(null);
   const [essUse, setEssUse] = useState(ESS_USES[0]);
   const [withSub, setWithSub] = useState(false);
+  const [tab, setTab] = useState<"calc" | "ai">("calc");
+  // 지도에 깔리는 패널과 같은 배치(기본 조건 용량 기준)
+  const panelCount = useMemo(() => {
+    if (!b0.target || b0.score.tier === "제외") return 0;
+    const f = ds.geo.features.find((x) => Number(x.properties?.bld_id) === b0.bld_id);
+    return layoutPanels(f?.geometry as { type: string; coordinates: unknown } | undefined, b0.calc.pv_kw).length;
+  }, [b0, ds.geo]);
   // PNL-07: 이 건물만 조건을 바꿔 다시 계산한다. null이면 기본 조건
   const [adj, setAdj] = useState<Scenario | null>(initial);
   const base = useMemo(() => defaultScenario(price.unitCost), [price.unitCost]);
@@ -112,7 +121,14 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
         <button type="button" onClick={onClose} aria-label="패널 닫기" className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100">✕</button>
       </header>
 
+      <div role="tablist" aria-label="정보 종류" className="flex gap-1 border-b border-slate-200 bg-white px-3 pt-1 text-[13px]">
+        {([["calc", "계산"], ["ai", "AI 판독 근거"]] as const).map(([k, label]) => (
+          <button key={k} id={k === "ai" ? "TAB-AI-BTN" : "TAB-CALC-BTN"} data-tour={k === "ai" ? "tab-ai" : undefined} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-2.5 py-1.5 ${tab === k ? "border-ink font-semibold text-ink" : "border-transparent text-slate-500 hover:text-ink"}`}>{label}</button>
+        ))}
+      </div>
+
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
+        {tab === "ai" ? <EvidenceTab bldId={b.bld_id} /> : <>
         {ds.labels?.labels[String(b.bld_id)] === "설치" && (
           <p id="BDG-INST" className="rounded-lg border border-[#1456c8] bg-[#e9f0fc] px-3 py-2 text-[13px]">
             {ds.labels.meta.basis?.startsWith("ai") ? "항공영상 AI 판독에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다" : "항공영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 그래서 '설치 우선' 순위에서 뺐습니다. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
@@ -180,6 +196,12 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
               <p className="num mt-2 rounded bg-slate-100 px-2 py-1 text-xs">
                 {n(c.roof_m2!, 1)}㎡ × {C.UTIL.value} ÷ {C.M2_PER_KW.value} = {n(c.pv_kw, 1)}kW · × {n(C.PVOUT.value)} = {n(c.pv_kwh!)}kWh
               </p>
+              {panelCount > 0 && (
+                <p id="TXT-PANEL" className="mt-1 text-[12px]">
+                  패널 약 <span className="num font-semibold">{n(panelCount)}</span>장 · <span className="num">{n(b0.calc.pv_kw!, 1)}</span>kW
+                  <span className="block text-[10px] text-slate-500">배치 예시 · 실제 배치는 현장·구조검토 후 확정</span>
+                </p>
+              )}
               {ds.roofUsable?.[String(b.bld_id)] && (
                 <p id="TXT-ROOF-AI" className="mt-1 text-[11px] text-slate-600" title={ds.roofUsable[String(b.bld_id)].note}>
                   AI 판독 이용률 <span className="num font-semibold text-ink">{ds.roofUsable[String(b.bld_id)].usable.toFixed(2)}</span>(참고) · 기본 계산은 {C.UTIL.value} 그대로
@@ -322,6 +344,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
             </Card>
           </>
         )}
+        </>}
       </div>
 
       <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-sm">

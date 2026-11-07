@@ -1,8 +1,9 @@
 "use client";
 
-import { LngLatBounds, Map as MlMap, NavigationControl, type ExpressionSpecification, type LngLatBoundsLike, type MapLayerMouseEvent, type MapMouseEvent } from "maplibre-gl";
+import { LngLatBounds, Map as MlMap, NavigationControl, type ExpressionSpecification, type GeoJSONSource, type LngLatBoundsLike, type MapLayerMouseEvent, type MapMouseEvent } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import type { Dataset } from "@/lib/data";
+import { layoutPanels } from "@/lib/panels";
 
 export const TIER_COLOR = { "설치 우선": "#0b5d34", 검토: "#f08c00", 보류: "#7b8494", "이미 설치됨": "#1456c8", 제외: "#d5d9df" } as const;
 const NONE = "#aab1bc";
@@ -173,6 +174,10 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       extrude("LYR-3D-INST", 0.6, extrudeColor("tier"));
       extrude("LYR-3D-SEL", 0.8, selectedColor("tier"));
       m.addLayer({ id: "sel-outline", type: "line", source: "bld", filter: ["==", ["get", "bld_id"], -1], layout: { visibility: "none" }, paint: { "line-color": "#ffffff", "line-width": 3 } });
+      // 선택 건물 지붕 위 패널 배치 예시(1동만). 3D는 지붕 높이에 얇게, 2D는 평면 격자
+      m.addSource("panels", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      m.addLayer({ id: "PANEL-3D", type: "fill-extrusion", source: "panels", layout: { visibility: "none" }, paint: { "fill-extrusion-color": "#1e3a8a", "fill-extrusion-base": ["get", "base"], "fill-extrusion-height": ["+", ["get", "base"], 0.3], "fill-extrusion-opacity": 0.95 } });
+      m.addLayer({ id: "PANEL-2D", type: "fill", source: "panels", paint: { "fill-color": "#1e3a8a", "fill-opacity": 0.9, "fill-outline-color": "#ffffff" } });
       // LYR-06: 항공영상 라벨에서 이미 태양광이 확인된 건물
       m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#1456c8", "line-width": 2.5, "line-dasharray": [2, 1] } });
       if (ds.stationGeo) {
@@ -238,7 +243,8 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     if (!ready || !m) return;
     m.setLayoutProperty("LYR-02", "visibility", is3d ? "none" : "visible");
     m.setLayoutProperty("bld-outline", "visibility", is3d ? "none" : "visible");
-    for (const l of [...LAYERS_3D, "sel-outline"]) m.setLayoutProperty(l, "visibility", is3d ? "visible" : "none");
+    for (const l of [...LAYERS_3D, "sel-outline", "PANEL-3D"]) m.setLayoutProperty(l, "visibility", is3d ? "visible" : "none");
+    m.setLayoutProperty("PANEL-2D", "visibility", is3d ? "none" : "visible");
     m.easeTo(is3d ? { pitch: selectedRef.current === null ? PITCH : PITCH_SELECTED, bearing: m.getBearing() === 0 ? BEARING : m.getBearing(), duration: 900 } : { pitch: 0, bearing: 0, duration: 700 });
   }, [ready, is3d]);
 
@@ -274,6 +280,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     m.setFilter("LYR-3D-SEL", ["==", id, sel]);
     m.setFilter("sel-outline", ["==", id, sel]);
   };
+  const setPanels = (m: MlMap, features: GeoJSON.Feature[]) => (m.getSource("panels") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features });
   /** 산단 전체 보기(3D면 기울임). 패널이 가리는 만큼 비운다 */
   const overview = (m: MlMap, cd: string | null) => {
     const feats = ds.complexGeo.features.filter((f) => !cd || f.properties?.complex_cd === cd);
@@ -292,14 +299,30 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       // 이동 중에는 박스로 보이고, 도착하면 선택 건물만 지붕 사진이 비치게 투명하게
       m.setPaintProperty("LYR-3D-SEL", "fill-extrusion-opacity", 0.8);
       if (f) {
+        setPanels(m, []);
         m.once("moveend", () => {
-          if (selectedRef.current === selectedId) m.setPaintProperty("LYR-3D-SEL", "fill-extrusion-opacity", 0.25);
+          if (selectedRef.current !== selectedId) return;
+          m.setPaintProperty("LYR-3D-SEL", "fill-extrusion-opacity", 0.25);
+          const b = ds.byId.get(selectedId);
+          const base = Number(f.properties?.h_render ?? 6);
+          const all = layoutPanels(f.geometry as { type: string; coordinates: unknown }, b?.target && b.score.tier !== "제외" ? b.calc.pv_kw : null).map((p) => ({ ...p, properties: { ...p.properties, base } }));
+          // 0.8초 동안 중앙에서 바깥으로 깔기. 2,000장이 넘으면 한 번에
+          if (all.length > 2000 || matchMedia("(prefers-reduced-motion: reduce)").matches) return setPanels(m, all);
+          const t0 = performance.now();
+          const step = () => {
+            if (selectedRef.current !== selectedId) return;
+            const k = Math.min(1, (performance.now() - t0) / 800);
+            setPanels(m, all.slice(0, Math.ceil(all.length * k)));
+            if (k < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
         });
         // P0-5: 검색·목록·1순위 버튼·지도 클릭 모두 이 이동 하나를 쓴다
         const c = bounds((f.geometry as { coordinates: unknown }).coordinates).getCenter();
         m.flyTo({ center: c, zoom: 17.5, pitch: is3dRef.current ? PITCH_SELECTED : 0, bearing: m.getBearing(), padding: { top: padding.top, left: 0, right: padding.right, bottom: padding.bottom }, duration: 1200 });
       }
     } else if (prev.current !== null) {
+      setPanels(m, []);
       apply3dFilters(m);
       overview(m, complexCdRef.current);
     }

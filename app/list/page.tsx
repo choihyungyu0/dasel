@@ -9,6 +9,7 @@ import { useStore } from "@/components/Store";
 import { toManwon } from "@/lib/calc";
 import { REVIEW_BADGE } from "@/lib/constants";
 import { toCsv } from "@/lib/csv";
+import NlSearch from "@/components/NlSearch";
 import { MULTI_CHIP } from "@/lib/chips";
 import { INSTALLED_RANK, rankMap, rankOrder } from "@/lib/rank";
 import type { Building } from "@/lib/data";
@@ -68,6 +69,7 @@ export default function ListPage() {
     <main className="flex h-dvh flex-col gap-2 p-2 md:p-3">
       <AppHeader />
       <section className="surface bg-white p-3">
+        <div className="mb-3 max-w-2xl"><NlSearch /></div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <Filters id="FLT-02" tour="list-filter" />
           <div className="flex flex-col items-end gap-1">

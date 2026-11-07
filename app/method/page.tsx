@@ -224,6 +224,9 @@ export default function MethodPage() {
         <p>읽을 때 주의할 점입니다. ML의 AUC가 조금 높지만 그 차이는 폴드별 흔들림보다 작습니다. 설치 건물이 {n(ml.positives)}동뿐이라 ML은 이 라벨에 맞춰졌을(과적합) 수 있고, ML이 쓴 정보는 규칙과 같습니다. 라벨은 항공영상 AI 판독이며, '이미 설치했는가'는 적합도를 대신 보는 지표일 뿐입니다. 그래서 이 결과로 점수 규칙이나 가중치를 바꾸지 않았습니다.</p>
       </Section>
 
+      <Section id="nl" title="말로 찾기">
+        <p>자연어 필터(OpenAI gpt-4.1): 문장 → 필터 조건 변환만 수행, 점수·순위 계산에는 미사용 · 허용 값 밖 조건은 버리고 해석하지 못한 표현으로 표시</p>
+      </Section>
       <Section id="reference" title="참고 표시 항목(점수 미반영)">
         <p>설치 걸림돌 확인용 참고 표시 · 점수·단계·계산에 넣지 않음 · 대상 {xq.targets}동({xq.lots}필지) · 조회일 {xq.meta.generated}</p>
         <Table head={["항목", "기준", "대상 분포", "출처"]} rows={[
