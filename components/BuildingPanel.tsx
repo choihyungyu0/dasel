@@ -118,7 +118,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
             {ds.labels.meta.basis?.startsWith("ai") ? "항공영상 AI 판독에서 이 지붕에 태양광 패널이 이미 있는 것으로 보입니다" : "항공영상에서 이 지붕에 태양광 패널이 이미 보입니다"}{ds.labels.meta.image_year ? ` (영상 ${ds.labels.meta.image_year}년)` : ""}. 그래서 '설치 우선' 순위에서 뺐습니다. 아래 용량은 지붕 전체 기준이라 추가로 설치할 수 있는 양과 다릅니다.
           </p>
         )}
-        <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>
+        {!excluded && <p id="TXT-02" className="rounded-lg bg-ink px-3 py-2 text-[13px] leading-snug text-white">{summarySentence(input, s)}</p>}
 
         {!excluded && c.pv_kw !== null && (
           <details id="PNL-07" open={adj !== null} className="rounded-lg border border-slate-200 bg-white p-3">
@@ -165,7 +165,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
         </Card>
 
         {excluded ? (
-          <p className="rounded-lg border border-slate-200 bg-white p-3 text-[13px]">산업용 대상 건물이 아니에요</p>
+          <p className="px-1 text-xs text-slate-500">태양광·ESS 검토 대상 아님 · 주용도 {b.use ?? "정보 없음"}(공장·창고 등 산업용 건물만 계산)</p>
         ) : c.pv_kw === null ? (
           <p className="rounded-lg border border-slate-200 bg-white p-3 text-[13px]">면적 정보가 없어 계산하지 않았어요</p>
         ) : (
