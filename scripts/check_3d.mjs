@@ -20,6 +20,10 @@ await page.screenshot({ path: "screenshots/poster/pc_6_3d_overview.png" });
 // 오창과학 산단만 당긴 3D 컷(포트폴리오용)
 await page.locator("#SEG-02 button", { hasText: "오창과학" }).click();
 await page.waitForTimeout(5000);
+// 산단이 화면을 채우도록 한 단계 더 당긴다(합계 띠·메뉴는 그대로)
+await page.mouse.move(820, 470);
+await page.mouse.wheel(0, -420);
+await page.waitForTimeout(4000);
 await page.screenshot({ path: "screenshots/poster/pc_8_3d_ochang.png" });
 await page.locator("#SEG-02 button", { hasText: "전체" }).click();
 await page.waitForTimeout(1500);
