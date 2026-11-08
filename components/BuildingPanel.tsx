@@ -292,7 +292,7 @@ export default function BuildingPanel({ b: b0, ds, price, onRefreshPrice, onClos
               <div className="mt-2 flex items-center gap-2">
                 <span className="badge-review">{REVIEW_BADGE}</span>
                 <button id="BTN-02" type="button" onClick={onRefreshPrice} disabled={price.loading} className="rounded-md border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-50">
-                  {price.loading ? "불러오는 중" : "최신 단가 다시 불러오기"}
+                  {price.loading ? "불러오는 중" : "현재 단가로 다시 계산"}
                 </button>
               </div>
             </Card>

@@ -31,7 +31,7 @@ async function chat(messages: { role: string; content: string }[], key: string, 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const q = typeof body?.question === "string" ? body.question.trim() : "";
-  const unitCost = Number(body?.unitCost) >= 100 && Number(body?.unitCost) <= 300 ? Number(body.unitCost) : 192;
+  const unitCost = Number(body?.unitCost) >= 100 && Number(body?.unitCost) <= 300 ? Number(body.unitCost) : 189.7;
   const history = (Array.isArray(body?.history) ? body.history : [])
     .filter((m: { role?: string; content?: unknown }) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .slice(-6)

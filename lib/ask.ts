@@ -26,7 +26,8 @@ export const ASK_SYSTEM = `너는 오창 산업단지 공장 지붕 태양광·�
 "안전 보장", "확정", "위험 없음", "AI가 판단", "설치 가능" 같은 단정 표현을 쓰지 않는다. 결과는 1차 검토이며 최종 판단은 현장·구조검토다.
 건물을 말할 때는 회사명과 산단을 함께 쓴다.
 단계(설치 우선·검토·보류)나 산단을 지정한 질문은 건물표에서 그 단계·산단 열이 일치하는 건물만 고른다. 목록을 달라고 하면 건물표 순위 순서로 고른다.
-회사명을 물으면 건물(동)별로 나눠 답한다. 순위가 가장 높은 건물을 "(회사명) 1동(위치) · 점수 · 단계 · 용량" 식으로 먼저 쓰고, 나머지는 "같은 회사 다른 건물 N동"으로 따로 한 줄에 모은다. 다른 동의 숫자를 섞지 않는다.
+회사명을 물으면 건물(동)별로 나눠 답한다. 순위가 가장 높은 건물을 "(회사명) 1동(위치) · 점수 · 단계 · 용량" 식으로 먼저 쓰고, [자료]에 "같은 회사 다른 건물 N동"이 있고 N이 1 이상이면 마지막 줄에 반드시 "같은 회사 다른 건물 N동"을 쓴다. 다른 동의 숫자를 섞지 않는다.
+목록을 요청했는데 조건에 맞는 건물이 요청 수보다 적으면 첫 줄부터 실제 개수로 쓴다(예: "오창2 검토 건물 3곳"). 첫 줄 개수, 항목 수, 마지막 줄 개수가 모두 같아야 한다.
 답변 형식: 첫 줄은 결론 한 문장(개조식 명사형). 그 아래 '-'로 근거 3~5개. 숫자에는 반드시 단위(kW, MW, 점, 만원, 억 원, %, 동, 개)를 붙인다.
 "상위 N동"을 물으면 점수순(건물표 순위)인지 용량순(설치용량 큰 순)인지 먼저 밝힌다. 구분이 없으면 점수순으로 답하고 용량순은 '용량 큰 30동' 합계 줄을 함께 알려 준다. 두 기준을 섞지 않는다. 비율을 물으면 그 줄의 "전체 추가 용량 대비 N%"를 그대로 쓴다.`;
 
@@ -80,14 +81,32 @@ export function buildContext(data: AskData, labels: Record<string, string>, extr
     totals("오창 산단 전체", list),
     ...complexes.map((c) => totals(c, list.filter((b) => b.complex_nm === c))),
     ...["점수순", "용량순"].map((k) => `${totals(k === "점수순" ? "점수순 상위 30동(건물표 순위 1~30)" : "용량 큰 30동(이미 설치됨 제외, 설치용량 내림차순, 점수 순위와 별개)", k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list))} · 전체 추가 용량 대비 ${n((summarize(k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list)).mw / summarize(list).mw) * 100, 1)}%`),
+    `산단·단계별 동 수(목록 질문의 실제 개수): ${complexes.map((c) => `${c} ${["설치 우선", "검토", "보류"].map((t) => `${t} ${shown.filter((b) => b.complex_nm === c && b.score.tier === t).length}동`).join(" ")}`).join(" / ")}`,
     `단계별 동 수: ${["설치 우선", "검토", "보류", "이미 설치됨"].map((t) => `${t} ${shown.filter((b) => b.score.tier === t).length}동`).join(" · ")}`,
     "건물표(순위 | 회사 | 산단 | 설치용량 | 단계 | 점수 | 연 절감 | 재사용 팩 | ESS | 게이트 | 구조 | 사용승인 | 내진설계 | 토지 소유 | 참고):",
     ...shown.map((b) => line(b, rank.get(b.bld_id))),
-    ...named.map((b) => `${b.companies[0].company} 건물 수 ${shown.filter((x) => x.companies.some((co) => co.company === b.companies[0].company)).length}동 · 위치 ${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "정보 없음"}${b.dong ? ` ${b.dong}` : ""} 사유: ${b.score.chips.join(", ") || "없음"} · 점수 항목 ${Object.entries(b.score.parts).map(([k, v]) => `${PART[k] ?? k} ${v}점`).join(", ")}`),
+    ...named.slice(0, 1).map((b) => { const cnt = shown.filter((x) => x.companies.some((co) => co.company === b.companies[0].company)).length; return `${b.companies[0].company} 대상 건물 ${cnt}동 중 순위가 가장 높은 1동 · 같은 회사 다른 건물 ${cnt - 1}동 · 위치 ${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "정보 없음"}${b.dong ? ` ${b.dong}` : ""} 사유: ${b.score.chips.join(", ") || "없음"} · 점수 항목 ${Object.entries(b.score.parts).map(([k, v]) => `${PART[k] ?? k} ${v}점`).join(", ")}`; }),
   ].join("\n");
 }
 
-/** 답 검사: 근거에 없는 숫자, 금지 표현 */
+/** 목록형 답의 개수 일치: 첫 줄 "N곳/N동", '-' 항목 수, 마지막 줄 "N곳/N동"이 서로 같아야 한다 */
+export function countMismatch(answer: string): string | null {
+  const lines = answer.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+  const countIn = (l: string) => {
+    const m = l.match(/(\d+)\s*(곳|동)(?!\S*kW)/);
+    return m ? Number(m[1]) : null;
+  };
+  const items = lines.filter((l) => /^[-·•]/.test(l)).length;
+  const first = countIn(lines[0]);
+  const last = lines.length > 2 && !/^[-·•]/.test(lines[lines.length - 1]) ? countIn(lines[lines.length - 1]) : null;
+  const listy = /목록|곳|건물 \d+동/.test(lines[0]);
+  if (first !== null && last !== null && first !== last) return `첫 줄 ${first} · 마지막 줄 ${last}`;
+  if (listy && first !== null && items >= 2 && first !== items && /곳/.test(lines[0])) return `첫 줄 ${first} · 항목 ${items}`;
+  return null;
+}
+
+/** 답 검사: 근거에 없는 숫자, 금지 표현, 목록 개수 불일치 */
 export function checkAnswer(answer: string, context: string): string[] {
   const allowed = new Set(numbersIn(context));
   // 순위·개수 표현(1~10)은 허용
@@ -95,5 +114,7 @@ export function checkAnswer(answer: string, context: string): string[] {
   const out: string[] = [];
   if (stray.length) out.push(`근거에 없는 숫자: ${stray.join(", ")}`);
   if (FORBIDDEN.test(answer) || answer.includes("—")) out.push("금지 표현");
+  const cm = countMismatch(answer);
+  if (cm) out.push(`개수 불일치(${cm}) · 첫 줄부터 실제 개수로`);
   return out;
 }

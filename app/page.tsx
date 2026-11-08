@@ -14,6 +14,7 @@ import SummaryBanner from "@/components/SummaryBanner";
 import { summarize } from "@/lib/calc";
 import { DEFAULT_FILTERS, isDefault, passes } from "@/lib/filters";
 import { topByKw, TOP_N } from "@/lib/top";
+import { FIXED_LABEL } from "@/lib/price";
 import { useRouter } from "next/navigation";
 import { startTour, tourDone, type TourHandle } from "@/lib/tour";
 import { decodeScenario, type Scenario } from "@/lib/url";
@@ -23,7 +24,7 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 const LAYER_LABEL: [keyof Layers, string][] = [["complex", "산단 경계"], ["target", "대상 공장 건물"], ["general", "일반 건물"], ["station", "119안전센터"], ["installed", "기존 태양광 설치 건물"]];
 
 export default function Page() {
-  const { status, reload, base, ds, price, refreshPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, compare } = useStore();
+  const { status, reload, base, ds, price, refreshPrice, resetPrice, complexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, compare } = useStore();
   const [linked, setLinked] = useState<{ id: number; scenario: Scenario } | null>(null);
   const [anchorId, setAnchorId] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
@@ -99,6 +100,7 @@ export default function Page() {
     const t = summarize(top30);
     return { t, pct: all.mw ? (t.mw / all.mw) * 100 : 0 };
   }, [ds, top30]);
+  const scnArea = useMemo(() => [...new Set(top30.map((b) => b.complex_nm))].join("·"), [top30]);
   const lit = useMemo(() => (scn ? { ids: top30.map((b) => b.bld_id), n: scn.n } : null), [scn?.n, top30]); // eslint-disable-line react-hooks/exhaustive-deps
   const startScenario = () => {
     setSelectedId(null);
@@ -268,6 +270,7 @@ export default function Page() {
                     ))}
                     {colorBy !== "tier" && colorBy !== "gate" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] bg-[#aab1bc]" />정보 없음</li>}
                     <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px]" style={{ background: TIER_COLOR.제외 }} />일반 건물</li>
+                    {scn && <li id="LGD-LIT" className="flex items-center gap-1.5 font-medium"><i className="inline-block size-2.5 rounded-[2px] bg-[#22c55e]" />용량 큰 30동 · 강조 표시(실제 높이 아님)</li>}
                     {installedCount > 0 && colorBy !== "tier" && <li className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-[2px] border-2 border-dashed border-[#1456c8]" />이미 설치됨{ds.labels?.meta.basis?.startsWith("ai") ? "(AI 판독)" : ""} <span className="num text-ink/50">{installedCount}</span></li>}
                   </ul>
                   <p className="mt-1 hidden max-w-[420px] text-ink/50 roomy:block">
@@ -286,7 +289,18 @@ export default function Page() {
               <div className="pointer-events-auto mt-auto w-full">
                 <SummaryBanner
                   summary={summary} scope={scope} baseDate={ds.meta.base_date} unitCost={price.unitCost}
-                  priceLabel={price.fallback ? `기준값(${price.month})` : `한전 ${price.month}`}
+                  priceLabel={price.fixed ? `한전 ${price.month} 고정` : price.fallback ? `기준값(${price.month})` : `한전 ${price.month}`}
+                  priceBar={
+                    <span id="TXT-PRICE" className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      <span className="rounded bg-ink/5 px-1.5 py-0.5 font-medium text-ink/80">{FIXED_LABEL}</span>
+                      {!price.fixed && !price.loading && <span className="text-amber-800">지금 화면: {price.fallback ? "조회 실패, 기준값" : `현재 단가 ${price.unitCost}원(한전 ${price.month})`}</span>}
+                      {price.fixed ? (
+                        <button id="BTN-PRICE-LIVE" type="button" onClick={refreshPrice} className="rounded border border-ink/20 px-1.5 py-0.5 hover:bg-ink/5">현재 단가로 다시 계산</button>
+                      ) : (
+                        <button id="BTN-PRICE-FIXED" type="button" onClick={resetPrice} disabled={price.loading} className="rounded border border-ink/20 px-1.5 py-0.5 hover:bg-ink/5 disabled:opacity-50">{price.loading ? "조회 중" : "고정 단가로 되돌리기"}</button>
+                      )}
+                    </span>
+                  }
                   hasTop={top !== null} onTop={() => { setScn(null); if (top) setSelectedId(top.bld_id); }} priority={priority} onScenario={startScenario} scenarioOn={!!scn && !scn.done} noteText={scn ? "이미 설치됨 제외 · 설치용량 큰 순 30동 · 점수 순위와 별개" : undefined}
                 />
               </div>
@@ -310,6 +324,7 @@ export default function Page() {
       {scn?.done && scnTotal && (
         <div id="BOX-TOP30" role="dialog" aria-label="용량 큰 30동 시나리오 결과" className="absolute left-1/2 top-24 z-30 w-[min(92vw,420px)] -translate-x-1/2 rounded-xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/10">
           <p className="text-[15px] font-bold">용량 큰 30동 = 추가 용량의 <span className="num text-tier-go">{scnTotal.pct.toFixed(1)}%</span></p>
+          <p id="TXT-TOP30-AREA" className="mt-1 text-[13px] font-medium text-ink">{scnArea} 전역 30동</p>
           <p className="mt-1 text-xs text-slate-600"><span className="num">{scnTotal.t.mw.toFixed(1)}</span>MW · 점수 순위와 별개, 용량 기준(이미 설치됨 제외, 설치용량 큰 순)</p>
           <div className="mt-3 flex gap-2">
             <button id="BTN-TOP30-LIST" type="button" onClick={() => { setFilters({ ...DEFAULT_FILTERS, topKw: TOP_N }); setScn(null); router.push("/list?sort=kw"); }} className="rounded-md bg-ink px-3 py-1.5 text-sm text-white">목록으로 보기</button>

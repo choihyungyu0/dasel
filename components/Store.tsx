@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { loadDataset, reprice, type Building, type Dataset } from "@/lib/data";
 import { DEFAULT_FILTERS, passes, type Filters } from "@/lib/filters";
 import { topByKw } from "@/lib/top";
-import { FALLBACK_PRICE, type Price } from "@/lib/price";
+import { FALLBACK_PRICE, FIXED_PRICE, type Price } from "@/lib/price";
 
 type Status = "loading" | "error" | "ready";
 
@@ -15,7 +15,10 @@ interface Store {
   base: Dataset | null;
   ds: Dataset | null;
   price: Price;
+  /** 현재 단가로 다시 계산(한전 실시간 조회) */
   refreshPrice: () => void;
+  /** 고정 기준 단가로 되돌리기 */
+  resetPrice: () => void;
   complexCd: string | null;
   setComplexCd: (cd: string | null) => void;
   filters: Filters;
@@ -46,7 +49,7 @@ export function useStore(): Store {
 export default function StoreProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [base, setBase] = useState<Dataset | null>(null);
-  const [price, setPrice] = useState<Price>({ ...FALLBACK_PRICE, loading: true }); // 첫 조회가 끝날 때까지 loading
+  const [price, setPrice] = useState<Price>(FIXED_PRICE); // 기본은 고정 단가. 실시간 조회는 버튼으로만
   const [complexCd, setComplexCd] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -93,10 +96,10 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     setPrice((p) => ({ ...p, loading: true }));
     fetch("/api/tariff", { signal: AbortSignal.timeout(5000) })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((t: { latest: number; month: string; fallback: boolean }) => setPrice({ unitCost: t.latest, month: t.month, fallback: t.fallback, loading: false }))
+      .then((t: { latest: number; month: string; fallback: boolean }) => setPrice({ unitCost: t.latest, month: t.month, fallback: t.fallback, loading: false, fixed: false }))
       .catch(() => setPrice({ ...FALLBACK_PRICE }));
   }, []);
-  useEffect(refreshPrice, [refreshPrice]);
+  const resetPrice = useCallback(() => setPrice(FIXED_PRICE), []);
 
   const ds = useMemo(() => (base ? reprice(base, price.unitCost) : null), [base, price.unitCost]);
   const topSet = useMemo(() => (ds && filters.topKw ? new Set(topByKw(ds.buildings, filters.topKw).map((b) => b.bld_id)) : null), [ds, filters.topKw]);
@@ -108,6 +111,6 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     [ds, filters, complexCd, topSet],
   );
 
-  const value = { status, reload, base, ds, price, refreshPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour, compare, toggleCompare };
+  const value = { status, reload, base, ds, price, refreshPrice, resetPrice, complexCd, setComplexCd, filters, setFilters, filtered, selectedId, setSelectedId, tourNonce, requestTour, compare, toggleCompare };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

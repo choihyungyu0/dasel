@@ -22,10 +22,12 @@ interface Props {
   scenarioOn?: boolean;
   /** 안내 줄 바꾸기(시나리오) */
   noteText?: string;
+  /** 계산 근거: 기준 단가 줄과 단가 버튼 */
+  priceBar?: React.ReactNode;
 }
 
 /** 화면 아래에 깔리는 계량 띠. 지도를 가리지 않도록 한 줄로 읽힌다. 좁은 화면에서는 핵심 셋만 보이고 누르면 펼쳐진다. */
-export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop, priority, onScenario, scenarioOn = false, noteText }: Props) {
+export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, priceLabel, hasTop, onTop, priority, onScenario, scenarioOn = false, noteText, priceBar }: Props) {
   const items: { label: string; value: string; unit: string; source: string; title?: string; always?: boolean }[] = [
     { label: "대상 공장", value: n(s.buildings), unit: "동", source: `GIS건물통합정보 ${baseDate} · 30kW 이상 대상` },
     { label: "추가 설치 가능", value: n(s.mw, 1), unit: "MW", source: `이용률 ${CONSTANTS.UTIL.value * 100}% · ${CONSTANTS.M2_PER_KW.value}㎡/kW 가정` },
@@ -58,6 +60,7 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
         <h2 className="text-[13px] font-semibold">{scope} 합계</h2>
         <span className="badge-review">{REVIEW_BADGE}</span>
         <span className="text-[11px] text-ink/55">{note}</span>
+        {priceBar && <span className="ml-auto">{priceBar}</span>}
       </div>
       <div id="CRD-00-body" className={`flex-col @4xl:flex-row @4xl:items-stretch roomy:flex ${open ? "flex border-t border-ink/10" : "hidden"}`}>
         <dl className="grid flex-1 grid-cols-2 @md:grid-cols-3 @4xl:grid-cols-6 @4xl:divide-x @4xl:divide-ink/10">
@@ -83,6 +86,7 @@ export default function SummaryBanner({ summary: s, scope, baseDate, unitCost, p
           </button>
         )}
         <p className="px-3 pb-2 text-[11px] text-ink/55 roomy:hidden">{note}</p>
+        {priceBar && <div className="px-3 pb-2 roomy:hidden">{priceBar}</div>}
       </div>
     </section>
   );
