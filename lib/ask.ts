@@ -118,3 +118,25 @@ export function checkAnswer(answer: string, context: string): string[] {
   if (cm) out.push(`개수 불일치(${cm}) · 첫 줄부터 실제 개수로`);
   return out;
 }
+
+/** 산단·단계 목록 질문(예: "오창2 검토 건물 5곳")은 모델 없이 계산 결과로 바로 답한다. 해당 없으면 null */
+export function listAnswer(data: AskData, labels: Record<string, string>, extra: Record<string, Building["extra"]>, unitCost: number, question: string): string | null {
+  const tiers = (["설치 우선", "보류", "검토"] as const).filter((t) => question.includes(t));
+  if (tiers.length !== 1 || !/곳|목록|건물|후보/.test(question) || /이유|왜/.test(question)) return null;
+  const base = data.meta.built.replaceAll("-", "");
+  const all = data.buildings.map((r) => enrich({ ...r, installed: labels[String(r.bld_id)] === "설치" || undefined, extra: extra[String(r.bld_id)] }, base, unitCost));
+  const list = all.filter((b) => passes(b, DEFAULT_FILTERS, null)).sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
+  const shown = list.filter((b) => !b.calc.small && b.calc.pv_kw !== null);
+  const complex = [...new Set(shown.map((b) => b.complex_nm))].find((c) => question.includes(c)) ?? null;
+  const tier = tiers[0];
+  const hit = shown.filter((b) => b.score.tier === tier && (!complex || b.complex_nm === complex));
+  const want = Number(question.match(/(\d+)\s*(곳|동|개)/)?.[1] ?? 10);
+  const top = hit.slice(0, Math.max(1, Math.min(want, 20)));
+  const scope = complex ?? "오창 산단 전체";
+  if (!top.length) return `${scope} ${tier} 건물 없음\n- 다셀 계산 결과 기준`;
+  const where = (b: Building) => `${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "주소 정보 없음"}${b.dong ? ` ${b.dong}` : ""}`;
+  return [
+    `${scope} ${tier} 건물 ${top.length}곳${hit.length > top.length ? `(전체 ${hit.length}곳 중 점수순)` : ""}`,
+    ...top.map((b) => `- ${b.companies.map((c) => c.company).join("/") || "등록공장 미연결"} · ${where(b)} · ${b.score.score}/${b.score.max}점 · ${n(b.calc.pv_kw, 1)}kW`),
+  ].join("\n");
+}

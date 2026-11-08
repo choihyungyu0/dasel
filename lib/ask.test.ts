@@ -16,3 +16,21 @@ describe("질의응답 목록 개수", () => {
     expect(checkAnswer(GOOD, ctx)).toEqual([]);
   });
 });
+
+import { readFileSync } from "node:fs";
+import { listAnswer, type AskData } from "./ask";
+
+describe("산단·단계 목록 질문(모델 미사용)", () => {
+  const data = JSON.parse(readFileSync("public/data/buildings.json", "utf8")) as AskData;
+  const labels = JSON.parse(readFileSync("public/data/labels.json", "utf8")).labels;
+  const extra = JSON.parse(readFileSync("public/data/extra.json", "utf8")).extra;
+  it("오창2 검토 건물 5곳 → 첫 줄 실제 개수와 항목 수가 같다", () => {
+    const a = listAnswer(data, labels, extra, 189.7, "오창2 검토 건물 5곳")!;
+    const lines = a.split("\n");
+    const n = Number(lines[0].match(/(\d+)곳/)![1]);
+    expect(lines.slice(1).length).toBe(n);
+    expect(n).toBeLessThanOrEqual(5);
+    expect(countMismatch(a)).toBeNull();
+  });
+  it("이유를 묻는 질문은 목록으로 답하지 않는다", () => expect(listAnswer(data, labels, extra, 189.7, "유한양행 건물이 설치 우선인 이유는?")).toBeNull());
+});

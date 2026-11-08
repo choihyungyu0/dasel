@@ -1,7 +1,7 @@
 // 질의응답: 다셀 계산 결과만 근거로 gpt-4.1이 답한다. 근거에 없는 숫자·금지 표현이 나오면 1회 다시 쓰게 하고, 그래도 안 되면 답하지 않는다.
 // 질문 300자, IP당 분당 10회, 요청당 20초. 로그에는 질문만 남긴다(키·응답 원문 저장 안 함).
 import { NextResponse, type NextRequest } from "next/server";
-import { ASK_MAX_CHARS, ASK_SYSTEM, buildContext, checkAnswer, type AskData } from "@/lib/ask";
+import { ASK_MAX_CHARS, ASK_SYSTEM, buildContext, checkAnswer, listAnswer, type AskData } from "@/lib/ask";
 import type { Building } from "@/lib/data";
 
 const TIMEOUT_MS = 20_000;
@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
   console.log("[ask]", q);
   try {
     const [data, labels, extra] = await load(req.nextUrl.origin);
+    const direct = listAnswer(data, labels, extra, unitCost, q);
+    if (direct) return NextResponse.json({ answer: direct, verified: true, source: `${data.meta.source} ${data.meta.base_date} · 다셀 계산 결과 목록(모델 미사용) · 단가 ${unitCost}원/kWh` });
     const context = buildContext(data, labels, extra, unitCost, q);
     const signal = AbortSignal.timeout(TIMEOUT_MS);
     const messages = [{ role: "system", content: `${ASK_SYSTEM}\n\n${context}` }, ...history, { role: "user", content: q }];

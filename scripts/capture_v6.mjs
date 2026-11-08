@@ -14,6 +14,7 @@ await p.goto(`${BASE}/?b=121902`);
 await p.waitForSelector("#TXT-PANEL", { timeout: 60000 });
 await p.waitForTimeout(7000);
 out.panel = await p.locator("#TXT-PANEL").innerText();
+  out.banner = (await p.locator("#CRD-00").innerText()).replace(/s+/g, " ");
 await p.screenshot({ path: `${D}/pc_9_panels.png` });
 await p.click("#TAB-AI-BTN");
 await p.waitForSelector("#TAB-AI img, #TAB-AI");
@@ -26,6 +27,7 @@ await p.click("#BTN-TOP30");
 await p.waitForSelector("#BOX-TOP30", { timeout: 15000 });
 await p.waitForTimeout(1500);
 out.box = await p.locator("#BOX-TOP30").innerText();
+  out.legend = await p.locator("#LGD-LIT").innerText();
 await p.screenshot({ path: `${D}/pc_10_top30.png` });
 // 12: 목록에서 말로 찾기(화면 안 이동)
 await p.click("#BTN-TOP30-RESET");
