@@ -26,7 +26,8 @@ export const ASK_SYSTEM = `너는 오창 산업단지 공장 지붕 태양광·�
 "안전 보장", "확정", "위험 없음", "AI가 판단", "설치 가능" 같은 단정 표현을 쓰지 않는다. 결과는 1차 검토이며 최종 판단은 현장·구조검토다.
 건물을 말할 때는 회사명과 산단을 함께 쓴다.
 단계(설치 우선·검토·보류)나 산단을 지정한 질문은 건물표에서 그 단계·산단 열이 일치하는 건물만 고른다. 목록을 달라고 하면 건물표 순위 순서로 고른다.
-한 회사에 건물이 여러 동이면 순위가 가장 높은 1동을 기준으로 답하고 "같은 회사 건물 N동" 식으로 동 수만 덧붙인다. 다른 동의 숫자를 섞지 않는다.
+회사명을 물으면 건물(동)별로 나눠 답한다. 순위가 가장 높은 건물을 "(회사명) 1동(위치) · 점수 · 단계 · 용량" 식으로 먼저 쓰고, 나머지는 "같은 회사 다른 건물 N동"으로 따로 한 줄에 모은다. 다른 동의 숫자를 섞지 않는다.
+답변 형식: 첫 줄은 결론 한 문장(개조식 명사형). 그 아래 '-'로 근거 3~5개. 숫자에는 반드시 단위(kW, MW, 점, 만원, 억 원, %, 동, 개)를 붙인다.
 "상위 N동"을 물으면 점수순(건물표 순위)인지 용량순(설치용량 큰 순)인지 먼저 밝힌다. 구분이 없으면 점수순으로 답하고 용량순은 '용량 큰 30동' 합계 줄을 함께 알려 준다. 두 기준을 섞지 않는다. 비율을 물으면 그 줄의 "전체 추가 용량 대비 N%"를 그대로 쓴다.`;
 
 export interface AskData {
@@ -43,6 +44,7 @@ function line(b: Building, rank: number | undefined): string {
     rank ?? (b.score.tier === "이미 설치됨" ? "설치됨" : "-"),
     b.companies.map((co) => co.company).join("/") || `${b.name ?? "건물"}(등록공장 미연결, ${b.addr ?? "주소 정보 없음"})`,
     b.complex_nm,
+    `위치 ${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "주소 정보 없음"}${b.dong ? ` ${b.dong}` : ""}`,
     `${n(c.pv_kw, 1)}kW`,
     b.score.tier,
     `${b.score.score}/${b.score.max}점`,
@@ -81,7 +83,7 @@ export function buildContext(data: AskData, labels: Record<string, string>, extr
     `단계별 동 수: ${["설치 우선", "검토", "보류", "이미 설치됨"].map((t) => `${t} ${shown.filter((b) => b.score.tier === t).length}동`).join(" · ")}`,
     "건물표(순위 | 회사 | 산단 | 설치용량 | 단계 | 점수 | 연 절감 | 재사용 팩 | ESS | 게이트 | 구조 | 사용승인 | 내진설계 | 토지 소유 | 참고):",
     ...shown.map((b) => line(b, rank.get(b.bld_id))),
-    ...named.map((b) => `${b.companies[0].company} 사유: ${b.score.chips.join(", ") || "없음"} · 점수 항목 ${Object.entries(b.score.parts).map(([k, v]) => `${PART[k] ?? k} ${v}점`).join(", ")}`),
+    ...named.map((b) => `${b.companies[0].company} 건물 수 ${shown.filter((x) => x.companies.some((co) => co.company === b.companies[0].company)).length}동 · 위치 ${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "정보 없음"}${b.dong ? ` ${b.dong}` : ""} 사유: ${b.score.chips.join(", ") || "없음"} · 점수 항목 ${Object.entries(b.score.parts).map(([k, v]) => `${PART[k] ?? k} ${v}점`).join(", ")}`),
   ].join("\n");
 }
 

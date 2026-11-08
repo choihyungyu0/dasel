@@ -15,6 +15,7 @@ const CASES: { text: string; model: Record<string, unknown>; complex: string[]; 
   { text: "100kW 이상 300kW 이하 국공유지", model: { kw_min: 100, kw_max: 300, land_owner: ["국유지", "시 도유지", "군유지"] }, complex: [], filters: { minKw: 100, maxKw: 300, landOwners: ["국유지", "시 도유지", "군유지"] } },
   { text: "ESS 500kWh 이상 내진 미적용", model: { ess_min: 500, seismic: "미적용" }, complex: [], filters: { minEss: 500, seismic: "미적용" } },
   { text: "용량 큰 상위 30동", model: { top_n: 30, top_basis: "용량", sort: "설치용량" }, complex: [], filters: { topKw: 30 } },
+  { text: "상위 30동 설치 우선", model: { top_n: 30, top_basis: "점수", tier: ["설치 우선"] }, complex: [], filters: { tiers: ["설치 우선"] }, ignored: ["점수순 상위 30동(후보 목록 순위에서 확인)"] },
   // 허용 값 밖(오창5, 최우선, 음수 용량)은 버린다
   { text: "오창5 최우선 -50kW", model: { complex: ["오창5"], tier: ["최우선"], kw_min: -50, ignored: ["오창5", "최우선"] }, complex: [], filters: {}, ignored: ["오창5", "최우선"] },
   // 조건이 아닌 표현은 ignored로

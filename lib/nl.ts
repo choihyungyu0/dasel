@@ -56,7 +56,7 @@ export const NL_SYSTEM = `오창 산업단지 공장 지붕 태양광 후보 목
 - recent_permit: 최근 5년 증축·대수선 허가 있음 true, 없음 false
 - sort: ${SORT_OPTIONS.join(", ")}
 말하지 않은 조건은 빈 배열 또는 null. 공장·건물·후보 같은 일반 명사는 조건이 아니다.
-- top_n·top_basis: "상위 N동"은 top_n = N. 점수순인지 용량순인지 구분한다. "용량 큰·큰 순·kW 큰"이면 top_basis 용량, 그냥 "상위·순위"면 top_basis 점수. ignored에 넣지 않는다.
+- top_n·top_basis: "상위 N동"은 top_n = N. 점수순인지 용량순인지 구분한다. "용량 큰·큰 순·kW 큰"이면 top_basis 용량, 그냥 "상위·순위"면 top_basis 점수. ignored에 넣지 않는다. 같은 문장의 다른 조건(단계·산단·용량 등)은 그대로 함께 채운다(예: "상위 30동 설치 우선"은 top_n 30, top_basis 점수, tier 설치 우선).
 허용 값으로 바꿀 수 없는 표현(회사명, 지역명, 날씨, 업체 연락처 등)은 문장 조각 그대로 ignored에 넣는다. 추측해서 조건을 만들지 않는다. 회사명·상호에서 업종·단계·구조를 추론하지 않는다(예: "유한양행 근처 맛집"은 모든 조건이 비고 ignored에 문장 전체).`;
 
 export interface NlResult {

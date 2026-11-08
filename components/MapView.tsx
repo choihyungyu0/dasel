@@ -86,7 +86,7 @@ function extrudeColor(by: ColorBy): ExpressionSpecification {
 }
 /** 용량 큰 30동 시나리오: 켜진 건물 색과 높이(살짝 올라옴) */
 const LIT_COLOR = "#22c55e";
-const HEIGHT: ExpressionSpecification = ["*", ["coalesce", ["get", "h_render"], 6], ["case", ["boolean", ["feature-state", "lit"], false], 1.6, 1]];
+const HEIGHT: ExpressionSpecification = ["*", ["coalesce", ["get", "h_render"], 6], ["case", ["boolean", ["feature-state", "lit"], false], 2.1, 1]];
 
 /** 선택 건물: 단계 색은 그대로 두고 밝기만 올린다 */
 const LIGHT_TIER: Record<string, string> = { "설치 우선": "#2fb36b", 검토: "#ffb547", 보류: "#aeb6c4", "이미 설치됨": "#5b93f2", 제외: "#eef0f3" };
@@ -185,7 +185,7 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       m.addLayer({ id: "sel-outline", type: "line", source: "bld", filter: ["==", ["get", "bld_id"], -1], layout: { visibility: "none" }, paint: { "line-color": "#ffffff", "line-width": 3 } });
       // 선택 건물 지붕 위 패널 배치 예시(1동만). 3D는 지붕 높이에 얇게, 2D는 평면 격자
       m.addSource("panels", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      m.addLayer({ id: "PANEL-3D", type: "fill-extrusion", source: "panels", layout: { visibility: "none" }, paint: { "fill-extrusion-color": "#1e3a8a", "fill-extrusion-base": ["get", "base"], "fill-extrusion-height": ["+", ["get", "base"], 0.3], "fill-extrusion-opacity": 0.95 } });
+      m.addLayer({ id: "PANEL-3D", type: "fill-extrusion", source: "panels", layout: { visibility: "none" }, paint: { "fill-extrusion-color": "#1e3a8a", "fill-extrusion-base": ["get", "base"], "fill-extrusion-height": ["+", ["get", "base"], 0.3], "fill-extrusion-opacity": 0.9 } });
       m.addLayer({ id: "PANEL-2D", type: "fill", source: "panels", paint: { "fill-color": "#1e3a8a", "fill-opacity": 0.9, "fill-outline-color": "#ffffff" } });
       // LYR-06: 항공영상 라벨에서 이미 태양광이 확인된 건물
       m.addLayer({ id: "LYR-06", type: "line", source: "bld", filter: ["==", ["get", "installed"], true], paint: { "line-color": "#1456c8", "line-width": 2.5, "line-dasharray": [2, 1] } });
@@ -267,7 +267,12 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
       m.setFeatureState({ source: "bld", id: b.bld_id }, { lit: false, dim: on ? !on.has(b.bld_id) : passIds !== null && !passIds.has(b.bld_id) });
     }
     if (!lit) return;
-    overview(m, null);
+    // 30동이 화면을 채우도록 경계 상자로 맞춘다
+    const box = new LngLatBounds();
+    for (const f of ds.geo.features) if (on!.has(Number(f.properties?.bld_id))) bounds((f.geometry as { coordinates: unknown }).coordinates, box);
+    const cam = box.isEmpty() ? null : m.cameraForBounds(box, { padding: { top: 80 + padding.top, left: 80, right: 80, bottom: 80 + padding.bottom }, bearing: is3dRef.current ? BEARING : 0 });
+    if (cam) m.easeTo({ ...cam, pitch: is3dRef.current ? PITCH : 0, bearing: is3dRef.current ? BEARING : 0, duration: 900 });
+    else overview(m, null);
     const timers = lit.ids.map((id, i) => setTimeout(() => m.setFeatureState({ source: "bld", id }, { lit: true }), 900 + i * 80));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
