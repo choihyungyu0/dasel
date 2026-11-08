@@ -21,7 +21,7 @@ for (const s of scenes) console.log([s.name, s.start, Math.min(s.end - s.start, 
 i=1
 while read -r name start dur sp; do
   f=$(printf "%s/scenes/%02d_%s.mp4" "$D" "$i" "$name")
-  ffmpeg -loglevel error -y -ss "$start" -t "$dur" -i "$D/raw_main.webm" -vf "setpts=PTS/$sp,fps=30,scale=1920:1080" $ENC "$f"
+  ffmpeg -loglevel error -y -ss "$start" -t "$dur" -i "$D/raw_main.webm" -vf "setpts=PTS/$sp,fps=30,scale=1920:1080$( [ "$name" = 9_ask ] && echo ',tpad=stop_mode=clone:stop_duration=1' )" $ENC "$f"
   i=$((i+1))
 done < "$D/cuts.txt"
 

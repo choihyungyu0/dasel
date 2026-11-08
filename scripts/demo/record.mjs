@@ -69,7 +69,7 @@ async function askScene() {
   await page.locator("#ASK-THREAD div.justify-start").first().waitFor({ timeout: 30000 });
   log.askMs = Date.now() - t;
   log.askText = (await page.locator("#ASK-THREAD div.justify-start").first().innerText()).slice(0, 400);
-  await wait(3200);
+  await wait(4000); // 답변 뒤 4초 유지
   await page.screenshot({ path: `${OUT}/rep_ask.png` });
   end();
 }
@@ -104,6 +104,7 @@ if (MODE === "ask") {
   log.tourClosed = !(await page.locator(".driver-popover").isVisible().catch(() => false));
   end();
   log.price = await page.locator("#TXT-PRICE").first().innerText();
+  log.health = await page.evaluate(() => fetch("/api/health").then((r) => r.json()).catch((e) => String(e)));
   log.sum = (await page.locator("#CRD-00").innerText()).replace(/\s+/g, " ");
 
   // 2. 3D 회전
@@ -143,7 +144,10 @@ if (MODE === "ask") {
   await wait(400);
   log.chips = await page.locator("#NL-CHIPS").innerText();
   await page.screenshot({ path: `${OUT}/rep_nl.png` });
-  await wait(2200);
+  await wait(1800);
+  // 칩 모두 해제 → 주변 건물이 원래 단계 색으로
+  await clickEl(page.locator("#NL-CHIPS button", { hasText: "모두 해제" }));
+  await wait(900);
   end();
 
   // 5. 1순위 건물 → 비행 → 패널(1.0배속)
