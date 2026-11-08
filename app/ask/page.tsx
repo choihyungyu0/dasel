@@ -14,6 +14,7 @@ interface Msg {
 }
 
 const KEY = "dasel_ask_v1";
+const FAIL = "지금은 답변을 만들 수 없음 · 왼쪽 예시 질문은 즉시 답변 가능";
 const time = () => new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 
 export default function AskPage() {
@@ -48,12 +49,13 @@ export default function AskPage() {
     setText("");
     setBusy(true);
     try {
-      const res = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question: q, unitCost: price.unitCost, history }), signal: AbortSignal.timeout(30_000) });
+      const res = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question: q, unitCost: price.unitCost, history }), signal: AbortSignal.timeout(12_000) });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.answer) throw new Error(j.error ?? "지금은 답변할 수 없음 · 잠시 뒤 다시 질문해 주세요");
+      if (!res.ok || !j.answer) throw new Error(j.error ?? FAIL);
       setMsgs((m) => [...m, { role: "assistant", content: j.answer, source: j.source, verified: j.verified, at: time() }]);
     } catch (e) {
-      setMsgs((m) => [...m, { role: "assistant", content: e instanceof Error && !/abort|timed out/i.test(e.message) ? e.message : "응답 시간 초과 · 다시 질문해 주세요", verified: false, at: time() }]);
+      setText((t) => t || q); // 입력값 유지
+      setMsgs((m) => [...m, { role: "assistant", content: e instanceof Error && !/abort|timed out|fetch/i.test(e.message) ? e.message : FAIL, verified: false, at: time() }]);
     } finally {
       setBusy(false);
     }

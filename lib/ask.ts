@@ -82,6 +82,7 @@ export function buildContext(data: AskData, labels: Record<string, string>, extr
     ...complexes.map((c) => totals(c, list.filter((b) => b.complex_nm === c))),
     ...["점수순", "용량순"].map((k) => `${totals(k === "점수순" ? "점수순 상위 30동(건물표 순위 1~30)" : "용량 큰 30동(이미 설치됨 제외, 설치용량 내림차순, 점수 순위와 별개)", k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list))} · 전체 추가 용량 대비 ${n((summarize(k === "점수순" ? list.filter((b) => (rank.get(b.bld_id) ?? 1e9) <= 30) : topByKw(list)).mw / summarize(list).mw) * 100, 1)}%`),
     `산단·단계별 동 수(목록 질문의 실제 개수): ${complexes.map((c) => `${c} ${["설치 우선", "검토", "보류"].map((t) => `${t} ${shown.filter((b) => b.complex_nm === c && b.score.tier === t).length}동`).join(" ")}`).join(" / ")}`,
+    `복수 입주(한 건물에 등록공장 2곳 이상, 건물주 승낙 필요) 단계별 동 수: ${["설치 우선", "검토", "보류"].map((t) => `${t} ${shown.filter((b) => b.score.tier === t && b.extra?.multi).length}동`).join(" · ")} · 같은 건물 여러 동은 동마다 한 줄`,
     `단계별 동 수: ${["설치 우선", "검토", "보류", "이미 설치됨"].map((t) => `${t} ${shown.filter((b) => b.score.tier === t).length}동`).join(" · ")}`,
     "건물표(순위 | 회사 | 산단 | 설치용량 | 단계 | 점수 | 연 절감 | 재사용 팩 | ESS | 게이트 | 구조 | 사용승인 | 내진설계 | 토지 소유 | 참고):",
     ...shown.map((b) => line(b, rank.get(b.bld_id))),
@@ -116,6 +117,7 @@ export function checkAnswer(answer: string, context: string): string[] {
   if (FORBIDDEN.test(answer) || answer.includes("—")) out.push("금지 표현");
   const cm = countMismatch(answer);
   if (cm) out.push(`개수 불일치(${cm}) · 첫 줄부터 실제 개수로`);
+  if (/(^|[^A-Za-z])N\s*(동|곳|개)/.test(answer)) out.push("자리표시 N이 남음 · 실제 숫자로 쓰거나 줄을 지움");
   return out;
 }
 
@@ -123,20 +125,31 @@ export function checkAnswer(answer: string, context: string): string[] {
 export function listAnswer(data: AskData, labels: Record<string, string>, extra: Record<string, Building["extra"]>, unitCost: number, question: string): string | null {
   const tiers = (["설치 우선", "보류", "검토"] as const).filter((t) => question.includes(t));
   if (tiers.length !== 1 || !/곳|목록|건물|후보/.test(question) || /이유|왜/.test(question)) return null;
+  // 계산 결과로 바로 답할 수 있는 조건: 단계·산단 + (복수 입주) + (연 절감 또는 설치용량 순). 그 밖의 조건이 붙으면 모델로 넘긴다
+  const multi = /복수\s*입주/.test(question);
+  const bySave = /절감/.test(question);
+  const byKw = !bySave && /용량|kW/i.test(question) && /큰|많은|가장|순/.test(question);
+  const rest = question.replace(/복수\s*입주(라|인|한)?/g, "").replace(/건물주\s*승낙(이)?\s*필요(한)?/g, "").replace(/연\s*절감(액)?(이)?/g, "").replace(/설치\s*용량/g, "");
+  if (/최소|작은|적은|내진|토지|소유|kW|MW|증축|허가|업종|구조|게이트|ESS|팩|발전|입주|승낙|절감|용량/i.test(rest)) return null;
+  if (!bySave && !byKw && /가장|최대|큰|많은/.test(rest)) return null;
   const base = data.meta.built.replaceAll("-", "");
   const all = data.buildings.map((r) => enrich({ ...r, installed: labels[String(r.bld_id)] === "설치" || undefined, extra: extra[String(r.bld_id)] }, base, unitCost));
   const list = all.filter((b) => passes(b, DEFAULT_FILTERS, null)).sort((a, b) => (b.score.score ?? 0) - (a.score.score ?? 0) || (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
   const shown = list.filter((b) => !b.calc.small && b.calc.pv_kw !== null);
   const complex = [...new Set(shown.map((b) => b.complex_nm))].find((c) => question.includes(c)) ?? null;
   const tier = tiers[0];
-  const hit = shown.filter((b) => b.score.tier === tier && (!complex || b.complex_nm === complex));
-  const want = Number(question.match(/(\d+)\s*(곳|동|개)/)?.[1] ?? 10);
+  const hit = shown.filter((b) => b.score.tier === tier && (!complex || b.complex_nm === complex) && (!multi || b.extra?.multi));
+  if (bySave) hit.sort((a, b) => (b.calc.save_base ?? 0) - (a.calc.save_base ?? 0));
+  if (byKw) hit.sort((a, b) => (b.calc.pv_kw ?? 0) - (a.calc.pv_kw ?? 0));
+  const one = /가장|최대/.test(question);
+  const want = one ? 1 : Number(question.match(/(\d+)\s*(곳|동|개)/)?.[1] ?? 10);
   const top = hit.slice(0, Math.max(1, Math.min(want, 20)));
   const scope = complex ?? "오창 산단 전체";
-  if (!top.length) return `${scope} ${tier} 건물 없음\n- 다셀 계산 결과 기준`;
+  const what = `${scope} ${multi ? "복수 입주(건물주 승낙 필요) " : ""}${tier} 건물`;
+  if (!top.length) return `${what} 없음\n- 다셀 계산 결과 기준`;
+  const order = bySave ? "연 절감 큰 순" : byKw ? "설치용량 큰 순" : "점수순";
   const where = (b: Building) => `${b.addr ? b.addr.split(" ").slice(-2).join(" ") : "주소 정보 없음"}${b.dong ? ` ${b.dong}` : ""}`;
-  return [
-    `${scope} ${tier} 건물 ${top.length}곳${hit.length > top.length ? `(전체 ${hit.length}곳 중 점수순)` : ""}`,
-    ...top.map((b) => `- ${b.companies.map((c) => c.company).join("/") || "등록공장 미연결"} · ${where(b)} · ${b.score.score}/${b.score.max}점 · ${n(b.calc.pv_kw, 1)}kW`),
-  ].join("\n");
+  const save = (b: Building) => (bySave ? ` · 연 절감 ${n(b.calc.save_low === null ? null : toManwon(b.calc.save_low))}~${n(b.calc.save_base === null ? null : toManwon(b.calc.save_base))}만원` : "");
+  const head = one ? `${what} 중 ${bySave ? "연 절감" : byKw ? "설치용량" : "점수"}이 가장 큰 곳(전체 ${hit.length}곳 중)` : `${what} ${top.length}곳${hit.length > top.length ? `(전체 ${hit.length}곳 중 ${order})` : ""}`;
+  return [head, ...top.map((b) => `- ${b.companies.map((c) => c.company).join("/") || "등록공장 미연결"} · ${where(b)} · ${b.score.score}/${b.score.max}점 · ${n(b.calc.pv_kw, 1)}kW${save(b)}`)].join("\n");
 }

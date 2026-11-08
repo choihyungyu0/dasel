@@ -33,4 +33,17 @@ describe("산단·단계 목록 질문(모델 미사용)", () => {
     expect(countMismatch(a)).toBeNull();
   });
   it("이유를 묻는 질문은 목록으로 답하지 않는다", () => expect(listAnswer(data, labels, extra, 189.7, "유한양행 건물이 설치 우선인 이유는?")).toBeNull());
+  it("자리표시 N은 거부", () => expect(checkAnswer("같은 회사 다른 건물 N동", "")).toContain("자리표시 N이 남음 · 실제 숫자로 쓰거나 줄을 지움"));
+  it("연 절감 가장 큰 설치 우선 건물은 계산 결과로", () => {
+    const a = listAnswer(data, labels, extra, 189.7, "설치 우선 단계 건물 중 연 절감액이 가장 큰 곳은?")!;
+    expect(a.split("\n")[0]).toContain("연 절감이 가장 큰 곳");
+    expect(a.split("\n").filter((l) => l.startsWith("- ")).length).toBe(1);
+  });
+  it("복수 입주 설치 우선 목록은 개수 일치, 전부 63점 이상", () => {
+    const a = listAnswer(data, labels, extra, 189.7, "복수 입주라 건물주 승낙이 필요한 설치 우선 건물은?")!;
+    const items = a.split("\n").filter((l) => l.startsWith("- "));
+    expect(a).toMatch(new RegExp(`${items.length}곳`));
+    for (const l of items) expect(Number(l.match(/ (\d+)\/90점/)![1])).toBeGreaterThanOrEqual(63);
+  });
+  it("다른 조건(내진)이 붙으면 모델로", () => expect(listAnswer(data, labels, extra, 189.7, "내진설계 적용된 설치 우선 건물 목록")).toBeNull());
 });

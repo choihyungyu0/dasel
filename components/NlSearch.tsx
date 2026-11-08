@@ -35,7 +35,7 @@ export default function NlSearch({ compact = false }: { compact?: boolean }) {
       setIgnored(j.ignored ?? []);
       if (isDefault(j.filters) && !cd) setMsg("조건으로 바꿀 표현을 찾지 못함 · 다시 입력해 주세요");
     } catch (err) {
-      setMsg(err instanceof Error && err.message !== "signal timed out" && !err.message.includes("abort") ? err.message : "다시 입력해 주세요");
+      setMsg(err instanceof Error && err.message !== "signal timed out" && !err.message.includes("abort") ? err.message : "AI 변환을 지금 쓸 수 없음 · 예시 조건으로 직접 거르기(필터 버튼) 가능");
     } finally {
       setBusy(false);
     }
