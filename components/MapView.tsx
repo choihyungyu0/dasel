@@ -270,11 +270,19 @@ export default function MapView({ ds, complexCd, selectedId, onSelect, colorBy, 
     // 30동이 화면을 채우도록 경계 상자로 맞춘다
     const box = new LngLatBounds();
     for (const f of ds.geo.features) if (on!.has(Number(f.properties?.bld_id))) bounds((f.geometry as { coordinates: unknown }).coordinates, box);
-    const cam = box.isEmpty() ? null : m.cameraForBounds(box, { padding: { top: 80 + padding.top, left: 80, right: 80, bottom: 80 + padding.bottom }, bearing: is3dRef.current ? BEARING : 0 });
-    if (cam) m.easeTo({ ...cam, pitch: is3dRef.current ? PITCH : 0, bearing: is3dRef.current ? BEARING : 0, duration: 900 });
-    else overview(m, null);
+    // 선택 해제에 따른 산단 전체 이동이 먼저 끝나도록 한 박자 뒤에 맞춘다
+    const fit = setTimeout(() => {
+      if (box.isEmpty()) return overview(m, null);
+      m.stop();
+      const bearing = is3dRef.current ? BEARING : 0;
+      const cam = m.cameraForBounds(box, { padding: { top: 80 + padding.top, left: 80, right: 80, bottom: 80 + padding.bottom }, bearing });
+      if (cam) m.easeTo({ center: cam.center, zoom: (cam.zoom ?? 13) + (is3dRef.current ? 1 : 0), pitch: is3dRef.current ? PITCH : 0, bearing, duration: 900 });
+    }, 60);
     const timers = lit.ids.map((id, i) => setTimeout(() => m.setFeatureState({ source: "bld", id }, { lit: true }), 900 + i * 80));
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      clearTimeout(fit);
+      timers.forEach(clearTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, ds, passIds, lit]);
 
